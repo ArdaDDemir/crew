@@ -92,7 +92,7 @@ function parseArgs(raw: string): Record<string, unknown> {
 }
 
 const ACCOUNT_NUDGE =
-  "Desk work for this pass is done. Give an account in first person: what you actually did, files touched, what's missing, what failed. Do not narrate tools. No more tool calls unless a patch is still required to finish this pass.";
+  "Desk work for this pass is done. Give an account in English, first person: what you actually did, files touched, what's missing, what failed. Do not narrate tools. No more tool calls unless a patch is still required to finish this pass.";
 
 async function collect(
   stream: AsyncIterable<ChatEvent>,
