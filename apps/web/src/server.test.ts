@@ -38,9 +38,26 @@ test("bootstrap lists channels and health is ok", async () => {
     const boot = await (await fetch(`${url}/api/bootstrap`)).json();
     expect(boot.channels[0].id).toBe("landing");
     expect(boot.bots.map((b: { id: string }) => b.id)).toContain("coder");
+    expect(Array.isArray(boot.models)).toBe(true);
     const page = await fetch(`${url}/`);
     expect(page.status).toBe(200);
     expect(await page.text()).toContain("Crew");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("POST /api/model updates the workspace model", async () => {
+  const { server, url } = await setup();
+  try {
+    const res = await fetch(`${url}/api/model`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "openai/gpt-4o-mini" }),
+    });
+    expect(res.ok).toBe(true);
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.model).toBe("openai/gpt-4o-mini");
   } finally {
     server.stop(true);
   }

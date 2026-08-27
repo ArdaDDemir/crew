@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 import type { ChatEvent } from "@crew/core";
-import { createHost, readThread, sayChannel, sendDm, setMode, snapshot, type Host } from "./host";
+import { createHost, readThread, sayChannel, sendDm, setMode, setModel, snapshot, type Host } from "./host";
 
 export type ServerOpts = {
   cwd?: string;
@@ -68,6 +68,15 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         verbose: url.searchParams.get("verbose") === "1",
       }),
     );
+  }
+  if (req.method === "POST" && path === "/api/model") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setModel(host, String(body.model ?? "")));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
   }
   if (req.method === "POST" && path === "/api/mode") {
     return readBody(req).then((body) => {

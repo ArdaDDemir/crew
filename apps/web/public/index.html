@@ -25,12 +25,6 @@
           <span class="kicker" id="room-kicker">channel</span>
           <h1 id="room-title">#landing</h1>
         </div>
-        <select id="mode" title="Permission mode">
-          <option value="supervised">supervised</option>
-          <option value="auto-accept" selected>auto-accept</option>
-          <option value="auto">auto</option>
-          <option value="full-access">full-access</option>
-        </select>
       </header>
       <div class="thread" id="thread">
         <ol class="log" id="log"></ol>
@@ -39,14 +33,32 @@
         <form class="composer" id="composer">
           <textarea id="draft" rows="1" placeholder="Message #landing" required></textarea>
           <div class="dock-row">
-            <label class="chk"><input type="checkbox" id="thinking" /> thinking</label>
-            <label class="chk"><input type="checkbox" id="verbose" /> tools</label>
+            <select id="mode" title="Permission mode">
+              <option value="supervised">supervised</option>
+              <option value="auto-accept" selected>auto-accept</option>
+              <option value="auto">auto</option>
+              <option value="full-access">full-access</option>
+            </select>
+            <button type="button" class="chip" id="model-btn" title="Model">model</button>
+            <button type="button" class="chip" id="thinking-btn" aria-pressed="false">thinking</button>
+            <button type="button" class="chip" id="tools-btn" aria-pressed="false">tools</button>
             <button type="submit" id="send">Send</button>
           </div>
         </form>
       </div>
     </section>
   </div>
+  <dialog id="model-modal" class="modal">
+    <form method="dialog" id="model-form">
+      <p class="modal-title">Model</p>
+      <div id="model-list" class="model-list"></div>
+      <input id="model-custom" type="text" placeholder="openrouter model id" />
+      <div class="modal-actions">
+        <button value="cancel" class="ghost">Cancel</button>
+        <button value="ok" id="model-save">Use</button>
+      </div>
+    </form>
+  </dialog>
   <script src="/app.js" type="module"></script>
 </body>
 </html>

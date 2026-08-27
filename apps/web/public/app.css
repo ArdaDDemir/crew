@@ -102,12 +102,13 @@ html, body {
 }
 
 #mode {
-  background: var(--lift);
+  background: transparent;
   color: var(--muted);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 6px 8px;
+  border-radius: 999px;
+  padding: 5px 10px;
   font: 12px "IBM Plex Mono", ui-monospace, monospace;
+  max-width: 11rem;
 }
 
 .thread {
@@ -203,16 +204,79 @@ html, body {
 .dock-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-top: 4px;
+  gap: 8px;
+  padding-top: 6px;
+  flex-wrap: wrap;
 }
 
-.chk {
-  font-size: 12px;
-  color: var(--faint);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.chip {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: 12px "IBM Plex Mono", ui-monospace, monospace;
+  cursor: pointer;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip[aria-pressed="true"] {
+  color: var(--text);
+  border-color: #3a3a40;
+  background: #1c1c20;
+}
+
+.modal {
+  border: 1px solid var(--line);
+  background: var(--lift);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 16px;
+  width: min(420px, calc(100vw - 32px));
+}
+.modal::backdrop { background: rgb(0 0 0 / 55%); }
+.modal-title { margin: 0 0 12px; font-size: 14px; font-weight: 600; }
+.model-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
+.model-list button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: 13px "IBM Plex Mono", ui-monospace, monospace;
+  cursor: pointer;
+}
+.model-list button:hover,
+.model-list button.on { background: var(--bg); color: var(--text); }
+#model-custom {
+  width: 100%;
+  margin-top: 10px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 13px "IBM Plex Mono", ui-monospace, monospace;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.ghost {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+#model-save {
+  border: 0;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 #send {

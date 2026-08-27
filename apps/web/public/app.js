@@ -16,9 +16,28 @@ const els = {
   form: document.getElementById("composer"),
   draft: document.getElementById("draft"),
   send: document.getElementById("send"),
-  thinking: document.getElementById("thinking"),
-  verbose: document.getElementById("verbose"),
+  thinkingBtn: document.getElementById("thinking-btn"),
+  toolsBtn: document.getElementById("tools-btn"),
+  modelBtn: document.getElementById("model-btn"),
+  modelModal: document.getElementById("model-modal"),
+  modelList: document.getElementById("model-list"),
+  modelCustom: document.getElementById("model-custom"),
 };
+
+function pressed(btn) {
+  return btn.getAttribute("aria-pressed") === "true";
+}
+
+function shortModel(id) {
+  const parts = String(id).split("/");
+  return parts[parts.length - 1] || id;
+}
+
+function syncModelChip() {
+  const id = state.bootstrap?.model ?? "model";
+  els.modelBtn.textContent = shortModel(id);
+  els.modelBtn.title = id;
+}
 
 function scrollThread() {
   const el = els.thread;
@@ -66,6 +85,7 @@ function renderRail() {
     els.dms.append(btn);
   }
   els.meta.textContent = b.model;
+  syncModelChip();
 }
 
 function addMessage({ who, botId, text, kind }) {
@@ -105,8 +125,8 @@ async function openThread(kind, id) {
   const q = new URLSearchParams({
     kind,
     id,
-    thinking: els.thinking.checked ? "1" : "0",
-    verbose: els.verbose.checked ? "1" : "0",
+    thinking: pressed(els.thinkingBtn) ? "1" : "0",
+    verbose: pressed(els.toolsBtn) ? "1" : "0",
   });
   const rows = await (await api(`/api/thread?${q}`)).json();
   els.log.replaceChildren();
@@ -146,6 +166,52 @@ async function boot() {
   const first = state.bootstrap.channels[0];
   if (first) await openThread("channel", first.id);
 }
+
+function toggleChip(btn) {
+  btn.setAttribute("aria-pressed", pressed(btn) ? "false" : "true");
+}
+
+els.thinkingBtn.addEventListener("click", () => toggleChip(els.thinkingBtn));
+els.toolsBtn.addEventListener("click", () => toggleChip(els.toolsBtn));
+
+function fillModelModal() {
+  const current = state.bootstrap.model;
+  const models = state.bootstrap.models ?? [current];
+  els.modelList.replaceChildren();
+  for (const id of models) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = id;
+    btn.className = id === current ? "on" : "";
+    btn.onclick = () => {
+      els.modelCustom.value = id;
+      for (const b of els.modelList.children) b.classList.toggle("on", b === btn);
+    };
+    els.modelList.append(btn);
+  }
+  els.modelCustom.value = current;
+}
+
+els.modelBtn.addEventListener("click", () => {
+  fillModelModal();
+  els.modelModal.showModal();
+});
+
+document.getElementById("model-form").addEventListener("submit", async (ev) => {
+  if (ev.submitter?.value !== "ok") return;
+  ev.preventDefault();
+  const model = els.modelCustom.value.trim();
+  if (!model) return;
+  const res = await (await api("/api/model", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model }),
+  })).json();
+  state.bootstrap.model = res.model;
+  if (!state.bootstrap.models.includes(res.model)) state.bootstrap.models.unshift(res.model);
+  syncModelChip();
+  els.modelModal.close();
+});
 
 els.mode.addEventListener("change", async () => {
   if (state.kind !== "channel") return;
@@ -198,8 +264,8 @@ els.form.addEventListener("submit", async (ev) => {
         body: JSON.stringify({
           channelId: state.id,
           text,
-          thinking: els.thinking.checked,
-          verbose: els.verbose.checked,
+          thinking: pressed(els.thinkingBtn),
+          verbose: pressed(els.toolsBtn),
         }),
       });
       const reader = res.body.getReader();

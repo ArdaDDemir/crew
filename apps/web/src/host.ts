@@ -12,7 +12,7 @@ import { JsonlEventStore } from "@crew/store-jsonl";
 import { FsWorkspace } from "@crew/workspace-fs";
 import { OpenAICompatProvider } from "@crew/provider-openai";
 import { nativeTools } from "@crew/tools-native";
-import { defaultHome, mergeConfig } from "./config";
+import { defaultHome, mergeConfig, projectConfigPath, writeConfigFile } from "./config";
 
 const MODES = new Set<PermissionMode>([
   "supervised",
@@ -78,9 +78,19 @@ function party(token: string) {
   return token === "human" ? ({ kind: "human" } as const) : { kind: "bot" as const, botId: token };
 }
 
+export const MODEL_PRESETS = [
+  "z-ai/glm-5.3-flash",
+  "z-ai/glm-5.2:free",
+  "openai/gpt-4o-mini",
+  "anthropic/claude-sonnet-4",
+  "google/gemini-2.5-flash",
+  "x-ai/grok-4",
+];
+
 export function snapshot(host: Host) {
   return {
     model: host.model,
+    models: [...new Set([host.model, ...MODEL_PRESETS])],
     key: host.cfg.apiKey ? "set" : "missing",
     channels: host.workspace.listChannels().map((ch) => ({
       id: ch.id,
@@ -201,6 +211,15 @@ export function setMode(host: Host, channelId: string, mode: string) {
   }
   host.workspace.setChannelMode(channelId, mode as PermissionMode);
   return { mode };
+}
+
+export function setModel(host: Host, model: string) {
+  const id = model.trim();
+  if (!id) throw new Error("model required");
+  host.model = id;
+  host.cfg.model = id;
+  writeConfigFile(projectConfigPath(host.cwd), { model: id });
+  return { model: id };
 }
 
 export { dmThreadId };
