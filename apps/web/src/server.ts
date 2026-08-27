@@ -141,13 +141,19 @@ export function startServer(opts: ServerOpts = {}) {
   const cwd = opts.cwd ?? process.cwd();
   const publicDir = opts.publicDir ?? join(import.meta.dir, "..", "public");
   const host = createHost({ cwd, provider: opts.provider });
-  const port = opts.port ?? Number(process.env.CREW_UI_PORT ?? 7734);
+  const preferred = opts.port ?? Number(process.env.CREW_UI_PORT ?? 7734);
   const hostname = opts.hostname ?? "127.0.0.1";
-  const server = Bun.serve({
-    port,
-    hostname,
-    fetch: (req) => handleRequest(host, req, publicDir),
-  });
+  const fetch = (req: Request) => handleRequest(host, req, publicDir);
+  let server: ReturnType<typeof Bun.serve>;
+  try {
+    server = Bun.serve({ port: preferred, hostname, fetch });
+  } catch (err) {
+    const busy =
+      err instanceof Error &&
+      (/EADDRINUSE/i.test(err.message) || /port .* in use/i.test(err.message));
+    if (!busy || preferred === 0) throw err;
+    server = Bun.serve({ port: 0, hostname, fetch });
+  }
   return { server, host, url: `http://${hostname}:${server.port}` };
 }
 
