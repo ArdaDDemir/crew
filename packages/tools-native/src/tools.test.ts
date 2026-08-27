@@ -39,6 +39,18 @@ test("apply_patch fails when old_text is missing", async () => {
   ).rejects.toThrow("old_text not found");
 });
 
+test("empty old_text does not clobber an existing file", async () => {
+  const { root, tools } = await tmp();
+  await writeFile(join(root, "a.txt"), "keep me");
+  await expect(
+    tools.apply_patch.execute(
+      { path: "a.txt", old_text: "", new_text: "wipe" },
+      { workspaceRoot: root },
+    ),
+  ).rejects.toThrow("file exists");
+  expect(await readFile(join(root, "a.txt"), "utf8")).toBe("keep me");
+});
+
 test("list_dir lists files", async () => {
   const { root, tools } = await tmp();
   await writeFile(join(root, "a.txt"), "x");

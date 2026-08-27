@@ -1,4 +1,4 @@
-const MENTION = /(^|[^A-Za-z0-9_])@([A-Za-z][A-Za-z0-9-]*)/g;
+const MENTION = /(^|[^A-Za-z0-9_/])@([A-Za-z][A-Za-z0-9-]*)/g;
 
 export function parseMentions(text: string): string[] {
   const seen = new Set<string>();

@@ -28,3 +28,13 @@ test("ignores email-like text without a mention boundary", () => {
     "tester",
   ]);
 });
+
+test("keeps a trailing-punctuation mention", () => {
+  expect(parseMentions("go @coder.")).toEqual(["coder"]);
+});
+
+test("does not treat a URL path @ as a wake", () => {
+  expect(parseMentions("see https://github.com/@tester/repo then @coder")).toEqual(
+    ["coder"],
+  );
+});

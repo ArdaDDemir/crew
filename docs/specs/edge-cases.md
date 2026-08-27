@@ -107,6 +107,6 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 Do now if we touch memory: **1, 2, 6, 7, 11** (conflict + unread DM pointer + half-done handoff).
 
-`ADR-0016` covers 1, 2, 7 (latest human wins + DM pointer + last channel account on DM turns). 6 and 11 still open.
+`ADR-0016` covers 1, 2, 7. Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11 still open (half-done handoff is the stop rule).
 
 Later: history cap/compact (40, 54), file-ownership lock beyond `apply_patch` (22–25), cancel (50).

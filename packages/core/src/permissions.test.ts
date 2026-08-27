@@ -70,6 +70,17 @@ test("supervised asks before patch, allows in-workspace read", () => {
   ).toBe("ask");
 });
 
+test("auto-accept asks before a path outside the workspace", () => {
+  expect(
+    decidePermission({
+      mode: "auto-accept",
+      tool: "read",
+      absPath: join("C:", "Windows", "notepad.exe"),
+      workspaceRoot: root,
+    }),
+  ).toBe("ask");
+});
+
 test("auto without reviewer becomes supervised", () => {
   expect(effectiveMode("auto", false)).toEqual({
     mode: "supervised",

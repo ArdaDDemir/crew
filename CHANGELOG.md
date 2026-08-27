@@ -34,3 +34,6 @@ See `docs/versioning.md`.
 
 - OpenAI adapter sends `tool_calls` as `{type:function, function:{name,arguments}}`. Z.AI dropped round-2 after `read` (`Inference processing failed`). That error retries once without tools.
 - Courtesy `@` could restart the meeting until `ADR-0013` / `ADR-0014`.
+- `@` inside a URL path (`github.com/@user`) is not a wake.
+- `dm_send` does not give a second turn to a bot who already spoke this `say`.
+- `apply_patch` with empty `old_text` no longer overwrites an existing file.

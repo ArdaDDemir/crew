@@ -263,6 +263,21 @@ test("log hides thinking and tools unless flagged", async () => {
   expect(tools.stdout).not.toContain("secret plan");
 });
 
+test("say with no text exits 1", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const result = await cli(cwd, ["say", "landing"]);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain("usage:");
+});
+
+test("say unknown channel exits 1", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  const result = await cli(cwd, ["say", "nosuch", "hello"]);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain("unknown channel");
+});
+
 test("unknown command exits 1", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
   const result = await cli(cwd, ["nope"]);

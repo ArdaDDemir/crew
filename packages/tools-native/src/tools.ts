@@ -69,8 +69,9 @@ export function nativeTools(): Tool[] {
             return `created ${args.path}`;
           }
           if (oldText === "") {
-            writeFileSync(path, newText, "utf8");
-            return `wrote ${args.path}`;
+            throw new Error(
+              `file exists: ${args.path} — pass old_text to replace, or pick a new path`,
+            );
           }
           const first = body.indexOf(oldText);
           if (first === -1) throw new Error("old_text not found");

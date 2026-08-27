@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { MemoryEventStore } from "./store";
 import { MemoryWorkspace } from "./workspace";
-import { ScriptedProvider } from "./provider";
+import { ScriptedProvider, type Provider } from "./provider";
 import { dispatchChannelPost } from "./dispatch";
 
 function seq() {
@@ -88,6 +88,61 @@ test("a bot that already spoke this say is not woken again by courtesy @", async
 
   const who = result.replies.map((r) => r.botId);
   expect(who).toEqual(["designer", "coder"]);
+});
+
+test("dm_send does not give a second turn to a bot who already spoke this say", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "designer", name: "Designer" });
+  workspace.addBot({ id: "tester", name: "Tester" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["designer", "tester"],
+    permissionMode: "auto-accept",
+  });
+  let designerRounds = 0;
+  const provider: Provider = {
+    async *complete(req: { messages: Array<{ role?: string; content?: string }> }) {
+      const sys = String(req.messages[0]?.content ?? "");
+      if (sys.includes("id: tester")) {
+        yield { type: "text-delta" as const, text: "tester in the channel" };
+        yield { type: "done" as const };
+        return;
+      }
+      designerRounds += 1;
+      if (designerRounds === 1) {
+        yield {
+          type: "tool-call" as const,
+          id: "d1",
+          name: "dm_send",
+          arguments: JSON.stringify({ to: "tester", text: "secret" }),
+        };
+        yield { type: "done" as const };
+        return;
+      }
+      yield { type: "text-delta" as const, text: "designer accounted" };
+      yield { type: "done" as const };
+    },
+  };
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@designer @tester go",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.replies.map((r) => r.botId).sort()).toEqual(["designer", "tester"]);
+  expect(result.dms).toEqual([]);
+  expect(store.read({ kind: "dm", id: "designer__tester" }).some((e) => e.type === "message.posted")).toBe(
+    true,
+  );
 });
 
 test("channel dm_send opens a DM and wakes the other bot once", async () => {

@@ -131,7 +131,7 @@ export async function dispatchChannelPost(
   const dmSeen = new Set<string>();
   for (const item of pendingDms) {
     const key = `${item.threadId}:${item.botId}`;
-    if (dmSeen.has(key)) continue;
+    if (dmSeen.has(key) || spoken.has(item.botId)) continue;
     dmSeen.add(key);
     const turn = await runBotTurn({
       ...input,
