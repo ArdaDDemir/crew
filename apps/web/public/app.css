@@ -64,6 +64,17 @@ html, body {
 }
 .nav button:hover { background: var(--lift); color: var(--text); }
 .nav button.on { background: var(--lift); color: var(--text); }
+.people { display: flex; flex-direction: column; gap: 4px; }
+.person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.person .avatar { width: 22px; height: 22px; font-size: 10px; border-radius: 6px; }
+
 .meta {
   margin-top: auto;
   padding: 12px 8px 0;
@@ -132,17 +143,45 @@ html, body {
   gap: 20px;
 }
 
-.msg { max-width: 100%; }
-.msg.you { align-self: flex-end; max-width: 80%; }
-
-.who {
-  margin: 0 0 6px;
-  font-size: 12px;
-  color: var(--muted);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+.msg {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px 12px;
+  max-width: 100%;
+  align-items: start;
 }
 
-.msg.you .who { text-align: right; }
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.col { min-width: 0; }
+
+.who {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--faint);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
 
 .copy {
   margin: 0;
@@ -152,11 +191,9 @@ html, body {
 
 .msg.you .copy {
   background: var(--lift);
-  border-radius: 16px 16px 4px 16px;
-  padding: 10px 14px;
+  border-radius: 4px 12px 12px 12px;
+  padding: 8px 12px;
 }
-
-.msg.bot .copy { padding: 0; }
 
 .msg.desk .copy,
 .msg.error .copy {

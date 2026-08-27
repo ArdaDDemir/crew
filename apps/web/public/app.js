@@ -7,6 +7,7 @@ const state = {
 const els = {
   channels: document.getElementById("channel-list"),
   dms: document.getElementById("dm-list"),
+  people: document.getElementById("people"),
   thread: document.getElementById("thread"),
   log: document.getElementById("log"),
   title: document.getElementById("room-title"),
@@ -86,21 +87,96 @@ function renderRail() {
   }
   els.meta.textContent = b.model;
   syncModelChip();
+  renderPeople();
+}
+
+function renderPeople() {
+  els.people.replaceChildren();
+  const ch = state.bootstrap?.channels.find((c) => c.id === state.id);
+  const ids = state.kind === "channel" && ch ? ch.memberBotIds : [];
+  const show = ids.length ? ids : (state.bootstrap?.bots ?? []).map((b) => b.id);
+  for (const id of ["you", ...show]) {
+    const face = faceFor(id);
+    const row = document.createElement("div");
+    row.className = "person";
+    const av = document.createElement("span");
+    av.className = "avatar";
+    av.textContent = face.glyph;
+    av.style.background = face.bg;
+    av.style.color = face.fg;
+    const label = document.createElement("span");
+    label.textContent = displayName(id);
+    row.append(av, label);
+    els.people.append(row);
+  }
+}
+
+const FACES = {
+  you: { glyph: "●", bg: "#2c313a", fg: "#d7dbe2" },
+  lead: { glyph: "◆", bg: "#24344f", fg: "#9bb6e3" },
+  designer: { glyph: "✦", bg: "#3f2a38", fg: "#e2b0c8" },
+  coder: { glyph: "λ", bg: "#1d3a36", fg: "#8fd0c1" },
+  tester: { glyph: "▣", bg: "#3a311c", fg: "#ddc07a" },
+  researcher: { glyph: "※", bg: "#2a382c", fg: "#a9c9a0" },
+};
+
+function botIdFromWho(who, botId) {
+  if (who === "you") return "you";
+  if (botId) return botId;
+  const m = String(who).match(/@([a-z0-9-]+)/i);
+  return m ? m[1].toLowerCase() : "bot";
+}
+
+function faceFor(id) {
+  if (FACES[id]) return FACES[id];
+  let n = 0;
+  for (const ch of id) n = (n * 33 + ch.charCodeAt(0)) % 360;
+  return {
+    glyph: (id[0] || "?").toUpperCase(),
+    bg: `hsl(${n} 18% 22%)`,
+    fg: `hsl(${n} 28% 78%)`,
+  };
+}
+
+function displayName(id) {
+  if (id === "you") return "You";
+  const bot = state.bootstrap?.bots?.find((b) => b.id === id);
+  return bot?.name || id;
 }
 
 function addMessage({ who, botId, text, kind }) {
+  const id = botIdFromWho(who, botId);
+  const isYou = id === "you";
+  const face = faceFor(id);
   const li = document.createElement("li");
-  const isYou = who === "you";
   li.className = `msg ${isYou ? "you" : "bot"}`;
   if (kind === "error") li.classList.add("error");
   if (kind === "thinking" || kind === "tool") li.classList.add("desk");
+
+  const avatar = document.createElement("span");
+  avatar.className = "avatar";
+  avatar.textContent = face.glyph;
+  avatar.style.background = face.bg;
+  avatar.style.color = face.fg;
+  avatar.title = displayName(id);
+
+  const col = document.createElement("div");
+  col.className = "col";
   const whoEl = document.createElement("p");
   whoEl.className = "who";
-  whoEl.textContent = who;
+  whoEl.style.color = face.fg;
+  whoEl.textContent = displayName(id);
+  if (!isYou) {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = `@${id}`;
+    whoEl.append(tag);
+  }
   const copy = document.createElement("p");
   copy.className = "copy";
   copy.textContent = text;
-  li.append(whoEl, copy);
+  col.append(whoEl, copy);
+  li.append(avatar, col);
   els.log.append(li);
   pinBottom();
   return copy;
