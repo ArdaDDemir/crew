@@ -7,6 +7,7 @@ const state = {
 const els = {
   channels: document.getElementById("channel-list"),
   dms: document.getElementById("dm-list"),
+  thread: document.getElementById("thread"),
   log: document.getElementById("log"),
   title: document.getElementById("room-title"),
   kicker: document.getElementById("room-kicker"),
@@ -19,75 +20,76 @@ const els = {
   verbose: document.getElementById("verbose"),
 };
 
-function plateColor(id) {
-  let n = 0;
-  for (const ch of id) n = (n * 33 + ch.charCodeAt(0)) % 360;
-  return `hsl(${n} 12% 62%)`;
-}
-
-function scrollLog() {
-  const el = els.log;
+function scrollThread() {
+  const el = els.thread;
+  el.scrollTop = el.scrollHeight;
   requestAnimationFrame(() => {
     el.scrollTop = el.scrollHeight;
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight;
-    });
   });
 }
 
-async function api(path, opts) {
-  const res = await fetch(path, opts);
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(t || res.statusText);
-  }
-  return res;
+function pinBottom() {
+  scrollThread();
+  requestAnimationFrame(scrollThread);
+}
+
+function setDraftPlaceholder() {
+  els.draft.placeholder =
+    state.kind === "dm" ? `Message ${state.id}` : `Message #${state.id || "channel"}`;
 }
 
 function renderRail() {
   const b = state.bootstrap;
-  els.channels.innerHTML = "";
+  els.channels.replaceChildren();
   for (const ch of b.channels) {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = `#${ch.id}`;
     btn.className = state.kind === "channel" && state.id === ch.id ? "on" : "";
     btn.onclick = () => openThread("channel", ch.id);
     els.channels.append(btn);
   }
-  els.dms.innerHTML = "";
+  els.dms.replaceChildren();
   if (!b.dms.length) {
-    const p = document.createElement("p");
-    p.className = "meta";
-    p.textContent = "none yet";
-    els.dms.append(p);
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.disabled = true;
+    empty.textContent = "None yet";
+    els.dms.append(empty);
   }
   for (const id of b.dms) {
     const btn = document.createElement("button");
-    btn.textContent = id;
+    btn.type = "button";
+    btn.textContent = id.replaceAll("__", " · ");
     btn.className = state.kind === "dm" && state.id === id ? "on" : "";
     btn.onclick = () => openThread("dm", id);
     els.dms.append(btn);
   }
-  els.meta.textContent = `model ${b.model}`;
+  els.meta.textContent = b.model;
 }
 
-function addBubble({ who, botId, text, kind }) {
+function addMessage({ who, botId, text, kind }) {
   const li = document.createElement("li");
-  li.className = "bubble";
-  if (who === "you") li.classList.add("you");
+  const isYou = who === "you";
+  li.className = `msg ${isYou ? "you" : "bot"}`;
   if (kind === "error") li.classList.add("error");
   if (kind === "thinking" || kind === "tool") li.classList.add("desk");
-  const plate = document.createElement("p");
-  plate.className = "plate";
-  plate.textContent = who;
-  if (botId) plate.style.color = plateColor(botId);
-  const body = document.createElement("p");
-  body.className = "body";
-  body.textContent = text;
-  li.append(plate, body);
+  const whoEl = document.createElement("p");
+  whoEl.className = "who";
+  whoEl.textContent = who;
+  const copy = document.createElement("p");
+  copy.className = "copy";
+  copy.textContent = text;
+  li.append(whoEl, copy);
   els.log.append(li);
-  scrollLog();
-  return body;
+  pinBottom();
+  return copy;
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error((await res.text()) || res.statusText);
+  return res;
 }
 
 async function openThread(kind, id) {
@@ -95,32 +97,53 @@ async function openThread(kind, id) {
   state.id = id;
   const ch = state.bootstrap.channels.find((c) => c.id === id);
   els.kicker.textContent = kind;
-  els.title.textContent = kind === "channel" ? `#${id}` : id;
+  els.title.textContent = kind === "channel" ? `#${id}` : id.replaceAll("__", " · ");
   if (ch) els.mode.value = ch.permissionMode;
   els.mode.disabled = kind !== "channel";
+  setDraftPlaceholder();
   renderRail();
-  const thinking = els.thinking.checked ? "1" : "0";
-  const verbose = els.verbose.checked ? "1" : "0";
-  const rows = await (await api(`/api/thread?kind=${kind}&id=${encodeURIComponent(id)}&thinking=${thinking}&verbose=${verbose}`)).json();
-  els.log.innerHTML = "";
+  const q = new URLSearchParams({
+    kind,
+    id,
+    thinking: els.thinking.checked ? "1" : "0",
+    verbose: els.verbose.checked ? "1" : "0",
+  });
+  const rows = await (await api(`/api/thread?${q}`)).json();
+  els.log.replaceChildren();
   for (const row of rows) {
     if (row.type === "message") {
-      addBubble({ who: row.who, botId: row.botId, text: row.text });
+      addMessage({ who: row.who, botId: row.botId, text: row.text });
     } else if (row.type === "thinking") {
-      addBubble({ who: `@${row.botId} thinking`, botId: row.botId, text: row.text, kind: "thinking" });
+      addMessage({
+        who: `@${row.botId}`,
+        botId: row.botId,
+        text: row.text,
+        kind: "thinking",
+      });
     } else if (row.type === "tool") {
-      addBubble({ who: `@${row.botId} tool`, botId: row.botId, text: row.name, kind: "tool" });
+      addMessage({
+        who: `@${row.botId}`,
+        botId: row.botId,
+        text: row.name,
+        kind: "tool",
+      });
     } else if (row.type === "error") {
-      addBubble({ who: `@${row.botId} error`, botId: row.botId, text: row.text, kind: "error" });
+      addMessage({
+        who: `@${row.botId}`,
+        botId: row.botId,
+        text: row.text,
+        kind: "error",
+      });
     }
   }
-  scrollLog();
+  pinBottom();
+  setTimeout(pinBottom, 50);
 }
 
 async function boot() {
   state.bootstrap = await (await api("/api/bootstrap")).json();
-  const first = state.bootstrap.channels[0];
   renderRail();
+  const first = state.bootstrap.channels[0];
   if (first) await openThread("channel", first.id);
 }
 
@@ -135,19 +158,32 @@ els.mode.addEventListener("change", async () => {
   if (ch) ch.permissionMode = els.mode.value;
 });
 
+els.draft.addEventListener("input", () => {
+  els.draft.style.height = "auto";
+  els.draft.style.height = `${Math.min(els.draft.scrollHeight, 160)}px`;
+});
+
+els.draft.addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter" && !ev.shiftKey) {
+    ev.preventDefault();
+    els.form.requestSubmit();
+  }
+});
+
 els.form.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const text = els.draft.value.trim();
   if (!text || !state.id) return;
   els.send.disabled = true;
-  addBubble({ who: "you", text });
+  addMessage({ who: "you", text });
   els.draft.value = "";
+  els.draft.style.height = "auto";
   const bodies = new Map();
   try {
     if (state.kind === "dm") {
       const to = state.id.startsWith("human__")
         ? state.id.slice("human__".length)
-        : state.id.split("__")[0];
+        : state.id.split("__").find((p) => p !== "human") ?? state.id;
       await api("/api/dm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,7 +206,7 @@ els.form.addEventListener("submit", async (ev) => {
       const dec = new TextDecoder();
       let buf = "";
       while (true) {
-        const { value, done } = await reader.read();
+        const { done, value } = await reader.read();
         if (done) break;
         buf += dec.decode(value, { stream: true });
         const lines = buf.split("\n");
@@ -179,21 +215,22 @@ els.form.addEventListener("submit", async (ev) => {
           if (!line.trim()) continue;
           const row = JSON.parse(line);
           if (row.type === "status") {
-            const p = document.createElement("li");
-            p.className = "status";
-            p.textContent = `→ ${row.message}`;
-            els.log.append(p);
+            const li = document.createElement("li");
+            li.className = "status";
+            li.textContent = row.message;
+            els.log.append(li);
+            pinBottom();
           } else if (row.type === "text") {
             let body = bodies.get(row.botId);
             if (!body) {
-              body = addBubble({ who: `@${row.botId}`, botId: row.botId, text: "" });
+              body = addMessage({ who: `@${row.botId}`, botId: row.botId, text: "" });
               bodies.set(row.botId, body);
             }
             body.textContent += row.text;
-            scrollLog();
+            pinBottom();
           } else if (row.type === "error") {
-            addBubble({
-              who: `@${row.botId ?? "engine"} error`,
+            addMessage({
+              who: `@${row.botId ?? "engine"}`,
               botId: row.botId,
               text: row.message,
               kind: "error",
@@ -206,12 +243,13 @@ els.form.addEventListener("submit", async (ev) => {
       }
     }
   } catch (err) {
-    addBubble({ who: "engine error", text: String(err), kind: "error" });
+    addMessage({ who: "error", text: String(err), kind: "error" });
   }
   els.send.disabled = false;
-  scrollLog();
+  pinBottom();
+  els.draft.focus();
 });
 
 boot().catch((err) => {
-  addBubble({ who: "engine error", text: String(err), kind: "error" });
+  addMessage({ who: "error", text: String(err), kind: "error" });
 });

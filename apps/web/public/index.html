@@ -6,53 +6,46 @@
   <title>Crew</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
   <div class="app">
-    <aside class="rail" id="rail">
-      <header class="brand">
-        <p class="brand-kicker">local</p>
-        <h1>Crew</h1>
-      </header>
-      <section>
-        <h2>Channels</h2>
-        <nav id="channel-list" class="stack"></nav>
-      </section>
-      <section>
-        <h2>DMs</h2>
-        <nav id="dm-list" class="stack"></nav>
-      </section>
+    <aside class="rail">
+      <p class="logo">Crew</p>
+      <p class="rail-label">Channels</p>
+      <nav id="channel-list" class="nav"></nav>
+      <p class="rail-label">Direct</p>
+      <nav id="dm-list" class="nav"></nav>
       <p class="meta" id="meta"></p>
     </aside>
-    <main class="stage">
-      <header class="stage-bar">
+    <section class="chat">
+      <header class="chat-top">
         <div>
-          <p class="eyebrow" id="room-kicker">channel</p>
-          <h2 id="room-title">#</h2>
+          <span class="kicker" id="room-kicker">channel</span>
+          <h1 id="room-title">#landing</h1>
         </div>
-        <label class="mode">
-          Mode
-          <select id="mode">
-            <option value="supervised">supervised</option>
-            <option value="auto-accept">auto-accept</option>
-            <option value="auto">auto</option>
-            <option value="full-access">full-access</option>
-          </select>
-        </label>
+        <select id="mode" title="Permission mode">
+          <option value="supervised">supervised</option>
+          <option value="auto-accept" selected>auto-accept</option>
+          <option value="auto">auto</option>
+          <option value="full-access">full-access</option>
+        </select>
       </header>
-      <ol class="log" id="log" aria-live="polite"></ol>
-      <form class="composer" id="composer">
-        <p class="hint">@ wakes a bot. No tag → lead. English on the floor.</p>
-        <textarea id="draft" rows="3" placeholder="@designer write the hero. @coder put it in index.html." required></textarea>
-        <div class="composer-row">
-          <label><input type="checkbox" id="thinking" /> desk thoughts</label>
-          <label><input type="checkbox" id="verbose" /> tools</label>
-          <button type="submit" id="send">Send</button>
-        </div>
-      </form>
-    </main>
+      <div class="thread" id="thread">
+        <ol class="log" id="log"></ol>
+      </div>
+      <div class="dock">
+        <form class="composer" id="composer">
+          <textarea id="draft" rows="1" placeholder="Message #landing" required></textarea>
+          <div class="dock-row">
+            <label class="chk"><input type="checkbox" id="thinking" /> thinking</label>
+            <label class="chk"><input type="checkbox" id="verbose" /> tools</label>
+            <button type="submit" id="send">Send</button>
+          </div>
+        </form>
+      </div>
+    </section>
   </div>
   <script src="/app.js" type="module"></script>
 </body>
