@@ -17,7 +17,7 @@ function ack(): Provider {
 async function cli(
   cwd: string,
   args: string[],
-  extra?: { readLine?: () => Promise<string | null> },
+  extra?: { readLine?: () => Promise<string | null>; provider?: Provider },
 ) {
   let stdout = "";
   let stderr = "";
@@ -33,9 +33,31 @@ async function cli(
       },
       readLine: extra?.readLine,
     },
-    { provider: ack() },
+    { provider: extra?.provider ?? ack() },
   );
   return { code, stdout, stderr };
+}
+
+function deskThenAccount(): Provider {
+  let round = 0;
+  return {
+    async *complete() {
+      round += 1;
+      if (round === 1) {
+        yield { type: "reasoning-delta", text: "secret plan" };
+        yield {
+          type: "tool-call",
+          id: "t1",
+          name: "read",
+          arguments: JSON.stringify({ path: "missing.txt" }),
+        };
+        yield { type: "done" };
+        return;
+      }
+      yield { type: "text-delta", text: "bak missing.txt yoktu, sordum" };
+      yield { type: "done" };
+    },
+  };
 }
 
 async function setupLanding(cwd: string) {
@@ -177,6 +199,54 @@ test("log reprints channel chat", async () => {
   expect(log.code).toBe(0);
   expect(log.stdout).toContain("you:");
   expect(log.stdout).toContain("@lead:");
+});
+
+test("say is chat-only; thinking and tools stay at the desk", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const said = await cli(cwd, ["say", "landing", "hello lead"], {
+    provider: deskThenAccount(),
+  });
+  expect(said.code).toBe(0);
+  expect(said.stdout).toContain("lead: bak missing.txt yoktu, sordum");
+  expect(said.stdout).not.toContain("secret plan");
+  expect(said.stdout).not.toContain("thinking");
+  expect(said.stdout).not.toContain("[lead tool]");
+});
+
+test("--thinking and --verbose print desk work live", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const said = await cli(
+    cwd,
+    ["say", "landing", "hello lead", "--thinking", "--verbose"],
+    { provider: deskThenAccount() },
+  );
+  expect(said.code).toBe(0);
+  expect(said.stdout).toContain("[lead thinking]");
+  expect(said.stdout).toContain("secret plan");
+  expect(said.stdout).toContain("[lead tool] read");
+  expect(said.stdout).toContain("bak missing.txt yoktu, sordum");
+});
+
+test("log hides thinking and tools unless flagged", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  await cli(cwd, ["say", "landing", "hello lead"], {
+    provider: deskThenAccount(),
+  });
+  const chat = await cli(cwd, ["log", "landing"]);
+  expect(chat.stdout).toContain("@lead: bak missing.txt yoktu, sordum");
+  expect(chat.stdout).not.toContain("secret plan");
+  expect(chat.stdout).not.toContain("[lead tool]");
+
+  const thoughts = await cli(cwd, ["log", "landing", "--thinking"]);
+  expect(thoughts.stdout).toContain("secret plan");
+  expect(thoughts.stdout).not.toContain("[lead tool]");
+
+  const tools = await cli(cwd, ["log", "landing", "--verbose"]);
+  expect(tools.stdout).toContain("[lead tool] read");
+  expect(tools.stdout).not.toContain("secret plan");
 });
 
 test("unknown command exits 1", async () => {

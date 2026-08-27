@@ -10,7 +10,7 @@ If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update t
 
 Local multi-bot runtime. Working CLI name: `crew`. Repo: `aibuildingapp`.
 
-Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`). A lead assigns work with `@designer` / `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots speak in the channel and may **DM** each other. Human can read every DM.
+Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`). A lead assigns work with `@designer` / `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel like coworkers: what they did, what's missing, what failed. They may **DM** each other. Human can read every DM.
 
 v1 surface: CLI. Later: GUI on the **same** `packages/core` events. We own the agent loop. OpenRouter (OpenAI-compatible `base_url`) is the model.
 
@@ -69,7 +69,7 @@ docs/specs             wire contracts
 2. **Architecture change → ADR.** Next number in `docs/adr/`. Do not rewrite an accepted ADR; supersede it. Touch `docs/adr/README.md` index.
 3. **User-visible change → `CHANGELOG.md` `[Unreleased]`.** Keep a Changelog headings.
 4. **Mention routing is the scheduler.** No tag → no turn (except human post with no `@` wakes the channel **lead**). `@everyone` wakes every **bot** member except the author. Unknown `@foo` is ignored. Spec: `docs/specs/mentions-and-routing.md`.
-5. **Permissions.** Four modes: `supervised` \| `auto-accept` (default) \| `auto` \| `full-access`. Auto-accept = workspace file writes allowed, shell still asks. `auto` without a reviewer model **falls back to supervised**, never to full-access. Always deny `.env` and `~/.ssh`. Approvals are events, not `stdin` inside a tool. Spec: `docs/specs/permissions.md`.
+5. **Permissions.** Four modes: `supervised` \| `auto-accept` (default) \| `auto` \| `full-access`. Auto-accept = workspace file writes **and** workspace `shell` allowed. `supervised` still asks. `auto` without a reviewer model **falls back to supervised**, never to full-access. Always deny `.env` and `~/.ssh`. Approvals are events, not `stdin` inside a tool. Spec: `docs/specs/permissions.md`.
 6. **Sessions are append-only JSONL** with `"v": 1`. Never rewrite a line. Spec: `docs/specs/session-jsonl.md`.
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. OpenRouter is an adapter. Core does not import `@openrouter/*`.
 8. **Skills = `SKILL.md`.** Channel `RULES.md` + `CONTEXT.md` load on every turn in that channel. Bot `SOUL.md` is voice, not a skill.

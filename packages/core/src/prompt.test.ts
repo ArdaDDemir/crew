@@ -45,7 +45,12 @@ test("channel prompt names the self, roster, lead, rules, and tools", () => {
   expect(text).toContain("No @ means wait.");
   expect(text).toContain("Marketing landing page.");
   expect(text).toContain("apply_patch");
-  expect(text).toContain("Keep it chat");
+  expect(text).toContain("give an account");
+  expect(text).toContain("first person");
+  expect(text).toContain("at your desk");
+  expect(text).toContain("If something is missing, ask");
+  expect(text).toContain("If it didn't work");
+  expect(text).toContain("Don't fake success");
   expect(text).not.toContain('post "done:');
   expect(text).toContain("Write copy and layout.");
   expect(text).toContain("mention = wake");

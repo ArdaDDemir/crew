@@ -30,7 +30,8 @@ Human opens channel `landing` with members `lead, designer, coder, tester`.
 3. Lead replies in the channel: `@designer hero yaz. Aynı anda @coder API iskeletini kur.`
 4. Engine wakes **designer and coder in parallel**. Tester still waits.
 5. Coder DMs tester a private note **or** later posts `@tester kır` in the channel.
-6. File writes inside the project folder pass without asking (`auto-accept`). Shell and paths outside the folder ask. Human can switch to `supervised` / `auto` / `full-access`.
+6. File writes and workspace shell inside the project folder pass without asking (`auto-accept`). Paths outside the folder ask. Human can switch to `supervised` / `auto` / `full-access`.
+7. Each woken bot works at its desk, then posts an account in the channel (what they did, what's missing, what failed). Thinking/tools are not the channel message.
 
 ## Architecture
 

@@ -101,7 +101,7 @@ function printReplies(
   }
 }
 
-function liveIo(io: Io, flags: { thinking: boolean }) {
+function liveIo(io: Io, flags: { thinking: boolean; verbose: boolean }) {
   const started = new Set<string>();
   const thinking = new Set<string>();
   return {
@@ -131,7 +131,7 @@ function liveIo(io: Io, flags: { thinking: boolean }) {
         return;
       }
       if (event.type === "tool-call") {
-        io.writeOut(`\n  [${botId} tool] ${event.name}\n`);
+        if (flags.verbose) io.writeOut(`\n  [${botId} tool] ${event.name}\n`);
         return;
       }
       if (event.type === "error") {
@@ -169,15 +169,16 @@ const USAGE = `crew — local multi-bot CLI
   crew channel create <id> --bots a,b [--lead id]
   crew channel list|show <id>
   crew mode <channel> <supervised|auto-accept|auto|full-access>
-  crew say <channel> <text> [--thinking]
+  crew say <channel> <text> [--thinking] [--verbose]
   crew dm <from> <to> <text>
-  crew open <channel>     (/thinking on|off, /quit)
-  crew log <channel> [--thinking]
+  crew open <channel>     (/thinking on|off, /verbose on|off, /quit)
+  crew log <channel> [--thinking] [--verbose]
   crew config set model <openrouter-model-id>
   crew config set key <OPENROUTER_KEY>
   crew config show
   --yes   allow asked tools this process
-  --thinking   stream model thoughts in this command
+  --thinking   stream thoughts (desk). default: crew log --thinking
+  --verbose    stream tool names (desk). default: crew log --verbose
 Env (overrides file): OPENROUTER_API_KEY  CREW_MODEL  CREW_BASE_URL
 `;
 
@@ -218,8 +219,13 @@ export async function runCli(
   const yes = argv.includes("--yes");
   const globalFlag = argv.includes("--global");
   const showThinking = argv.includes("--thinking");
+  const verbose = argv.includes("--verbose");
   argv = argv.filter(
-    (a) => a !== "--yes" && a !== "--global" && a !== "--thinking",
+    (a) =>
+      a !== "--yes" &&
+      a !== "--global" &&
+      a !== "--thinking" &&
+      a !== "--verbose",
   );
   const [cmd, sub, ...rest] = argv;
   const root = crewRoot(io.cwd);
@@ -231,7 +237,7 @@ export async function runCli(
   const cfg = mergeConfig({ cwd: io.cwd, home, env });
   const model = deps.model ?? cfg.model ?? "z-ai/glm-5.3-flash";
   const ask = deps.ask ?? defaultAsk(io, yes);
-  const thinkingFlags = { thinking: showThinking };
+  const liveFlags = { thinking: showThinking, verbose };
 
   const dispatchBase = () => ({
     store,
@@ -244,7 +250,7 @@ export async function runCli(
     hasReviewer: false,
     turnGapMs: deps.provider ? 0 : Number(process.env.CREW_TURN_GAP_MS ?? 0),
     rateLimitGapMs: deps.provider ? 0 : Number(process.env.CREW_RATE_LIMIT_GAP_MS ?? 8000),
-    ...liveIo(io, thinkingFlags),
+    ...liveIo(io, liveFlags),
     ...clock(),
   });
 
@@ -404,7 +410,7 @@ export async function runCli(
         throw new Error(`unknown channel: ${channelId}`);
       }
       io.writeOut(
-        `opened #${channelId}  (/thinking on|off | /mode ... | /quit)\n`,
+        `opened #${channelId}  (/thinking on|off | /verbose on|off | /mode ... | /quit)\n`,
       );
       const read = io.readLine ?? defaultReadLine;
       while (true) {
@@ -433,13 +439,23 @@ export async function runCli(
           continue;
         }
         if (trimmed === "/thinking on") {
-          thinkingFlags.thinking = true;
+          liveFlags.thinking = true;
           io.writeOut("thinking: on\n");
           continue;
         }
         if (trimmed === "/thinking off") {
-          thinkingFlags.thinking = false;
+          liveFlags.thinking = false;
           io.writeOut("thinking: off\n");
+          continue;
+        }
+        if (trimmed === "/verbose on") {
+          liveFlags.verbose = true;
+          io.writeOut("verbose: on\n");
+          continue;
+        }
+        if (trimmed === "/verbose off") {
+          liveFlags.verbose = false;
+          io.writeOut("verbose: off\n");
           continue;
         }
         if (trimmed.startsWith("/mode ")) {
@@ -468,7 +484,7 @@ export async function runCli(
 
     if (cmd === "log") {
       const channelId = sub;
-      if (!channelId) throw new Error("usage: crew log <channel> [--thinking]");
+      if (!channelId) throw new Error("usage: crew log <channel> [--thinking] [--verbose]");
       const events = store.read({ kind: "channel", id: channelId });
       if (events.length === 0) {
         io.writeOut("(empty)\n");
@@ -487,7 +503,7 @@ export async function runCli(
           io.writeErr(
             `ERROR ${event.payload.botId ?? ""}: ${String(event.payload.message ?? "")}\n`,
           );
-        } else if (event.type === "tool.requested") {
+        } else if (event.type === "tool.requested" && verbose) {
           io.writeOut(`  [${event.payload.botId} tool] ${event.payload.name}\n`);
         }
       }

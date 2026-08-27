@@ -1,6 +1,6 @@
 # aibuildingapp (`crew`)
 
-Local multi-bot runtime. You create bots and channels. A lead assigns work with `@`. Mentioned bots act (in parallel if several are tagged). The rest wait. Bots can talk in the channel or DM each other.
+Local multi-bot runtime. You create bots and channels. A lead assigns work with `@`. Mentioned bots act (in parallel if several are tagged). The rest wait. Each bot works at its desk, then accounts in chat. Bots can talk in the channel or DM each other.
 
 CLI first. GUI later, same core.
 
@@ -25,4 +25,4 @@ bun run crew -- say landing "@designer hero yaz. Aynı anda @coder API kur."
 bun run crew -- open landing
 ```
 
-Default permission: auto-accept (workspace file writes). Shell still asks unless `--yes` or `full-access`. Logs: `.crew/logs/*.jsonl`.
+Default permission: auto-accept (workspace file writes and workspace shell). `.env` / `.ssh` still deny. Chat is the account; thinking/tools stay in the log (`crew log landing --thinking --verbose`). Logs: `.crew/logs/*.jsonl`.

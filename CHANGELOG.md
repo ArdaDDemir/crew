@@ -22,3 +22,4 @@ See `docs/versioning.md`.
 - Provider errors print to stderr (`bot ERROR: ...`). 429/5xx retried; 429 messages are short (no raw JSON). Bot turns pause after a rate-limit.
 - Default model `z-ai/glm-5.3-flash`. Live stream + thinking deltas. Fetch timeout 45s.
 - Chat style (no `done:` protocol). `crew log` / `--thinking`. Auto-accept allows workspace `shell`. `list_dir` tool. File write lock.
+- Coworker turns: work at the desk, then give an account in chat (ask if blocked, say if it failed). Default `say` / `log` hide thinking and tools; `--thinking` / `--verbose` (or `/thinking`, `/verbose`) show desk work.
