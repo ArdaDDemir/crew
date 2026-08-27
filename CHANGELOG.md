@@ -24,3 +24,4 @@ See `docs/versioning.md`.
 - Chat style (no `done:` protocol). `crew log` / `--thinking`. Auto-accept allows workspace `shell`. `list_dir` tool. File write lock.
 - Coworker turns: work at the desk, then give an account in chat (ask if blocked, say if it failed). Default `say` / `log` hide thinking and tools; `--thinking` / `--verbose` (or `/thinking`, `/verbose`) show desk work.
 - Engine-enforced desk vs account (`ADR-0012`): tool-round mutter is not the channel message. After tools, one nudge to give an account.
+- OpenAI adapter sends `tool_calls` as `{type:function, function:{name,arguments}}`. Z.AI dropped round-2 after `read` (`Inference processing failed` / vLLM validation). That error retries once without tools so the bot can still give an account.

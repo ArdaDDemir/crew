@@ -71,6 +71,53 @@ test("hanging fetch becomes a timeout error", async () => {
   expect(String((events[0] as { message: string }).message)).toContain("timeout");
 });
 
+test("assistant tool_calls are sent in OpenAI function shape", async () => {
+  let body = "";
+  const sse =
+    'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n' + "data: [DONE]\n\n";
+  const provider = new OpenAICompatProvider({
+    apiKey: "test",
+    fetch: async (_url, init) => {
+      body = String(init?.body ?? "");
+      return new Response(sse, { status: 200 });
+    },
+  });
+  for await (const _ of provider.complete({
+    model: "x",
+    messages: [
+      {
+        role: "assistant",
+        content: "",
+        tool_calls: [
+          {
+            id: "call_1",
+            name: "read",
+            arguments: JSON.stringify({ path: "index.html" }),
+          },
+        ],
+      },
+      { role: "tool", tool_call_id: "call_1", content: "<html/>" },
+    ],
+  })) {
+    /* drain */
+  }
+  const parsed = JSON.parse(body) as {
+    messages: Array<{
+      tool_calls?: Array<{
+        type?: string;
+        function?: { name?: string; arguments?: string };
+        name?: string;
+      }>;
+      tool_call_id?: string;
+    }>;
+  };
+  const call = parsed.messages[0]?.tool_calls?.[0];
+  expect(call?.type).toBe("function");
+  expect(call?.function?.name).toBe("read");
+  expect(call?.name).toBeUndefined();
+  expect(parsed.messages[1]?.tool_call_id).toBe("call_1");
+});
+
 test("non-OK responses become error events", async () => {
   const provider = new OpenAICompatProvider({
     apiKey: "bad",

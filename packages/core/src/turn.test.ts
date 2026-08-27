@@ -313,6 +313,47 @@ test("after tools, next model call is nudged to give an account", async () => {
   expect(seen[1].toLowerCase()).toContain("give an account");
 });
 
+test("inference processing failed retries once without tools", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const seenTools: boolean[] = [];
+  const provider: Provider = {
+    async *complete(req) {
+      seenTools.push(Boolean(req.tools?.length));
+      if (seenTools.length === 1) {
+        yield { type: "error", message: "Inference processing failed" };
+        yield { type: "done" };
+        return;
+      }
+      yield { type: "text-delta", text: "bak dosyaya bakamadım, tekrar denerim" };
+      yield { type: "done" };
+    },
+  };
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [readTool],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(seenTools).toEqual([true, false]);
+  expect(result.error).toBeUndefined();
+  expect(result.text).toContain("bak dosyaya bakamadım");
+});
+
 test("provider error is returned on the turn, not swallowed", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

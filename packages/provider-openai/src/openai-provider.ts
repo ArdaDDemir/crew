@@ -1,6 +1,35 @@
-import type { ChatRequest, Provider, ChatEvent } from "@crew/core";
+import type {
+  ChatRequest,
+  ChatMessage,
+  Provider,
+  ChatEvent,
+} from "@crew/core";
 import { parseSseChunk, splitSse } from "./sse";
 import { formatProviderError } from "./format-error";
+
+export function toOpenAiMessages(messages: ChatMessage[]): unknown[] {
+  return messages.map((msg) => {
+    if (msg.role === "assistant" && msg.tool_calls?.length) {
+      return {
+        role: "assistant",
+        content: msg.content ? msg.content : null,
+        tool_calls: msg.tool_calls.map((call) => ({
+          id: call.id,
+          type: "function",
+          function: { name: call.name, arguments: call.arguments },
+        })),
+      };
+    }
+    if (msg.role === "tool") {
+      return {
+        role: "tool",
+        tool_call_id: msg.tool_call_id,
+        content: msg.content,
+      };
+    }
+    return { role: msg.role, content: msg.content };
+  });
+}
 
 export type OpenAICompatOptions = {
   apiKey: string;
@@ -45,7 +74,7 @@ export class OpenAICompatProvider implements Provider {
     };
     const body = JSON.stringify({
       model: req.model,
-      messages: req.messages,
+      messages: toOpenAiMessages(req.messages),
       tools: tools?.length ? tools : undefined,
       stream: true,
       reasoning: { enabled: true },

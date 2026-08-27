@@ -191,9 +191,12 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
           input.provider.complete({
             model,
             messages,
-            tools: toolSpecs,
+            tools: undefined,
           }),
-          input.onEvent,
+          (event) => {
+            if (event.type === "reasoning-delta") reasoning.push(event.text);
+            input.onEvent?.(event);
+          },
         );
       }
     } catch (err) {
