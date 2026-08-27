@@ -24,6 +24,8 @@ bun run crew -- channel create landing --bots lead,designer,coder --lead lead
 bun run crew -- say landing "@designer hero yaz. Aynı anda @coder API kur."
 bun run crew -- log landing
 bun run crew -- open landing
+bun run ui
 ```
+Then open the printed `http://127.0.0.1:7734`. Same `.crew` logs as the CLI.
 
 Default permission: auto-accept (workspace file writes and workspace shell). `.env` / `.ssh` still deny. Chat is the account; thinking/tools stay in the log (`crew log landing --thinking --verbose`). Logs: `.crew/logs/*.jsonl`.

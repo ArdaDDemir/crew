@@ -1,0 +1,13 @@
+{
+  "name": "@crew/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@crew/core": "workspace:*",
+    "@crew/provider-openai": "workspace:*",
+    "@crew/store-jsonl": "workspace:*",
+    "@crew/tools-native": "workspace:*",
+    "@crew/workspace-fs": "workspace:*"
+  }
+}

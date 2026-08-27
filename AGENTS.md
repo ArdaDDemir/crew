@@ -22,7 +22,7 @@ Do **not** start building any of these. They are the usual wrong first commit:
 |---|---|
 | discord.js / Discord API bot | Discord-like **data model** only. Real Discord is a later adapter. |
 | Wrapper around Claude Code, Codex, OpenCode, Grok CLI | We are the engine. T3 Code is UI/permission **inspiration**, not a dependency. |
-| Electron / T3 desktop in v1 | CLI first. |
+| Electron / T3 desktop in v1 | CLI first. Local web UI is `apps/web` (`ADR-0017`). |
 | Single ChatGPT REPL | Product is bots + channels + mentions + DMs. |
 | Cloud VM / computer-use | Work is the human’s machine. |
 | New YAML skill format | Agent Skills `SKILL.md` only. |
@@ -57,6 +57,7 @@ packages/core          domain + ports. NO fetch, NO clap, NO discord, NO console
 packages/store-jsonl   append-only JSONL EventStore
 packages/workspace-fs  .crew/ bots + channels on disk
 apps/cli               `crew` argv adapter
+apps/web               local UI adapter (Bun.serve)
 docs/adr               decisions (immutable once accepted)
 docs/specs             wire contracts
 ```
@@ -74,7 +75,7 @@ docs/specs             wire contracts
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. OpenRouter is an adapter. Core does not import `@openrouter/*`.
 8. **Skills = `SKILL.md`.** Channel `RULES.md` + `CONTEXT.md` load on every turn in that channel. Bot `SOUL.md` is voice, not a skill.
 9. **0.x semver.** Breaking public API (CLI flags, JSONL types, mode names, skill frontmatter) bumps **minor** until 1.0. Start/stay honest: we are `0.1.0`.
-10. **Scope.** Do not add GUI, real Discord, MCP, git-PR buttons, fullscreen TUI, or a second provider SDK unless the human asked in this session.
+10. **Scope.** Do not add Electron, real Discord, MCP, git-PR buttons, or a second provider SDK unless the human asked in this session. Local web UI lives in `apps/web`.
 
 ## Testing
 

@@ -29,6 +29,7 @@ See `docs/versioning.md`.
 - `crew dms` / `crew dms show a b` — human lists and reads every DM. Desk events stay in JSONL for the UI (`crew log` / `dms show --thinking --verbose`).
 - Bots always reply in English, even if the human writes another language.
 - Latest human message to a bot wins across channel and DM (`ADR-0016`). Channel turns get a DM pointer, not a dump. Disk is truth.
+- Local web UI (`bun run ui`) on the same core: channel log with per-bot nameplates, DMs, composer, permission mode (`ADR-0017`).
 
 ### Fixed
 

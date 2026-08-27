@@ -7,6 +7,7 @@
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "test": "bun test",
-    "crew": "bun run apps/cli/src/main.ts"
+    "crew": "bun run apps/cli/src/main.ts",
+    "ui": "bun run apps/web/src/server.ts"
   }
 }

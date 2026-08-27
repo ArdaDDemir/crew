@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crew</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Syne:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" id="rail">
+      <header class="brand">
+        <p class="brand-kicker">local workshop</p>
+        <h1>Crew</h1>
+      </header>
+      <section>
+        <h2>Channels</h2>
+        <nav id="channel-list" class="stack"></nav>
+      </section>
+      <section>
+        <h2>DMs</h2>
+        <nav id="dm-list" class="stack"></nav>
+      </section>
+      <p class="meta" id="meta"></p>
+    </aside>
+    <main class="stage">
+      <header class="stage-bar">
+        <div>
+          <p class="eyebrow" id="room-kicker">channel</p>
+          <h2 id="room-title">#</h2>
+        </div>
+        <label class="mode">
+          Mode
+          <select id="mode">
+            <option value="supervised">supervised</option>
+            <option value="auto-accept">auto-accept</option>
+            <option value="auto">auto</option>
+            <option value="full-access">full-access</option>
+          </select>
+        </label>
+      </header>
+      <ol class="log" id="log" aria-live="polite"></ol>
+      <form class="composer" id="composer">
+        <p class="hint">@ wakes a bot. No tag → lead. English on the floor.</p>
+        <textarea id="draft" rows="3" placeholder="@designer write the hero. @coder put it in index.html." required></textarea>
+        <div class="composer-row">
+          <label><input type="checkbox" id="thinking" /> desk thoughts</label>
+          <label><input type="checkbox" id="verbose" /> tools</label>
+          <button type="submit" id="send">Send</button>
+        </div>
+      </form>
+    </main>
+  </div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
