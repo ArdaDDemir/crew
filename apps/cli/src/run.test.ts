@@ -45,6 +45,7 @@ function deskThenAccount(): Provider {
       round += 1;
       if (round === 1) {
         yield { type: "reasoning-delta", text: "secret plan" };
+        yield { type: "text-delta", text: "checking files" };
         yield {
           type: "tool-call",
           id: "t1",
@@ -209,6 +210,7 @@ test("say is chat-only; thinking and tools stay at the desk", async () => {
   });
   expect(said.code).toBe(0);
   expect(said.stdout).toContain("lead: bak missing.txt yoktu, sordum");
+  expect(said.stdout).not.toContain("checking files");
   expect(said.stdout).not.toContain("secret plan");
   expect(said.stdout).not.toContain("thinking");
   expect(said.stdout).not.toContain("[lead tool]");

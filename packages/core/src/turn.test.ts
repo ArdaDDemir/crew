@@ -213,6 +213,106 @@ test("onStatus and onEvent fire while the model streams", async () => {
   expect(seen).toContain("text-delta");
 });
 
+test("desk-round text is not forwarded as channel text-delta", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const thread = { kind: "channel" as const, id: "landing" };
+  store.append({
+    v: 1,
+    id: "seed",
+    ts: "t",
+    thread,
+    type: "message.posted",
+    parent: null,
+    payload: { author: { kind: "human" }, text: "read pkg", mentions: ["coder"] },
+  });
+  const seen: string[] = [];
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        { type: "text-delta", text: "checking files" },
+        {
+          type: "tool-call",
+          id: "call_1",
+          name: "read",
+          arguments: JSON.stringify({ path: "package.json" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "bak package.json okudum" }, { type: "done" }],
+    ]),
+    tools: [readTool],
+    nextId: seq(),
+    now: () => "t",
+    thread,
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+    onEvent: (e) => {
+      if (e.type === "text-delta") seen.push(e.text);
+    },
+  });
+  expect(result.text).toBe("bak package.json okudum");
+  expect(seen.join("")).toBe("bak package.json okudum");
+  expect(seen.join("")).not.toContain("checking files");
+});
+
+test("after tools, next model call is nudged to give an account", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const seen: string[] = [];
+  const provider: Provider = {
+    async *complete(req) {
+      const last = req.messages.at(-1);
+      seen.push(`${last?.role}:${"content" in last! ? last.content : ""}`);
+      if (seen.length === 1) {
+        yield {
+          type: "tool-call",
+          id: "call_1",
+          name: "read",
+          arguments: JSON.stringify({ path: "package.json" }),
+        };
+        yield { type: "done" };
+        return;
+      }
+      yield { type: "text-delta", text: "bak okudum" };
+      yield { type: "done" };
+    },
+  };
+  await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [readTool],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(seen[1]).toContain("user:");
+  expect(seen[1].toLowerCase()).toContain("give an account");
+});
+
 test("provider error is returned on the turn, not swallowed", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

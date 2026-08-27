@@ -26,7 +26,7 @@ For `dm`, `thread.id` is `botA__botB` with sorted slugs, or `human__bot`.
 | `message.posted` | human or bot |
 | `bot.woken` | engine (routing) |
 | `bot.turn.started` | engine |
-| `assistant.delta` | engine (stream) |
+| `assistant.delta` | engine (stream; desk mutter and account tokens) |
 | `tool.requested` | engine |
 | `permission.asked` | engine |
 | `permission.resolved` | human (via adapter) |

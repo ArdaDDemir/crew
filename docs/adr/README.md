@@ -15,3 +15,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0009 | TypeScript + Bun | accepted |
 | 0010 | AGENTS.md is the agent-facing law | accepted |
 | 0011 | Auto-accept shell + thinking log | accepted |
+| 0012 | Desk then account (engine-enforced) | accepted |

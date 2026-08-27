@@ -90,6 +90,9 @@ function parseArgs(raw: string): Record<string, unknown> {
   return { _raw: raw };
 }
 
+const ACCOUNT_NUDGE =
+  "Desk work for this pass is done. Give an account in first person: what you actually did, files touched, what's missing, what failed. Do not narrate tools. No more tool calls unless a patch is still required to finish this pass.";
+
 async function collect(
   stream: AsyncIterable<ChatEvent>,
   onEvent?: (event: ChatEvent) => void,
@@ -101,11 +104,12 @@ async function collect(
   let text = "";
   const toolCalls: ToolCall[] = [];
   for await (const event of stream) {
-    onEvent?.(event);
-    if (event.type === "text-delta") text += event.text;
-    if (event.type === "reasoning-delta") {
-      /* stored by caller via onEvent; keep collecting text only */
+    if (event.type === "text-delta") {
+      text += event.text;
+      continue;
     }
+    if (event.type === "done") continue;
+    onEvent?.(event);
     if (event.type === "tool-call") {
       toolCalls.push({
         id: event.id,
@@ -162,6 +166,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
   let error: string | undefined;
   const maxRounds = input.maxRounds ?? 4;
   let denials = 0;
+  let accountNudged = false;
 
   for (let round = 0; round < maxRounds; round += 1) {
     let collected: { text: string; toolCalls: ToolCall[]; error?: string };
@@ -216,6 +221,9 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
       });
     }
     if (collected.toolCalls.length === 0) {
+      if (collected.text) {
+        input.onEvent?.({ type: "text-delta", text: collected.text });
+      }
       finalText = collected.text;
       break;
     }
@@ -295,6 +303,9 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         content:
           "Tools keep getting denied. Stop calling tools. Reply with a short final channel message only.",
       });
+    } else if (!accountNudged) {
+      messages.push({ role: "user", content: ACCOUNT_NUDGE });
+      accountNudged = true;
     }
   }
 
@@ -303,5 +314,6 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
     text: finalText,
     error: error ?? null,
   });
+  input.onEvent?.({ type: "done" });
   return { text: finalText, toolNames, error };
 }
