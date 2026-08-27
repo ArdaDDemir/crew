@@ -1,0 +1,12 @@
+{
+  "name": "@crew/store-jsonl",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/jsonl-store.ts"
+  },
+  "dependencies": {
+    "@crew/core": "workspace:*"
+  }
+}

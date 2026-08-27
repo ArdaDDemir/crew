@@ -7,7 +7,7 @@ Mode is stored on the channel or DM. The CLI composer can change it for the curr
 | id | Label | Workspace file write (`apply_patch` under cwd) | `shell` and writes outside cwd |
 |---|---|---|---|
 | `supervised` | Sor | ask | ask |
-| `auto-accept` | Auto-accept | allow | ask |
+| `auto-accept` | Auto-accept | allow | allow (cwd is workspace; `.env`/`.ssh` still deny) |
 | `auto` | Auto (reviewer) | reviewer model; risky → ask | reviewer; risky → ask |
 | `full-access` | Full access | allow | allow |
 

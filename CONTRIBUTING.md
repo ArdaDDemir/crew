@@ -1,5 +1,7 @@
 # Contributing
 
+Read [`AGENTS.md`](./AGENTS.md) first. That file is what other AIs must follow.
+
 ## Commits
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):

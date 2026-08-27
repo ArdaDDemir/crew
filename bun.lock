@@ -1,0 +1,68 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "aibuildingapp",
+    },
+    "apps/cli": {
+      "name": "@crew/cli",
+      "version": "0.1.0",
+      "bin": {
+        "crew": "./src/main.ts",
+      },
+      "dependencies": {
+        "@crew/core": "workspace:*",
+        "@crew/provider-openai": "workspace:*",
+        "@crew/store-jsonl": "workspace:*",
+        "@crew/tools-native": "workspace:*",
+        "@crew/workspace-fs": "workspace:*",
+      },
+    },
+    "packages/core": {
+      "name": "@crew/core",
+      "version": "0.1.0",
+    },
+    "packages/provider-openai": {
+      "name": "@crew/provider-openai",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crew/core": "workspace:*",
+      },
+    },
+    "packages/store-jsonl": {
+      "name": "@crew/store-jsonl",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crew/core": "workspace:*",
+      },
+    },
+    "packages/tools-native": {
+      "name": "@crew/tools-native",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crew/core": "workspace:*",
+      },
+    },
+    "packages/workspace-fs": {
+      "name": "@crew/workspace-fs",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crew/core": "workspace:*",
+      },
+    },
+  },
+  "packages": {
+    "@crew/cli": ["@crew/cli@workspace:apps/cli"],
+
+    "@crew/core": ["@crew/core@workspace:packages/core"],
+
+    "@crew/provider-openai": ["@crew/provider-openai@workspace:packages/provider-openai"],
+
+    "@crew/store-jsonl": ["@crew/store-jsonl@workspace:packages/store-jsonl"],
+
+    "@crew/tools-native": ["@crew/tools-native@workspace:packages/tools-native"],
+
+    "@crew/workspace-fs": ["@crew/workspace-fs@workspace:packages/workspace-fs"],
+  }
+}

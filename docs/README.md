@@ -7,4 +7,4 @@
 | [versioning.md](versioning.md) | 0.x semver policy |
 | [superpowers/specs/](superpowers/specs/) | Product design (the “why” in one place) |
 
-Start with `superpowers/specs/2026-08-27-crew-runtime-design.md`.
+Start with repo-root [`AGENTS.md`](../AGENTS.md), then `superpowers/specs/2026-08-27-crew-runtime-design.md`.

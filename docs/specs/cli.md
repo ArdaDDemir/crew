@@ -21,6 +21,8 @@ crew mode <channel> <supervised|auto-accept|auto|full-access>
 
 `--bots` is the membership list. The human is always included.
 
+`say` / `dm` / `open` call OpenRouter when `OPENROUTER_API_KEY` is set. `--yes` allows asked tools for that process.
+
 ## Interactive
 
 ```

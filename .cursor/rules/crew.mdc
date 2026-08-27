@@ -1,0 +1,15 @@
+---
+description: Crew runtime — local multi-bot CLI. Read AGENTS.md.
+alwaysApply: true
+---
+
+Read and obey `AGENTS.md` at the repo root.
+
+This is not a Discord bot and not a Claude/Codex wrapper. It is a local Grok-Bot-style runtime: bots, channels, `@` mentions (wake), DMs, CLI first.
+
+- Bun + TypeScript. `bun test`.
+- TDD: failing test first.
+- `packages/core` has no fetch, CLI, or Discord.
+- Architecture change → new `docs/adr/NNNN-*.md`.
+- User-visible change → `CHANGELOG.md` `[Unreleased]`.
+- Design: `docs/superpowers/specs/2026-08-27-crew-runtime-design.md`
