@@ -22,7 +22,17 @@ const els = {
 function plateColor(id) {
   let n = 0;
   for (const ch of id) n = (n * 33 + ch.charCodeAt(0)) % 360;
-  return `hsl(${n} 38% 62%)`;
+  return `hsl(${n} 12% 62%)`;
+}
+
+function scrollLog() {
+  const el = els.log;
+  requestAnimationFrame(() => {
+    el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  });
 }
 
 async function api(path, opts) {
@@ -76,7 +86,7 @@ function addBubble({ who, botId, text, kind }) {
   body.textContent = text;
   li.append(plate, body);
   els.log.append(li);
-  els.log.scrollTop = els.log.scrollHeight;
+  scrollLog();
   return body;
 }
 
@@ -104,6 +114,7 @@ async function openThread(kind, id) {
       addBubble({ who: `@${row.botId} error`, botId: row.botId, text: row.text, kind: "error" });
     }
   }
+  scrollLog();
 }
 
 async function boot() {
@@ -179,7 +190,7 @@ els.form.addEventListener("submit", async (ev) => {
               bodies.set(row.botId, body);
             }
             body.textContent += row.text;
-            els.log.scrollTop = els.log.scrollHeight;
+            scrollLog();
           } else if (row.type === "error") {
             addBubble({
               who: `@${row.botId ?? "engine"} error`,
@@ -198,7 +209,7 @@ els.form.addEventListener("submit", async (ev) => {
     addBubble({ who: "engine error", text: String(err), kind: "error" });
   }
   els.send.disabled = false;
-  els.log.scrollTop = els.log.scrollHeight;
+  scrollLog();
 });
 
 boot().catch((err) => {
