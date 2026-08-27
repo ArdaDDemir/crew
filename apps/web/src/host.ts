@@ -94,6 +94,8 @@ export function snapshot(host: Host) {
     key: host.cfg.apiKey ? "set" : "missing",
     channels: host.workspace.listChannels().map((ch) => ({
       id: ch.id,
+      title: ch.title ?? ch.id,
+      icon: ch.icon ?? "#",
       leadBotId: ch.leadBotId ?? null,
       memberBotIds: ch.memberBotIds,
       permissionMode: ch.permissionMode,
@@ -102,6 +104,7 @@ export function snapshot(host: Host) {
       id: b.id,
       name: b.name,
       model: b.model ?? null,
+      icon: b.icon ?? null,
     })),
     dms: host.store
       .listThreads()
@@ -211,6 +214,36 @@ export function setMode(host: Host, channelId: string, mode: string) {
   }
   host.workspace.setChannelMode(channelId, mode as PermissionMode);
   return { mode };
+}
+
+export function channelDetail(host: Host, id: string) {
+  const ch = host.workspace.getChannel(id);
+  if (!ch) throw new Error(`unknown channel: ${id}`);
+  return {
+    id: ch.id,
+    title: ch.title ?? ch.id,
+    icon: ch.icon ?? "#",
+    leadBotId: ch.leadBotId ?? null,
+    memberBotIds: ch.memberBotIds,
+    permissionMode: ch.permissionMode,
+    rules: ch.rules ?? "",
+    context: ch.context ?? "",
+    folders: ch.folders ?? [],
+  };
+}
+
+export function botDetail(host: Host, id: string) {
+  const bot = host.workspace.getBot(id);
+  if (!bot) throw new Error(`unknown bot: ${id}`);
+  return {
+    id: bot.id,
+    name: bot.name,
+    icon: bot.icon ?? "",
+    model: bot.model ?? "",
+    soul: bot.soul ?? "",
+    standingOrders: bot.standingOrders ?? "",
+    skills: bot.skills ?? [],
+  };
 }
 
 export function setModel(host: Host, model: string) {

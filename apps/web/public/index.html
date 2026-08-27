@@ -15,8 +15,6 @@
       <p class="logo">Crew</p>
       <p class="rail-label">Channels</p>
       <nav id="channel-list" class="nav"></nav>
-      <p class="rail-label">Direct</p>
-      <nav id="dm-list" class="nav"></nav>
       <p class="rail-label">People</p>
       <nav id="people" class="people"></nav>
       <p class="meta" id="meta"></p>
@@ -27,6 +25,7 @@
           <span class="kicker" id="room-kicker">channel</span>
           <h1 id="room-title">#landing</h1>
         </div>
+        <button type="button" class="chip" id="settings-btn">settings</button>
       </header>
       <div class="thread" id="thread">
         <ol class="log" id="log"></ol>
@@ -50,6 +49,56 @@
       </div>
     </section>
   </div>
+  <dialog id="channel-modal" class="modal wide">
+    <form id="channel-form">
+      <p class="modal-title">Channel</p>
+      <label>Icon <input id="ch-icon" maxlength="4" /></label>
+      <label>Name <input id="ch-title" /></label>
+      <label>Lead
+        <select id="ch-lead"></select>
+      </label>
+      <p class="rail-label">Members</p>
+      <div id="ch-members" class="checks"></div>
+      <label>What this room is about
+        <textarea id="ch-context" rows="5"></textarea>
+      </label>
+      <label>Rules
+        <textarea id="ch-rules" rows="4"></textarea>
+      </label>
+      <label>Folders (one path per line)
+        <textarea id="ch-folders" rows="3"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="ghost" id="ch-cancel">Cancel</button>
+        <button type="submit" id="ch-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="bot-modal" class="modal wide">
+    <form id="bot-form">
+      <p class="modal-title">Person</p>
+      <label>Icon <input id="bot-icon" maxlength="4" /></label>
+      <label>Name <input id="bot-name" /></label>
+      <label>Soul (voice / prompt)
+        <textarea id="bot-soul" rows="6"></textarea>
+      </label>
+      <label>Standing orders
+        <textarea id="bot-orders" rows="4"></textarea>
+      </label>
+      <p class="rail-label">Skills</p>
+      <ul id="bot-skills" class="skill-list"></ul>
+      <label>New skill name <input id="skill-name" /></label>
+      <label>Description <input id="skill-desc" /></label>
+      <label>Body
+        <textarea id="skill-body" rows="3"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="ghost" id="bot-cancel">Cancel</button>
+        <button type="button" class="ghost" id="skill-add">Add skill</button>
+        <button type="submit" id="bot-save">Save</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="model-modal" class="modal">
     <form method="dialog" id="model-form">
       <p class="modal-title">Model</p>

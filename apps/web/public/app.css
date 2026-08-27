@@ -72,6 +72,18 @@ html, body {
   padding: 4px 8px;
   color: var(--muted);
   font-size: 13px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+}
+.person:hover, .person.on { background: var(--lift); color: var(--text); }
+.person .edit {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 11px;
 }
 .person .avatar { width: 22px; height: 22px; font-size: 10px; border-radius: 6px; }
 
@@ -264,6 +276,29 @@ html, body {
   border-color: #3a3a40;
   background: #1c1c20;
 }
+
+.modal.wide { width: min(560px, calc(100vw - 32px)); }
+.modal label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 10px 0;
+}
+.modal label input,
+.modal label textarea,
+.modal label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.checks { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; }
+.skill-list { margin: 0 0 8px; padding-left: 18px; color: var(--muted); font-size: 13px; }
 
 .modal {
   border: 1px solid var(--line);

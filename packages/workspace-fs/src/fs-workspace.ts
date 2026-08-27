@@ -8,7 +8,9 @@ import {
 import { join } from "node:path";
 import {
   assertSlug,
+  type BotPatch,
   type BotRecord,
+  type ChannelPatch,
   type ChannelRecord,
   type PermissionMode,
   type Workspace,
@@ -16,9 +18,19 @@ import {
 
 type ChannelFile = {
   id: string;
+  title?: string;
+  icon?: string;
   leadBotId?: string;
   memberBotIds: string[];
   permissionMode: PermissionMode;
+  folders?: string[];
+};
+
+type BotFile = {
+  id: string;
+  name: string;
+  model?: string;
+  icon?: string;
 };
 
 export class FsWorkspace implements Workspace {
@@ -30,7 +42,7 @@ export class FsWorkspace implements Workspace {
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "bot.json"),
-      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model }, null, 2)}\n`,
+      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model, icon: bot.icon }, null, 2)}\n`,
     );
     writeFileSync(
       join(dir, "SOUL.md"),
@@ -77,9 +89,12 @@ export class FsWorkspace implements Workspace {
     mkdirSync(dir, { recursive: true });
     const file: ChannelFile = {
       id: channel.id,
+      title: channel.title,
+      icon: channel.icon,
       leadBotId: channel.leadBotId,
       memberBotIds: channel.memberBotIds,
       permissionMode: channel.permissionMode,
+      folders: channel.folders,
     };
     writeFileSync(join(dir, "channel.json"), `${JSON.stringify(file, null, 2)}\n`);
     const rules = join(dir, "RULES.md");
@@ -106,13 +121,71 @@ export class FsWorkspace implements Workspace {
     const channel = this.getChannel(id);
     if (!channel) throw new Error(`unknown channel: ${id}`);
     const path = join(this.root, "channels", id, "channel.json");
-    const file: ChannelFile = {
-      id: channel.id,
-      leadBotId: channel.leadBotId,
-      memberBotIds: channel.memberBotIds,
-      permissionMode: mode,
+    this.updateChannel(id, { permissionMode: mode });
+  }
+
+  updateBot(id: string, patch: BotPatch): BotRecord {
+    const bot = this.getBot(id);
+    if (!bot) throw new Error(`unknown bot: ${id}`);
+    const dir = join(this.root, "bots", id);
+    const next: BotRecord = { ...bot, ...patch };
+    const file: BotFile = {
+      id: next.id,
+      name: next.name,
+      model: next.model,
+      icon: next.icon,
     };
-    writeFileSync(path, `${JSON.stringify(file, null, 2)}\n`);
+    writeFileSync(join(dir, "bot.json"), `${JSON.stringify(file, null, 2)}\n`);
+    if (patch.soul !== undefined) {
+      writeFileSync(join(dir, "SOUL.md"), patch.soul);
+    }
+    if (patch.standingOrders !== undefined) {
+      writeFileSync(join(dir, "AGENTS.md"), patch.standingOrders);
+    }
+    return this.getBot(id)!;
+  }
+
+  addSkill(
+    botId: string,
+    skill: { name: string; description: string; body?: string },
+  ): void {
+    if (!this.getBot(botId)) throw new Error(`unknown bot: ${botId}`);
+    const slug =
+      skill.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "skill";
+    const dir = join(this.root, "bots", botId, "skills", slug);
+    mkdirSync(dir, { recursive: true });
+    const md = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${skill.body ?? ""}\n`;
+    writeFileSync(join(dir, "SKILL.md"), md);
+  }
+
+  updateChannel(id: string, patch: ChannelPatch): ChannelRecord {
+    const channel = this.getChannel(id);
+    if (!channel) throw new Error(`unknown channel: ${id}`);
+    const next: ChannelRecord = { ...channel, ...patch };
+    if (next.memberBotIds) {
+      for (const botId of next.memberBotIds) {
+        if (!this.getBot(botId)) throw new Error(`unknown bot: ${botId}`);
+      }
+    }
+    const dir = join(this.root, "channels", id);
+    const file: ChannelFile = {
+      id: next.id,
+      title: next.title,
+      icon: next.icon,
+      leadBotId: next.leadBotId,
+      memberBotIds: next.memberBotIds,
+      permissionMode: next.permissionMode,
+      folders: next.folders,
+    };
+    writeFileSync(join(dir, "channel.json"), `${JSON.stringify(file, null, 2)}\n`);
+    if (patch.rules !== undefined) writeFileSync(join(dir, "RULES.md"), patch.rules);
+    if (patch.context !== undefined) {
+      writeFileSync(join(dir, "CONTEXT.md"), patch.context);
+    }
+    return this.getChannel(id)!;
   }
 
   private readSkills(botId: string): BotRecord["skills"] {

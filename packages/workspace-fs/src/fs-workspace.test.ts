@@ -50,6 +50,38 @@ test("channel create fails if a member bot is missing", async () => {
   ).toThrow("unknown bot: ghost");
 });
 
+test("updateChannel and updateBot persist icon name soul and folders", async () => {
+  const { ws } = await tmpCrew();
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addBot({ id: "coder", name: "Coder" });
+  ws.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead", "coder"],
+    permissionMode: "auto-accept",
+  });
+  ws.updateChannel("landing", {
+    title: "Landing page",
+    icon: "⌂",
+    folders: ["."],
+    context: "Marketing site.",
+  });
+  expect(ws.getChannel("landing")).toMatchObject({
+    title: "Landing page",
+    icon: "⌂",
+    folders: ["."],
+    context: "Marketing site.",
+  });
+  ws.updateBot("coder", { name: "Frontend", icon: "λ", soul: "Write HTML." });
+  expect(ws.getBot("coder")).toMatchObject({
+    name: "Frontend",
+    icon: "λ",
+    soul: "Write HTML.",
+  });
+  ws.addSkill("coder", { name: "html", description: "Semantic HTML", body: "Use sections." });
+  expect(ws.getBot("coder")?.skills?.some((s) => s.name === "html")).toBe(true);
+});
+
 test("rejects invalid bot slug", async () => {
   const { ws } = await tmpCrew();
   expect(() => ws.addBot({ id: "Lead", name: "X" })).toThrow("invalid slug: Lead");

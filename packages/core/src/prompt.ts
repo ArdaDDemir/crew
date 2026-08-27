@@ -83,6 +83,11 @@ export function buildSystemPrompt(input: PromptInput): string {
     if (channel?.context?.trim()) {
       parts.push(`## Channel context\n${channel.context.trim()}`);
     }
+    if (channel?.folders?.length) {
+      parts.push(
+        `## Folders\n${channel.folders.map((f) => `- ${f}`).join("\n")}`,
+      );
+    }
     parts.push(
       "You were woken in this channel (mentioned, or you are the lead). Work at your desk. Then give an account. If someone else must act next, @them.",
     );

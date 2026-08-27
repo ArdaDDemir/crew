@@ -47,6 +47,38 @@ test("bootstrap lists channels and health is ok", async () => {
   }
 });
 
+test("PATCH channel and bot persist customization", async () => {
+  const { server, url } = await setup();
+  try {
+    const ch = await fetch(`${url}/api/channel/landing`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Landing",
+        icon: "⌂",
+        folders: "src\npublic",
+        context: "Ship the marketing page.",
+      }),
+    });
+    expect(ch.ok).toBe(true);
+    const got = await (await fetch(`${url}/api/channel/landing`)).json();
+    expect(got.title).toBe("Landing");
+    expect(got.icon).toBe("⌂");
+    expect(got.folders).toEqual(["src", "public"]);
+    const bot = await fetch(`${url}/api/bot/coder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Frontend", icon: "λ", soul: "Write HTML." }),
+    });
+    expect(bot.ok).toBe(true);
+    const coder = await (await fetch(`${url}/api/bot/coder`)).json();
+    expect(coder.name).toBe("Frontend");
+    expect(coder.soul).toContain("Write HTML");
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("POST /api/model updates the workspace model", async () => {
   const { server, url } = await setup();
   try {

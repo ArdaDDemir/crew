@@ -6,7 +6,6 @@ const state = {
 
 const els = {
   channels: document.getElementById("channel-list"),
-  dms: document.getElementById("dm-list"),
   people: document.getElementById("people"),
   thread: document.getElementById("thread"),
   log: document.getElementById("log"),
@@ -23,6 +22,7 @@ const els = {
   modelModal: document.getElementById("model-modal"),
   modelList: document.getElementById("model-list"),
   modelCustom: document.getElementById("model-custom"),
+  settingsBtn: document.getElementById("settings-btn"),
 };
 
 function pressed(btn) {
@@ -64,26 +64,11 @@ function renderRail() {
   for (const ch of b.channels) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = `#${ch.id}`;
+    const icon = ch.icon && ch.icon !== "#" ? ch.icon : "#";
+    btn.textContent = `${icon}  ${ch.title || ch.id}`;
     btn.className = state.kind === "channel" && state.id === ch.id ? "on" : "";
     btn.onclick = () => openThread("channel", ch.id);
     els.channels.append(btn);
-  }
-  els.dms.replaceChildren();
-  if (!b.dms.length) {
-    const empty = document.createElement("button");
-    empty.type = "button";
-    empty.disabled = true;
-    empty.textContent = "None yet";
-    els.dms.append(empty);
-  }
-  for (const id of b.dms) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = id.replaceAll("__", " · ");
-    btn.className = state.kind === "dm" && state.id === id ? "on" : "";
-    btn.onclick = () => openThread("dm", id);
-    els.dms.append(btn);
   }
   els.meta.textContent = b.model;
   syncModelChip();
@@ -92,13 +77,13 @@ function renderRail() {
 
 function renderPeople() {
   els.people.replaceChildren();
-  const ch = state.bootstrap?.channels.find((c) => c.id === state.id);
-  const ids = state.kind === "channel" && ch ? ch.memberBotIds : [];
-  const show = ids.length ? ids : (state.bootstrap?.bots ?? []).map((b) => b.id);
-  for (const id of ["you", ...show]) {
+  const show = (state.bootstrap?.bots ?? []).map((b) => b.id);
+  for (const id of show) {
     const face = faceFor(id);
-    const row = document.createElement("div");
+    const row = document.createElement("button");
+    row.type = "button";
     row.className = "person";
+    if (state.kind === "dm" && state.id === `human__${id}`) row.classList.add("on");
     const av = document.createElement("span");
     av.className = "avatar";
     av.textContent = face.glyph;
@@ -106,7 +91,15 @@ function renderPeople() {
     av.style.color = face.fg;
     const label = document.createElement("span");
     label.textContent = displayName(id);
-    row.append(av, label);
+    const edit = document.createElement("span");
+    edit.className = "edit";
+    edit.textContent = "edit";
+    edit.onclick = (ev) => {
+      ev.stopPropagation();
+      openBotSettings(id);
+    };
+    row.append(av, label, edit);
+    row.onclick = () => openThread("dm", `human__${id}`);
     els.people.append(row);
   }
 }
@@ -128,14 +121,17 @@ function botIdFromWho(who, botId) {
 }
 
 function faceFor(id) {
-  if (FACES[id]) return FACES[id];
   let n = 0;
   for (const ch of id) n = (n * 33 + ch.charCodeAt(0)) % 360;
-  return {
+  const hashed = {
     glyph: (id[0] || "?").toUpperCase(),
     bg: `hsl(${n} 18% 22%)`,
     fg: `hsl(${n} 28% 78%)`,
   };
+  const stock = FACES[id] ?? hashed;
+  const bot = state.bootstrap?.bots?.find((b) => b.id === id);
+  if (bot?.icon) return { ...stock, glyph: bot.icon };
+  return stock;
 }
 
 function displayName(id) {
@@ -193,7 +189,13 @@ async function openThread(kind, id) {
   state.id = id;
   const ch = state.bootstrap.channels.find((c) => c.id === id);
   els.kicker.textContent = kind;
-  els.title.textContent = kind === "channel" ? `#${id}` : id.replaceAll("__", " · ");
+  if (kind === "channel") {
+    const ch = state.bootstrap.channels.find((c) => c.id === id);
+    const icon = ch?.icon && ch.icon !== "#" ? ch.icon : "#";
+    els.title.textContent = `${icon} ${ch?.title || id}`;
+  } else {
+    els.title.textContent = id.replaceAll("__", " · ");
+  }
   if (ch) els.mode.value = ch.permissionMode;
   els.mode.disabled = kind !== "channel";
   setDraftPlaceholder();
@@ -235,6 +237,134 @@ async function openThread(kind, id) {
   pinBottom();
   setTimeout(pinBottom, 50);
 }
+
+async function openChannelSettings() {
+  const data = await (await api(`/api/channel/${state.id}`)).json();
+  document.getElementById("ch-icon").value = data.icon === "#" ? "" : data.icon;
+  document.getElementById("ch-title").value = data.title ?? "";
+  document.getElementById("ch-context").value = data.context ?? "";
+  document.getElementById("ch-rules").value = data.rules ?? "";
+  document.getElementById("ch-folders").value = (data.folders ?? []).join("\n");
+  const lead = document.getElementById("ch-lead");
+  const members = document.getElementById("ch-members");
+  lead.replaceChildren();
+  members.replaceChildren();
+  for (const bot of state.bootstrap.bots) {
+    const opt = document.createElement("option");
+    opt.value = bot.id;
+    opt.textContent = `@${bot.id}`;
+    if (bot.id === data.leadBotId) opt.selected = true;
+    lead.append(opt);
+    const lab = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = bot.id;
+    box.checked = data.memberBotIds.includes(bot.id);
+    lab.append(box, ` @${bot.id}`);
+    members.append(lab);
+  }
+  document.getElementById("channel-modal").showModal();
+}
+
+async function openBotSettings(id) {
+  state.editBotId = id;
+  const data = await (await api(`/api/bot/${id}`)).json();
+  document.getElementById("bot-icon").value = data.icon ?? "";
+  document.getElementById("bot-name").value = data.name ?? "";
+  document.getElementById("bot-soul").value = data.soul ?? "";
+  document.getElementById("bot-orders").value = data.standingOrders ?? "";
+  const list = document.getElementById("bot-skills");
+  list.replaceChildren();
+  for (const s of data.skills ?? []) {
+    const li = document.createElement("li");
+    li.textContent = `${s.name} — ${s.description}`;
+    list.append(li);
+  }
+  document.getElementById("bot-modal").showModal();
+}
+
+document.getElementById("settings-btn").addEventListener("click", () => {
+  if (state.kind === "channel") openChannelSettings();
+  else {
+    const id = state.id.startsWith("human__")
+      ? state.id.slice("human__".length)
+      : state.id.split("__").find((p) => p !== "human");
+    if (id) openBotSettings(id);
+  }
+});
+
+document.getElementById("ch-cancel").onclick = () =>
+  document.getElementById("channel-modal").close();
+document.getElementById("bot-cancel").onclick = () =>
+  document.getElementById("bot-modal").close();
+
+document.getElementById("channel-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const memberBotIds = [...document.querySelectorAll("#ch-members input:checked")].map(
+    (el) => el.value,
+  );
+  await api(`/api/channel/${state.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      icon: document.getElementById("ch-icon").value.trim(),
+      title: document.getElementById("ch-title").value.trim(),
+      leadBotId: document.getElementById("ch-lead").value,
+      memberBotIds,
+      context: document.getElementById("ch-context").value,
+      rules: document.getElementById("ch-rules").value,
+      folders: document.getElementById("ch-folders").value,
+    }),
+  });
+  document.getElementById("channel-modal").close();
+  state.bootstrap = await (await api("/api/bootstrap")).json();
+  await openThread("channel", state.id);
+});
+
+document.getElementById("bot-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const id = state.editBotId;
+  await api(`/api/bot/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      icon: document.getElementById("bot-icon").value.trim(),
+      name: document.getElementById("bot-name").value.trim(),
+      soul: document.getElementById("bot-soul").value,
+      standingOrders: document.getElementById("bot-orders").value,
+    }),
+  });
+  document.getElementById("bot-modal").close();
+  state.bootstrap = await (await api("/api/bootstrap")).json();
+  renderRail();
+});
+
+document.getElementById("skill-add").addEventListener("click", async () => {
+  const id = state.editBotId;
+  const name = document.getElementById("skill-name").value.trim();
+  if (!id || !name) return;
+  const data = await (
+    await api(`/api/bot/${id}/skills`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        description: document.getElementById("skill-desc").value.trim(),
+        body: document.getElementById("skill-body").value,
+      }),
+    })
+  ).json();
+  const list = document.getElementById("bot-skills");
+  list.replaceChildren();
+  for (const s of data.skills ?? []) {
+    const li = document.createElement("li");
+    li.textContent = `${s.name} — ${s.description}`;
+    list.append(li);
+  }
+  document.getElementById("skill-name").value = "";
+  document.getElementById("skill-desc").value = "";
+  document.getElementById("skill-body").value = "";
+});
 
 async function boot() {
   state.bootstrap = await (await api("/api/bootstrap")).json();

@@ -12,7 +12,9 @@ export { dmThreadId, threadKey, type CrewEvent, type ThreadRef } from "./events"
 export { MemoryEventStore, type EventStore } from "./store";
 export {
   MemoryWorkspace,
+  type BotPatch,
   type BotRecord,
+  type ChannelPatch,
   type ChannelRecord,
   type PermissionMode,
   type Workspace,

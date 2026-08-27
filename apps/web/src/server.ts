@@ -1,6 +1,17 @@
 import { join, resolve } from "node:path";
 import type { ChatEvent } from "@crew/core";
-import { createHost, readThread, sayChannel, sendDm, setMode, setModel, snapshot, type Host } from "./host";
+import {
+  botDetail,
+  channelDetail,
+  createHost,
+  readThread,
+  sayChannel,
+  sendDm,
+  setMode,
+  setModel,
+  snapshot,
+  type Host,
+} from "./host";
 
 export type ServerOpts = {
   cwd?: string;
@@ -68,6 +79,82 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         verbose: url.searchParams.get("verbose") === "1",
       }),
     );
+  }
+  const channelMatch = path.match(/^\/api\/channel\/([^/]+)$/);
+  if (channelMatch && req.method === "GET") {
+    try {
+      return json(channelDetail(host, decodeURIComponent(channelMatch[1]!)));
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : String(err) }, 404);
+    }
+  }
+  if (channelMatch && req.method === "PATCH") {
+    return readBody(req).then((body) => {
+      try {
+        const folders =
+          typeof body.folders === "string"
+            ? body.folders.split("\n").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(body.folders)
+              ? (body.folders as string[])
+              : undefined;
+        return json(
+          host.workspace.updateChannel(decodeURIComponent(channelMatch[1]!), {
+            title: body.title !== undefined ? String(body.title) : undefined,
+            icon: body.icon !== undefined ? String(body.icon) : undefined,
+            leadBotId: body.leadBotId !== undefined ? String(body.leadBotId) : undefined,
+            memberBotIds: Array.isArray(body.memberBotIds)
+              ? (body.memberBotIds as string[])
+              : undefined,
+            rules: body.rules !== undefined ? String(body.rules) : undefined,
+            context: body.context !== undefined ? String(body.context) : undefined,
+            folders,
+          }),
+        );
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  const skillMatch = path.match(/^\/api\/bot\/([^/]+)\/skills$/);
+  if (skillMatch && req.method === "POST") {
+    return readBody(req).then((body) => {
+      try {
+        host.workspace.addSkill(decodeURIComponent(skillMatch[1]!), {
+          name: String(body.name ?? ""),
+          description: String(body.description ?? ""),
+          body: String(body.body ?? ""),
+        });
+        return json(botDetail(host, decodeURIComponent(skillMatch[1]!)));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  const botMatch = path.match(/^\/api\/bot\/([^/]+)$/);
+  if (botMatch && req.method === "GET") {
+    try {
+      return json(botDetail(host, decodeURIComponent(botMatch[1]!)));
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : String(err) }, 404);
+    }
+  }
+  if (botMatch && req.method === "PATCH") {
+    return readBody(req).then((body) => {
+      try {
+        return json(
+          host.workspace.updateBot(decodeURIComponent(botMatch[1]!), {
+            name: body.name !== undefined ? String(body.name) : undefined,
+            icon: body.icon !== undefined ? String(body.icon) : undefined,
+            model: body.model !== undefined ? String(body.model) : undefined,
+            soul: body.soul !== undefined ? String(body.soul) : undefined,
+            standingOrders:
+              body.standingOrders !== undefined ? String(body.standingOrders) : undefined,
+          }),
+        );
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
   }
   if (req.method === "POST" && path === "/api/model") {
     return readBody(req).then((body) => {
