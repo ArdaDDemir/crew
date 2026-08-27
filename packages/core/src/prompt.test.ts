@@ -48,6 +48,7 @@ test("channel prompt names the self, roster, lead, rules, and tools", () => {
   expect(text).toContain("give an account");
   expect(text).toContain("first person");
   expect(text).toContain("Always write in English");
+  expect(text).toContain("obey the latest human message");
   expect(text).not.toContain("bak hero");
   expect(text).toContain("at your desk");
   expect(text).toContain("If something is missing, ask");

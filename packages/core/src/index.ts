@@ -31,4 +31,5 @@ export {
 export { decidePermission, effectiveMode } from "./permissions";
 export { runBotTurn, type AskFn, type Tool } from "./turn";
 export { buildHistory, buildSystemPrompt } from "./prompt";
+export { buildCrossThreadNote, collectHumanOrders } from "./orders";
 export { dispatchChannelPost, dispatchDm } from "./dispatch";

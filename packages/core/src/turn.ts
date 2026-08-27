@@ -16,6 +16,7 @@ import type {
   ToolSpec,
 } from "./provider";
 import { buildHistory, buildSystemPrompt } from "./prompt";
+import { buildCrossThreadNote } from "./orders";
 import type { Participant } from "./router";
 
 export type Tool = ToolSpec & {
@@ -180,6 +181,13 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
     },
     ...buildHistory(input.store.read(input.thread), input.botId),
   ];
+  const cross = buildCrossThreadNote({
+    store: input.store,
+    workspace: input.workspace,
+    botId: input.botId,
+    thread: input.thread,
+  });
+  if (cross) messages.push({ role: "user", content: cross });
 
   const toolNames: string[] = [];
   let finalText = "";

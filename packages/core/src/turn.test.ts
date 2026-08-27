@@ -181,6 +181,77 @@ test("bot.model overrides the workspace default model", async () => {
   expect(seen).toBe("z-ai/glm-5.3-flash");
 });
 
+test("channel turn is told when a newer human DM wins", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const channel = { kind: "channel" as const, id: "landing" };
+  const dm = { kind: "dm" as const, id: "human__coder" };
+  store.append({
+    v: 1,
+    id: "a",
+    ts: "2026-08-27T15:00:00.000Z",
+    thread: channel,
+    type: "message.posted",
+    parent: null,
+    payload: { author: { kind: "human" }, text: "Set title to FlowHub @coder" },
+  });
+  store.append({
+    v: 1,
+    id: "b",
+    ts: "2026-08-27T15:06:00.000Z",
+    thread: dm,
+    type: "dm.opened",
+    parent: null,
+    payload: {
+      participants: [{ kind: "human" }, { kind: "bot", botId: "coder" }],
+    },
+  });
+  store.append({
+    v: 1,
+    id: "c",
+    ts: "2026-08-27T15:07:00.000Z",
+    thread: dm,
+    type: "message.posted",
+    parent: null,
+    payload: {
+      author: { kind: "human" },
+      text: "Do not change index.html. Title stays Landing.",
+    },
+  });
+  let lastUser = "";
+  const provider: Provider = {
+    async *complete(req) {
+      const last = req.messages.at(-1);
+      lastUser =
+        last && last.role === "user" && "content" in last ? last.content : "";
+      yield { type: "text-delta", text: "ok" };
+      yield { type: "done" };
+    },
+  };
+  await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    thread: channel,
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(lastUser).toContain("wins");
+  expect(lastUser).toContain("Title stays Landing");
+});
+
 test("onStatus and onEvent fire while the model streams", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

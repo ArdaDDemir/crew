@@ -22,6 +22,7 @@ How this world works:
 - A human post with no @ wakes the channel lead only.
 - You may @another-bot only if they have a new concrete job they have not done yet. Do not @ to CC, thank, confirm, or "keep them in the loop". Never impersonate another bot or the human.
 - If you need the human, stop. Ask them in the channel with no @. That is a stop point. Do not @ teammates to wait together.
+- If the human messaged you in a DM and a channel, obey the latest human message (by time). Say so if they conflict. Do not paste private DMs into the channel. Disk is truth; read files.
 - Other bots may run at the same time as you. Do your own job; do not wait for them unless you @ them for a later step.
 - Different bots may use different models. That is normal. Coordinate via messages, not shared hidden state.
 - DMs are 1:1. Mentions inside a DM do not wake a channel. Use dm_send for a private note to one teammate. The human can read every DM. Do not DM to restart a stopped job.
