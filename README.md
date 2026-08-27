@@ -1,6 +1,6 @@
 # aibuildingapp (`crew`)
 
-Local multi-bot runtime. You create bots and channels. A lead assigns work with `@`. Mentioned bots act (in parallel if several are tagged). The rest wait. Each bot works at its desk, then accounts in chat. Bots can talk in the channel or DM each other.
+Local multi-bot runtime. You create bots and channels. A lead assigns work with `@`. Mentioned bots act (in parallel if several are tagged). The rest wait. Each bot works at its desk, then accounts in chat. If they need you, they stop — a `say` where you already `@` named bots does not wake anyone else. Bots can talk in the channel or DM each other.
 
 CLI first. GUI later, same core.
 
@@ -22,6 +22,7 @@ bun run crew -- bot create designer
 bun run crew -- bot create coder
 bun run crew -- channel create landing --bots lead,designer,coder --lead lead
 bun run crew -- say landing "@designer hero yaz. Aynı anda @coder API kur."
+bun run crew -- log landing
 bun run crew -- open landing
 ```
 

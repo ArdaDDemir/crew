@@ -2,7 +2,7 @@
 
 This is the source of truth for every coding agent (Claude, Cursor, Codex, Gemini, Grok, Copilot, OpenCode, Aider, humans).
 
-Türkçe özet: Bu repo bir Discord botu değil. Yerelde Grok Bot takımı: sen kanal + bot açarsın, `@etiket` uyanır, diğerleri bekler, botlar DM’leşir. v1 = CLI. GUI sonra. Kurallar: TDD, ADR, `packages/core` I/O’suz.
+Türkçe özet: Bu repo bir Discord botu değil. Yerelde Grok Bot takımı: sen kanal + bot açarsın, `@etiket` uyanır, diğerleri bekler, botlar masada işler kanalda hesap verir, insana ihtiyaç varsa dururlar, DM’leşirler. v1 = CLI. GUI sonra. Kurallar: TDD, ADR, `packages/core` I/O’suz.
 
 If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update them in the same PR as the code.
 
@@ -100,6 +100,6 @@ Not required to run `bun test`.
 
 ## When you are lost
 
-The product sentence: **human owns channels; `@` wakes bots; bots may DM; CLI first; core has no UI.**
+The product sentence: **human owns channels; `@` wakes bots; they work at the desk then account; need-human is a stop; bots may DM; CLI first; core has no UI.**
 
 If a change would make that sentence false, stop and write an ADR.

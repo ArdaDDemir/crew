@@ -29,9 +29,9 @@ Human opens channel `landing` with members `lead, designer, coder, tester`.
 2. Engine wakes **only** `lead` (mentioned). Others wait.
 3. Lead replies in the channel: `@designer hero yaz. Aynı anda @coder API iskeletini kur.`
 4. Engine wakes **designer and coder in parallel**. Tester still waits.
-5. Coder DMs tester a private note **or** later posts `@tester kır` in the channel.
+5. Coder DMs tester a private note, **or** the human later `say`s `@tester kır`. A worker `@tester` in the same `say` does not wake tester (`ADR-0014`).
 6. File writes and workspace shell inside the project folder pass without asking (`auto-accept`). Paths outside the folder ask. Human can switch to `supervised` / `auto` / `full-access`.
-7. Each woken bot works at its desk, then posts an account in the channel (what they did, what's missing, what failed). Thinking/tools are not the channel message.
+7. Each woken bot works at its desk, then posts an account in the channel (what they did, what's missing, what failed). Thinking/tools are not the channel message (`ADR-0012`). If they need the human, they stop (`ADR-0013`). One turn per bot per `say`.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ v1 transport is in-process. HTTP is not required until a GUI needs a process bou
 | Turn loop | one bot, one thread: model stream → tools → until stop | Provider, Tools, Permissions, Store |
 | Permissions | four modes + hard denials | Path jail |
 | Store | append JSONL, read back | filesystem adapter |
-| Tools | `read`, `apply_patch`, `shell` | host (cwd) |
+| Tools | `read`, `apply_patch`, `list_dir`, `shell` | host (cwd) |
 
 ### Data flow (mention fan-out)
 
@@ -93,7 +93,7 @@ docs/adr docs/specs
 
 ## v1 / not v1
 
-**v1:** bot create, channel create (members + lead + rules/context), `say` / `open` REPL, `@` routing, parallel wakes, bot-bot and human-bot DM, four permission modes (default auto-accept), OpenRouter, read/apply_patch/shell, JSONL, ADRs, 0.1.0.
+**v1:** bot create, channel create (members + lead + rules/context), `say` / `open` / `log` / `config`, `@` routing, parallel wakes, one turn per bot per `say`, human-tagged stop, bot-bot and human-bot DM, four permission modes (default auto-accept including workspace shell), OpenRouter, read/apply_patch/list_dir/shell, JSONL, ADRs, 0.1.0.
 
 **Not v1:** second GUI, real Discord, fullscreen TUI, MCP, git auto-PR, cloud computer, routines/cron, `@everyone` abuse controls beyond “wake all bots”.
 

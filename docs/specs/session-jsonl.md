@@ -26,7 +26,8 @@ For `dm`, `thread.id` is `botA__botB` with sorted slugs, or `human__bot`.
 | `message.posted` | human or bot |
 | `bot.woken` | engine (routing) |
 | `bot.turn.started` | engine |
-| `assistant.delta` | engine (stream; desk mutter and account tokens) |
+| `assistant.delta` | engine (desk mutter **and** account tokens; not the channel bubble) |
+| `assistant.reasoning` | engine (thinking; live only with `--thinking`) |
 | `tool.requested` | engine |
 | `permission.asked` | engine |
 | `permission.resolved` | human (via adapter) |
@@ -35,6 +36,8 @@ For `dm`, `thread.id` is `botA__botB` with sorted slugs, or `human__bot`.
 | `dm.opened` | engine |
 | `error` | engine |
 | `thread.compacted` | engine |
+
+`message.posted` from a bot is the **account** after desk work (`ADR-0012`). Tool-round mutter stays in `assistant.delta`, not in `message.posted`.
 
 Unknown `type` values: skip, do not crash. Additive types are a patch/minor; renaming a type is a 0.x minor break.
 

@@ -18,6 +18,8 @@ crew dm human <bot> <text>
 crew log <channel> [--thinking] [--verbose]
 
 crew mode <channel> <supervised|auto-accept|auto|full-access>
+crew config set <model|key|base-url> <value> [--global]
+crew config show
 ```
 
 `--bots` is the membership list. The human is always included.
@@ -44,7 +46,7 @@ Then lines are posts to that channel. Mentions work as in the spec. Slash comman
 - `/verbose on|off` — show tool names live
 - `/quit`
 
-Streaming tokens print as they arrive. Permission prompts are inline yes/no.
+The account prints when that bot’s desk round finishes (not tool-round mutter). Permission prompts are inline yes/no.
 
 ## Config
 

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; in-say @ fan-out qualified by ADR-0013 and ADR-0014
 date: 2026-08-27
 decision-makers: Arda
 ---

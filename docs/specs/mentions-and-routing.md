@@ -26,13 +26,13 @@ Mentions are case-insensitive. Slugs are `[a-z][a-z0-9-]*`.
 
 ## Channel post from a bot
 
-Same parse. A bot may `@` others to hand off.
+Same parse. A bot's `@` is recorded on `message.posted`.
 
-A bot is not auto-woken by its own message. `@everyone` on a bot post wakes every bot member except the author.
+A bot is not auto-woken by its own message.
 
-**One turn per bot per `say`:** a bot that already completed a turn in this dispatch is not woken again, even if `@`'d.
+**One turn per bot per `say` (`ADR-0013`):** a bot that already completed a turn in this dispatch is not woken again, even if `@`'d.
 
-**Human-tagged stop:** if the human named member bots (or `@everyone`), only those bots run. Their `@` is not a wake this `say`. If the human named nobody, the lead may `@` workers once; that is the last wave. Needing the human is a stop (ask in the channel, no `@`). The next job is the next `say`.
+**Human-tagged stop (`ADR-0014`):** if the human named member bots (or `@everyone`), only those bots run. Their `@` is chat, not a wake. If the human named nobody, the **lead** may `@` workers **once**; that is the last wave. Needing the human is a stop (ask in the channel, no `@`). The next job is the next `say`.
 
 ## Parallel vs wait
 
@@ -43,7 +43,7 @@ Lead example:
 - That post wakes `designer` and `coder` now.
 - `tester` is mentioned as a *future* instruction in prose, but **also** tagged. If `@tester` is present in the same message, tester wakes now too.
 
-If the lead wants tester later, the lead **must not** `@tester` on this message. When designer/coder finish, they (or the lead) post a new message that `@tester`.
+If the lead wants tester later, the lead **must not** `@tester` on this message. Tester waits for a **later human `say`** that `@tester`. A worker `@tester` in the same `say` does not wake tester (`ADR-0014`).
 
 “Diğerleri beklesin” is the default engine behavior (no tag → no turn). It is not a special keyword.
 
