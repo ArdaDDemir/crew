@@ -33,6 +33,7 @@ export async function dispatchChannelPost(
 ): Promise<{
   woken: string[];
   replies: { botId: string; text: string; error?: string }[];
+  dms: { threadId: string; botId: string; text: string; error?: string }[];
 }> {
   const posted = await postToChannel({
     store: input.store,
@@ -44,6 +45,7 @@ export async function dispatchChannelPost(
   });
 
   const replies: { botId: string; text: string; error?: string }[] = [];
+  const pendingDms: { threadId: string; botId: string }[] = [];
   const queue = [...posted.woken];
   const spoken = new Set<string>();
   const channel = input.workspace.getChannel(input.channelId);
@@ -82,6 +84,26 @@ export async function dispatchChannelPost(
           onEvent: input.onEvent
             ? (event) => input.onEvent!(botId, event)
             : undefined,
+          sendDm: async (toBotId, text) => {
+            const ch = input.workspace.getChannel(input.channelId);
+            if (!ch?.memberBotIds.includes(toBotId)) {
+              return `unknown or non-member bot: ${toBotId}`;
+            }
+            if (toBotId === botId) return "cannot DM yourself";
+            if (!text.trim()) return "text is required";
+            const dm = await postToDm({
+              store: input.store,
+              nextId: input.nextId,
+              now: input.now,
+              from: { kind: "bot", botId },
+              to: { kind: "bot", botId: toBotId },
+              text,
+            });
+            for (const wokenId of dm.woken) {
+              pendingDms.push({ threadId: dm.threadId, botId: wokenId });
+            }
+            return `dm sent to @${toBotId} (${dm.threadId})`;
+          },
         });
         return { botId, turn };
       }),
@@ -105,7 +127,41 @@ export async function dispatchChannelPost(
     allowHandoff = false;
   }
 
-  return { woken: posted.woken, replies };
+  const dms: { threadId: string; botId: string; text: string; error?: string }[] = [];
+  const dmSeen = new Set<string>();
+  for (const item of pendingDms) {
+    const key = `${item.threadId}:${item.botId}`;
+    if (dmSeen.has(key)) continue;
+    dmSeen.add(key);
+    const turn = await runBotTurn({
+      ...input,
+      thread: { kind: "dm", id: item.threadId },
+      botId: item.botId,
+      onStatus: input.onStatus,
+      onEvent: input.onEvent
+        ? (event) => input.onEvent!(item.botId, event)
+        : undefined,
+    });
+    dms.push({
+      threadId: item.threadId,
+      botId: item.botId,
+      text: turn.text,
+      error: turn.error,
+    });
+    if (turn.error || !turn.text.trim()) continue;
+    const other = item.threadId.split("__").find((id) => id !== item.botId);
+    if (!other || other === "human") continue;
+    await postToDm({
+      store: input.store,
+      nextId: input.nextId,
+      now: input.now,
+      from: { kind: "bot", botId: item.botId },
+      to: { kind: "bot", botId: other },
+      text: turn.text,
+    });
+  }
+
+  return { woken: posted.woken, replies, dms };
 }
 
 export async function dispatchDm(

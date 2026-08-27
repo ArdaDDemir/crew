@@ -3,6 +3,7 @@ import { threadKey, type CrewEvent, type ThreadRef } from "./events";
 export interface EventStore {
   append(event: CrewEvent): void;
   read(thread: ThreadRef): CrewEvent[];
+  listThreads(): ThreadRef[];
 }
 
 export class MemoryEventStore implements EventStore {
@@ -17,5 +18,13 @@ export class MemoryEventStore implements EventStore {
 
   read(thread: ThreadRef): CrewEvent[] {
     return [...(this.byThread.get(threadKey(thread)) ?? [])];
+  }
+
+  listThreads(): ThreadRef[] {
+    return [...this.byThread.keys()].map((key) => {
+      const cut = key.indexOf(":");
+      const kind = key.slice(0, cut) as ThreadRef["kind"];
+      return { kind, id: key.slice(cut + 1) };
+    });
   }
 }

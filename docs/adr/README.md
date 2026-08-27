@@ -18,3 +18,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0012 | Desk then account (engine-enforced) | accepted |
 | 0013 | One turn per bot per say (human stop) | accepted; qualified by 0014 |
 | 0014 | Human-tagged `say` does not hand off | accepted |
+| 0015 | `dm_send` + human can read every DM | accepted |

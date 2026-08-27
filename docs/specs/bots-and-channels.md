@@ -44,7 +44,7 @@ A DM is a 1:1 thread: `human↔bot` or `bot↔bot`.
 - The human may list and read all DMs.
 - Permission mode defaults to the workspace default (`auto-accept`) unless set on that DM.
 
-A bot opens a DM by emitting a `dm.send` tool (or an engine-level action) targeting another member bot. The engine creates the thread if missing and posts the message. The target bot then takes a turn in that DM (this **is** a wake; no extra `@` required inside an already-addressed DM).
+A bot opens a DM by emitting `dm_send` (`to`, `text`) targeting another **channel member**. The engine creates the thread if missing, posts the message, then the target takes **one** DM turn (no nested `dm_send`). Human: `crew dms` / `crew dms show a b`.
 
 ## Data on disk (v1)
 

@@ -40,6 +40,15 @@ test("DM logs use dm-<threadId>.jsonl", async () => {
   expect(JSON.parse(text.trim()).id).toEqual("evt_1");
 });
 
+test("listThreads finds channel and dm logs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "crew-jsonl-"));
+  const store = new JsonlEventStore(dir);
+  store.append(evt("e1", { kind: "channel", id: "landing" }, "message.posted"));
+  store.append(evt("e2", { kind: "dm", id: "coder__designer" }, "dm.opened"));
+  const ids = store.listThreads().map((t) => `${t.kind}:${t.id}`).sort();
+  expect(ids).toEqual(["channel:landing", "dm:coder__designer"]);
+});
+
 test("unknown thread reads as empty", async () => {
   const dir = await mkdtemp(join(tmpdir(), "crew-jsonl-"));
   const store = new JsonlEventStore(dir);

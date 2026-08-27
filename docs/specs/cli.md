@@ -15,6 +15,8 @@ crew channel show <id>
 crew say <channel> <text> [--thinking] [--verbose]
 crew dm <bot-a> <bot-b> <text>
 crew dm human <bot> <text>
+crew dms
+crew dms show <a> <b>
 crew log <channel> [--thinking] [--verbose]
 
 crew mode <channel> <supervised|auto-accept|auto|full-access>

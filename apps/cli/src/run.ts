@@ -4,10 +4,12 @@ import { join } from "node:path";
 import {
   dispatchChannelPost,
   dispatchDm,
+  dmThreadId,
   type AskFn,
   type Participant,
   type PermissionMode,
   type ChatEvent,
+  type CrewEvent,
   type Provider,
   type Tool,
 } from "@crew/core";
@@ -82,6 +84,34 @@ function clock() {
 
 function wokeLine(woken: string[]): string {
   return `woke: ${woken.length ? woken.join(", ") : "(none)"}\n`;
+}
+
+function printThread(
+  io: Io,
+  events: CrewEvent[],
+  flags: { thinking: boolean; verbose: boolean },
+): void {
+  if (events.length === 0) {
+    io.writeOut("(empty)\n");
+    return;
+  }
+  for (const event of events) {
+    if (event.type === "message.posted") {
+      const author = event.payload.author as { kind?: string; botId?: string };
+      const who = author?.kind === "human" ? "you" : `@${author?.botId ?? "bot"}`;
+      io.writeOut(`${who}: ${String(event.payload.text ?? "")}\n\n`);
+    } else if (event.type === "assistant.reasoning" && flags.thinking) {
+      io.writeOut(
+        `  [${event.payload.botId} thinking]\n${String(event.payload.text ?? "")}\n\n`,
+      );
+    } else if (event.type === "error") {
+      io.writeErr(
+        `ERROR ${event.payload.botId ?? ""}: ${String(event.payload.message ?? "")}\n`,
+      );
+    } else if (event.type === "tool.requested" && flags.verbose) {
+      io.writeOut(`  [${event.payload.botId} tool] ${event.payload.name}\n`);
+    }
+  }
 }
 
 function printReplies(
@@ -171,6 +201,8 @@ const USAGE = `crew — local multi-bot CLI
   crew mode <channel> <supervised|auto-accept|auto|full-access>
   crew say <channel> <text> [--thinking] [--verbose]
   crew dm <from> <to> <text>
+  crew dms
+  crew dms show <a> <b>
   crew open <channel>     (/thinking on|off, /verbose on|off, /quit)
   crew log <channel> [--thinking] [--verbose]
   crew config set model <openrouter-model-id>
@@ -383,7 +415,36 @@ export async function runCli(
       });
       io.writeOut(wokeLine(result.woken));
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
+      for (const dm of result.dms) {
+        io.writeOut(`dm: ${dm.threadId}\n`);
+        if (dm.error) io.writeErr(`${dm.botId} ERROR: ${dm.error}\n`);
+        else if (dm.text.trim()) io.writeOut(`${dm.botId}: ${dm.text}\n`);
+      }
       return 0;
+    }
+
+    if (cmd === "dms") {
+      const dms = store.listThreads().filter((t) => t.kind === "dm");
+      if (!sub || sub === "list") {
+        if (dms.length === 0) {
+          io.writeOut("(no dms)\n");
+          return 0;
+        }
+        for (const thread of dms) io.writeOut(`${thread.id}\n`);
+        return 0;
+      }
+      if (sub === "show") {
+        const a = rest[0];
+        const b = rest[1];
+        if (!a) throw new Error("usage: crew dms show <a> <b>");
+        const id = b ? dmThreadId(party(a), party(b)) : a;
+        printThread(io, store.read({ kind: "dm", id }), {
+          thinking: showThinking,
+          verbose,
+        });
+        return 0;
+      }
+      throw new Error("usage: crew dms | crew dms show <a> <b>");
     }
 
     if (cmd === "dm") {
@@ -485,28 +546,10 @@ export async function runCli(
     if (cmd === "log") {
       const channelId = sub;
       if (!channelId) throw new Error("usage: crew log <channel> [--thinking] [--verbose]");
-      const events = store.read({ kind: "channel", id: channelId });
-      if (events.length === 0) {
-        io.writeOut("(empty)\n");
-        return 0;
-      }
-      for (const event of events) {
-        if (event.type === "message.posted") {
-          const author = event.payload.author as { kind?: string; botId?: string };
-          const who = author?.kind === "human" ? "you" : `@${author?.botId ?? "bot"}`;
-          io.writeOut(`${who}: ${String(event.payload.text ?? "")}\n\n`);
-        } else if (event.type === "assistant.reasoning" && showThinking) {
-          io.writeOut(
-            `  [${event.payload.botId} thinking]\n${String(event.payload.text ?? "")}\n\n`,
-          );
-        } else if (event.type === "error") {
-          io.writeErr(
-            `ERROR ${event.payload.botId ?? ""}: ${String(event.payload.message ?? "")}\n`,
-          );
-        } else if (event.type === "tool.requested" && verbose) {
-          io.writeOut(`  [${event.payload.botId} tool] ${event.payload.name}\n`);
-        }
-      }
+      printThread(io, store.read({ kind: "channel", id: channelId }), {
+        thinking: showThinking,
+        verbose,
+      });
       return 0;
     }
 

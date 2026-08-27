@@ -1,4 +1,10 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type { CrewEvent, EventStore, ThreadRef } from "@crew/core";
 
@@ -26,5 +32,18 @@ export class JsonlEventStore implements EventStore {
       .split("\n")
       .filter((line) => line.length > 0)
       .map((line) => JSON.parse(line) as CrewEvent);
+  }
+
+  listThreads(): ThreadRef[] {
+    if (!existsSync(this.dir)) return [];
+    const out: ThreadRef[] = [];
+    for (const name of readdirSync(this.dir)) {
+      if (name.startsWith("channel-") && name.endsWith(".jsonl")) {
+        out.push({ kind: "channel", id: name.slice("channel-".length, -".jsonl".length) });
+      } else if (name.startsWith("dm-") && name.endsWith(".jsonl")) {
+        out.push({ kind: "dm", id: name.slice("dm-".length, -".jsonl".length) });
+      }
+    }
+    return out;
   }
 }

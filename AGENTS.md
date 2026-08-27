@@ -82,7 +82,7 @@ docs/specs             wire contracts
 - Do not assert on mock internals. Assert on `woken` lists, events, files on disk.
 - A test that needs the network is not a unit test.
 
-v1 is in: mention routing, JSONL, workspace, turn loop, tools, OpenRouter adapter, CLI (`bot`, `channel`, `say`, `dm`, `open`, `mode`, `log`). Channel text is the **account after desk work** (`ADR-0012`): tool-round `text-delta` is not posted. Next features need an ADR if they change the public surface.
+v1 is in: mention routing, JSONL, workspace, turn loop, tools, OpenRouter adapter, CLI (`bot`, `channel`, `say`, `dm`, `dms`, `open`, `mode`, `log`). Channel text is the **account after desk work** (`ADR-0012`). Bots may `dm_send`; human reads all DMs (`ADR-0015`). Next features need an ADR if they change the public surface.
 
 ## Code style
 

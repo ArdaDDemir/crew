@@ -25,6 +25,8 @@ See `docs/versioning.md`.
 - Coworker turns: work at the desk, then give an account in chat (ask if blocked, say if it failed). Default `say` / `log` hide thinking and tools; `--thinking` / `--verbose` (or `/thinking`, `/verbose`) show desk work.
 - Engine-enforced desk vs account (`ADR-0012`).
 - One turn per bot per `say` (`ADR-0013`). If you already `@` bots, this `say` does not wake anyone else (`ADR-0014`).
+- `dm_send` tool: a bot in a channel can DM a member; the other bot answers once in that DM (`ADR-0015`).
+- `crew dms` / `crew dms show a b` — human lists and reads every DM. Desk events stay in JSONL for the UI (`crew log` / `dms show --thinking --verbose`).
 
 ### Fixed
 

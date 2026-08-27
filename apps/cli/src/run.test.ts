@@ -109,6 +109,18 @@ test("dm human to bot reports the other party woken", async () => {
   expect(dm.stdout).toContain("coder: ack");
 });
 
+test("dms lists threads and show reprints the private chat", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await cli(cwd, ["bot", "create", "coder"]);
+  await cli(cwd, ["dm", "human", "coder", "fix login"]);
+  const listed = await cli(cwd, ["dms"]);
+  expect(listed.stdout).toContain("human__coder");
+  const shown = await cli(cwd, ["dms", "show", "human", "coder"]);
+  expect(shown.stdout).toContain("you:");
+  expect(shown.stdout).toContain("fix login");
+  expect(shown.stdout).toContain("@coder:");
+});
+
 test("mode changes the channel permission mode", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
   await setupLanding(cwd);

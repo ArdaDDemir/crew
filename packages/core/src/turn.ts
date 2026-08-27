@@ -44,6 +44,7 @@ export type RunBotTurnInput = Clock & {
   maxRounds?: number;
   onEvent?: (event: ChatEvent) => void;
   onStatus?: (message: string) => void;
+  sendDm?: (toBotId: string, text: string) => Promise<string>;
 };
 
 function append(
@@ -140,8 +141,27 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
       : "auto-accept";
   const { mode } = effectiveMode(modeRaw ?? "auto-accept", input.hasReviewer);
 
-  const toolsByName = new Map(input.tools.map((t) => [t.name, t]));
-  const toolSpecs: ToolSpec[] = input.tools.map(({ name, description, parameters }) => ({
+  const tools: Tool[] = [...input.tools];
+  if (input.sendDm && input.thread.kind === "channel") {
+    tools.push({
+      name: "dm_send",
+      description:
+        "Private 1:1 note to another bot. The human can read every DM. Not a channel mention.",
+      parameters: {
+        type: "object",
+        properties: {
+          to: { type: "string", description: "bot id" },
+          text: { type: "string" },
+        },
+        required: ["to", "text"],
+      },
+      async execute() {
+        return "use sendDm";
+      },
+    });
+  }
+  const toolsByName = new Map(tools.map((t) => [t.name, t]));
+  const toolSpecs: ToolSpec[] = tools.map(({ name, description, parameters }) => ({
     name,
     description,
     parameters,
@@ -154,7 +174,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         workspace: input.workspace,
         botId: input.botId,
         thread: input.thread,
-        toolNames: input.tools.map((t) => t.name),
+        toolNames: tools.map((t) => t.name),
         dmParticipants: dmParticipants(input.store, input.thread),
       }),
     },
@@ -249,7 +269,20 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
 
       const tool = toolsByName.get(call.name);
       let output: string;
-      if (!tool) {
+      if (call.name === "dm_send") {
+        if (!input.sendDm) {
+          output = "dm_send is not available in this thread";
+        } else {
+          try {
+            output = await input.sendDm(
+              String(args.to ?? ""),
+              String(args.text ?? ""),
+            );
+          } catch (err) {
+            output = `tool error (dm_send): ${err instanceof Error ? err.message : String(err)}`;
+          }
+        }
+      } else if (!tool) {
         output = `unknown tool: ${call.name}`;
       } else {
         const rel = typeof args.path === "string" ? args.path : undefined;
