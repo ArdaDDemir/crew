@@ -52,6 +52,8 @@ test("channel prompt names the self, roster, lead, rules, and tools", () => {
   expect(text).toContain("If it didn't work");
   expect(text).toContain("Don't fake success");
   expect(text).toContain("The team only sees your account");
+  expect(text).toContain("If you need the human, stop");
+  expect(text).toContain("Do not @ to CC");
   expect(text).not.toContain('post "done:');
   expect(text).toContain("Write copy and layout.");
   expect(text).toContain("mention = wake");

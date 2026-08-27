@@ -44,13 +44,20 @@ export async function dispatchChannelPost(
 
   const replies: { botId: string; text: string; error?: string }[] = [];
   const queue = [...posted.woken];
+  const spoken = new Set<string>();
   const sleep = input.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const rateGap = input.rateLimitGapMs ?? 0;
   let safety = 0;
   let previousWaveHadRateLimit = false;
-  while (queue.length > 0 && safety < 16) {
+  while (queue.length > 0 && safety < 8) {
     safety += 1;
-    const wave = queue.splice(0, queue.length);
+    const wave: string[] = [];
+    for (const botId of queue.splice(0, queue.length)) {
+      if (spoken.has(botId) || wave.includes(botId)) continue;
+      spoken.add(botId);
+      wave.push(botId);
+    }
+    if (wave.length === 0) break;
     if (previousWaveHadRateLimit && rateGap > 0) {
       await sleep(rateGap);
     }
@@ -81,7 +88,7 @@ export async function dispatchChannelPost(
         channelId: input.channelId,
         post: { author: { kind: "bot", botId }, text: turn.text },
       });
-      queue.push(...fan.woken);
+      queue.push(...fan.woken.filter((id) => !spoken.has(id)));
     }
   }
 

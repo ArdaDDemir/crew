@@ -30,6 +30,8 @@ Same parse. A bot may `@` others to hand off.
 
 A bot is not auto-woken by its own message. `@everyone` on a bot post wakes every bot member except the author.
 
+**One turn per bot per `say`:** a bot that already completed a turn in this dispatch is not woken again, even if `@`'d. Courtesy CC cannot restart the meeting. A handoff only wakes bots who have not spoken yet. Needing the human is a stop (ask in the channel, no `@`).
+
 ## Parallel vs wait
 
 Lead example:
