@@ -87,14 +87,10 @@ test("a bot that already spoke this say is not woken again by courtesy @", async
   });
 
   const who = result.replies.map((r) => r.botId);
-  expect(who.filter((id) => id === "designer")).toHaveLength(1);
-  expect(who.filter((id) => id === "coder")).toHaveLength(1);
-  expect(who.filter((id) => id === "lead")).toHaveLength(1);
-  expect(who.filter((id) => id === "tester")).toHaveLength(1);
-  expect(who).toHaveLength(4);
+  expect(who).toEqual(["designer", "coder"]);
 });
 
-test("waits rateLimitGapMs before the next wave after a 429", async () => {
+test("lead handoff still runs; a 429 on that wave is returned", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();
   workspace.addBot({ id: "lead", name: "Lead" });
@@ -102,14 +98,13 @@ test("waits rateLimitGapMs before the next wave after a 429", async () => {
   workspace.addBot({ id: "designer", name: "Designer" });
   workspace.addChannel({
     id: "landing",
+    leadBotId: "lead",
     memberBotIds: ["lead", "coder", "designer"],
     permissionMode: "auto-accept",
   });
-  const slept: number[] = [];
   const provider = new ScriptedProvider([
     [{ type: "text-delta", text: "@designer next" }, { type: "done" }],
     [{ type: "error", message: "429 rate-limited" }, { type: "done" }],
-    [{ type: "text-delta", text: "ok" }, { type: "done" }],
   ]);
   const result = await dispatchChannelPost({
     store,
@@ -119,17 +114,12 @@ test("waits rateLimitGapMs before the next wave after a 429", async () => {
     nextId: seq(),
     now: () => "t",
     channelId: "landing",
-    text: "@lead @coder",
+    text: "kick off",
     model: "test",
     workspaceRoot: "/proj",
     ask: async () => "allow",
     hasReviewer: false,
-    sleep: async (ms) => {
-      slept.push(ms);
-    },
-    rateLimitGapMs: 12000,
   });
-  expect(slept).toEqual([12000]);
   expect(result.replies.some((r) => r.error?.includes("429"))).toBe(true);
-  expect(result.replies.some((r) => r.text === "ok")).toBe(true);
+  expect(result.replies[0]?.botId).toBe("lead");
 });

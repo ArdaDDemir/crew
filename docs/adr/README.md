@@ -17,3 +17,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0011 | Auto-accept shell + thinking log | accepted |
 | 0012 | Desk then account (engine-enforced) | accepted |
 | 0013 | One turn per bot per say (human stop) | accepted |
+| 0014 | Human-tagged `say` does not hand off | accepted |

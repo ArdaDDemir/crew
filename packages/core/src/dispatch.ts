@@ -5,6 +5,7 @@ import type { Provider } from "./provider";
 import { runBotTurn, type AskFn, type Tool } from "./turn";
 import type { ChatEvent } from "./provider";
 import type { Participant } from "./router";
+import { parseMentions } from "./mentions";
 
 export type DispatchBase = Clock & {
   store: EventStore;
@@ -45,6 +46,15 @@ export async function dispatchChannelPost(
   const replies: { botId: string; text: string; error?: string }[] = [];
   const queue = [...posted.woken];
   const spoken = new Set<string>();
+  const channel = input.workspace.getChannel(input.channelId);
+  const mentioned = parseMentions(input.text);
+  const humanPicked =
+    mentioned.includes("everyone") ||
+    Boolean(
+      channel &&
+        mentioned.some((id) => channel.memberBotIds.includes(id)),
+    );
+  let allowHandoff = !humanPicked;
   const sleep = input.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const rateGap = input.rateLimitGapMs ?? 0;
   let safety = 0;
@@ -88,8 +98,11 @@ export async function dispatchChannelPost(
         channelId: input.channelId,
         post: { author: { kind: "bot", botId }, text: turn.text },
       });
-      queue.push(...fan.woken.filter((id) => !spoken.has(id)));
+      if (allowHandoff) {
+        queue.push(...fan.woken.filter((id) => !spoken.has(id)));
+      }
     }
+    allowHandoff = false;
   }
 
   return { woken: posted.woken, replies };

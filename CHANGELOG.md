@@ -26,3 +26,4 @@ See `docs/versioning.md`.
 - Engine-enforced desk vs account (`ADR-0012`): tool-round mutter is not the channel message. After tools, one nudge to give an account.
 - OpenAI adapter sends `tool_calls` as `{type:function, function:{name,arguments}}`. Z.AI dropped round-2 after `read` (`Inference processing failed` / vLLM validation). That error retries once without tools so the bot can still give an account.
 - One turn per bot per `say` (`ADR-0013`). Courtesy `@` cannot restart the meeting. If they need you, they stop.
+- If you already `@` bots, this `say` does not wake anyone else (`ADR-0014`). Lead may still assign once when you didn't tag anyone.
