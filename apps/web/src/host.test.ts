@@ -8,9 +8,11 @@ import {
   checkHostUpdate,
   createChannel,
   createHost,
+  openDmChat,
   readThread,
   resolveAsk,
   sayChannel,
+  setMode,
   setUpdateUrl,
   snapshot,
   threadDiff,
@@ -430,4 +432,15 @@ test("checkHostUpdate uses injected fetch and does not hit the network", async (
     notes: "n",
     url: "https://example.com/Crew.msi",
   });
+});
+
+test("new DM stores workspace defaultPermissionMode; setMode updates it", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  writeConfigFile(projectConfigPath(cwd), { apiKey: "sk-test", defaultPermissionMode: "supervised" });
+  const host = createHost({ cwd, provider: new ScriptedProvider([[{ type: "text-delta", text: "hi" }, { type: "done" }]]) });
+  host.workspace.addBot({ id: "coder", name: "Coder" });
+  const opened = openDmChat(host, "coder");
+  expect(snapshot(host).dms.find((d) => d.id === opened.id)?.permissionMode).toBe("supervised");
+  expect(setMode(host, opened.id, "full-access").mode).toBe("full-access");
+  expect(snapshot(host).dms.find((d) => d.id === opened.id)?.permissionMode).toBe("full-access");
 });

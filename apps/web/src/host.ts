@@ -51,7 +51,7 @@ import {
   titleThread,
   VISION_PROMPT,
 } from "./jobs";
-import { loadDmPrefs } from "./dm-prefs";
+import { dmModeOf, ensureDmMode, loadDmPrefs, saveDmPrefs, setDmMode } from "./dm-prefs";
 import { loadMcp, parseMcpBody, saveMcp, writeHarnessMcpConfig, type McpFile, type McpServer } from "./mcp";
 import { collectMcpSessions, type McpRpc } from "./mcp-client";
 import {
@@ -351,6 +351,7 @@ export function snapshot(host: Host) {
             lastTs: last?.ts ?? events[events.length - 1]?.ts ?? "",
             posted: events.filter((e) => e.type === "message.posted").length,
             archived: archived.has(t.id),
+            permissionMode: dmModeOf(prefs, t.id, "auto-accept"),
           };
         })
         .sort((x, y) => String(y.lastTs).localeCompare(String(x.lastTs)));
@@ -469,6 +470,11 @@ export async function sayChannel(
       provider: host.provider,
       providerForBot: (botId) =>
         harnessBind(host, botId, (channel.permissionMode as CrewPermissionMode) || "auto-accept"),
+      permissionModeFor: (thread) => {
+        if (thread.kind === "channel") return channel.permissionMode as PermissionMode;
+        const existed = host.store.read(thread).length > 0;
+        return rememberDmMode(host, thread.id, !existed);
+      },
       tools,
       model: host.model,
       fallbackModel: host.fallbackModel,
@@ -713,9 +719,31 @@ export async function sendDm(
   to: string,
   text: string,
   threadId?: string,
+  onEvent?: (botId: string, event: ChatEvent) => void,
+  onStatus?: (message: string) => void,
+  onAsk?: (botId: string, tool: string, args: Record<string, unknown>) => void,
 ) {
   const previous = host.run;
   host.run = { stopped: false, abort: new AbortController() };
+  const tid =
+    threadId?.trim() ||
+    dmThreadId(party(from), party(to));
+  const existed = host.store.read({ kind: "dm", id: tid }).length > 0;
+  const mode = rememberDmMode(host, tid, !existed);
+  const crewDir = join(host.cwd, ".crew");
+  const ask: AskFn = async ({ tool, args, botId }) => {
+    if (host.run?.stopped) return "deny";
+    if (!host.live) return "allow";
+    if (matchesAlways(loadAlways(crewDir), tool, args)) return "allow";
+    return await new Promise<"allow" | "deny" | "always">((resolve) => {
+      if (host.run) {
+        host.run.resolveAsk = resolve;
+        host.run.askTool = tool;
+        host.run.askArgs = args;
+      }
+      onAsk?.(botId ?? "", tool, args);
+    });
+  };
   let result: Awaited<ReturnType<typeof dispatchDm>>;
   try {
     result = await withMcpTools(host, (tools) =>
@@ -723,19 +751,23 @@ export async function sendDm(
       store: host.store,
       workspace: host.workspace,
       provider: host.provider,
-      providerForBot: (botId) => harnessBind(host, botId, "auto-accept"),
+      providerForBot: (botId) => harnessBind(host, botId, mode),
       tools,
       model: host.model,
       fallbackModel: host.fallbackModel,
       workspaceRoot: host.cwd,
-      ask: async () => "allow",
+      ask,
       hasReviewer: false,
       turnGapMs: 0,
-      rateLimitGapMs: 0,
+      rateLimitGapMs: host.live ? 8000 : 0,
+      permissionModeFor: (thread) =>
+        thread.kind === "dm" ? resolveThreadMode(host, "dm", thread.id) : undefined,
       shouldStop: () => {
         if (host.run?.stopped) host.run.abort?.abort();
         return Boolean(host.run?.stopped);
       },
+      onEvent,
+      onStatus,
       from: party(from),
       to: party(to),
       text,
@@ -781,6 +813,7 @@ export function openDmChat(host: Host, to: string) {
   const conv = `t${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
   assertSlug(conv);
   const id = `${dmThreadId({ kind: "human" }, { kind: "bot", botId: to })}__${conv}`;
+  rememberDmMode(host, id, true);
   const { nextId, now } = clock();
   host.store.append({
     v: 1,
@@ -800,8 +833,29 @@ export function setMode(host: Host, channelId: string, mode: string) {
   if (!MODES.has(mode as PermissionMode)) {
     throw new Error("unknown mode");
   }
-  host.workspace.setChannelMode(channelId, mode as PermissionMode);
-  return { mode };
+  const id = channelId.trim();
+  if (host.workspace.getChannel(id)) {
+    host.workspace.setChannelMode(id, mode as PermissionMode);
+    return { mode, kind: "channel" as const, id };
+  }
+  saveDmPrefs(host.cwd, setDmMode(loadDmPrefs(host.cwd), id, mode as PermissionMode));
+  return { mode, kind: "dm" as const, id };
+}
+
+export function resolveThreadMode(host: Host, kind: "channel" | "dm", id: string): PermissionMode {
+  if (kind === "channel") {
+    return (host.workspace.getChannel(id)?.permissionMode as PermissionMode) || "auto-accept";
+  }
+  return dmModeOf(loadDmPrefs(host.cwd), id, "auto-accept");
+}
+
+function rememberDmMode(host: Host, id: string, isNew: boolean): PermissionMode {
+  const prefs = loadDmPrefs(host.cwd);
+  if (prefs.modes[id]) return prefs.modes[id]!;
+  if (!isNew) return "auto-accept";
+  const next = ensureDmMode(prefs, id, host.cfg.defaultPermissionMode ?? "auto-accept");
+  saveDmPrefs(host.cwd, next);
+  return dmModeOf(next, id, "auto-accept");
 }
 
 export function channelDetail(host: Host, id: string) {

@@ -13,7 +13,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | GET | `/api/health` | `{ ok: true, version }` |
 | GET | `/api/bootstrap` | `version`, `updateUrl`, channels, bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
 | GET | `/api/thread?kind&id` | messages / thinking / tools / shortened errors |
-| POST | `/api/say` | NDJSON stream (`text`, `thinking`, `tool`, `ask`, `done`) |
+| POST | `/api/say` | NDJSON stream (`text`, `thinking`, `tool`, `ask`, `done`). Channel: `{ channelId, text }`. DM: `{ kind: "dm", id, text }` (`ADR-0041`) |
 | POST | `/api/dm` | human or watch replay (`threadId` optional) |
 | POST | `/api/dm/new` | extra chat with a person (`human__<bot>__t…`) |
 | POST | `/api/stop` | halt in-flight dispatch |
@@ -39,7 +39,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | GET/PUT | `/api/mcp` | `.crew/mcp.json` `{ servers: [{ name, enabled, command, args, env, url, headers }] }`. Stdio or HTTP. Max 8. Missing file → `[]` |
 | GET | `/api/mcp/tools` | `{ tools: [{ name, description }] }` from live initialize + `tools/list`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised (`ADR-0038`). Dead servers skipped |
 | PUT | `/api/jobs` | same shape. `botId` null or an existing bot (not reserved). `harness` null or `claude\|codex\|grok\|opencode`. 400 on bad id. Writes `.crew/jobs.json` (not `config.json`) |
-| GET/PUT | `/api/dm-prefs` | `.crew/dm-prefs.json` `{ archived, deleted }`. Deleted omitted from bootstrap `dms`; archived flagged. JSONL stays |
+| GET/PUT | `/api/dm-prefs` | `.crew/dm-prefs.json` `{ archived, deleted, modes }`. Deleted omitted from bootstrap `dms`; archived flagged. `modes[threadId]` is that DM's permission mode (`ADR-0041`). JSONL stays |
 | POST | `/api/thread-title` | `{ kind, id }` appends `thread.titled` (last wins). Title job is not a channel wake |
 
 `/clear` in the composer is a sessionStorage bookmark, not a JSONL truncate. Export downloads the current thread JSON.

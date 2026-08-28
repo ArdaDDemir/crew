@@ -432,6 +432,17 @@ function currentChannel() {
   return state.bootstrap?.channels.find((c) => c.id === state.id) ?? null;
 }
 
+function currentDm() {
+  if (state.kind !== "dm" || !state.id) return null;
+  return (state.bootstrap?.dms ?? []).find((d) => d.id === state.id) ?? null;
+}
+
+function currentPermissionMode() {
+  if (state.kind === "channel") return currentChannel()?.permissionMode ?? "auto-accept";
+  if (state.kind === "dm") return currentDm()?.permissionMode ?? "auto-accept";
+  return "auto-accept";
+}
+
 function allowedModels() {
   return state.bootstrap?.models ?? [];
 }
@@ -933,10 +944,9 @@ function syncBotFallback() {
 
 function syncModeChip() {
   if (!els.modeBtn) return;
-  const ch = currentChannel();
-  const mode = ch?.permissionMode ?? "auto-accept";
-  els.modeBtn.textContent = mode;
-  els.modeBtn.disabled = !ch;
+  const on = state.kind === "channel" || state.kind === "dm";
+  els.modeBtn.textContent = currentPermissionMode();
+  els.modeBtn.disabled = !on || !state.id;
 }
 
 function nearBottom() {
@@ -2635,7 +2645,7 @@ document.getElementById("win-open-project")?.addEventListener("click", () => {
 document.getElementById("mode-close").onclick = () => els.modeModal.close();
 document.getElementById("mode-list").addEventListener("click", async (ev) => {
   const btn = ev.target.closest("[data-mode]");
-  if (!btn || state.kind !== "channel") return;
+  if (!btn || (state.kind !== "channel" && state.kind !== "dm")) return;
   const mode = btn.dataset.mode;
   try {
     await api("/api/mode", {
@@ -2645,6 +2655,8 @@ document.getElementById("mode-list").addEventListener("click", async (ev) => {
     });
     const ch = currentChannel();
     if (ch) ch.permissionMode = mode;
+    const dm = currentDm();
+    if (dm) dm.permissionMode = mode;
     syncModeChip();
     els.modeModal.close();
   } catch (err) {
@@ -3246,15 +3258,18 @@ function onDraftKeydown(ev) {
   if (ev.key === "Tab" && ev.shiftKey) {
     ev.preventDefault();
     const order = ["supervised", "auto-accept", "auto", "full-access"];
-    const ch = currentChannel();
-    if (!ch) return;
-    const next = order[(order.indexOf(ch.permissionMode) + 1) % order.length];
+    if (state.kind !== "channel" && state.kind !== "dm") return;
+    const current = currentPermissionMode();
+    const next = order[(order.indexOf(current) + 1) % order.length];
     api("/api/mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channelId: state.id, mode: next }),
     }).then(() => {
-      ch.permissionMode = next;
+      const ch = currentChannel();
+      if (ch) ch.permissionMode = next;
+      const dm = currentDm();
+      if (dm) dm.permissionMode = next;
       syncModeChip();
     });
     return;
@@ -3400,29 +3415,15 @@ async function onComposerSubmit(ev) {
   const runKind = state.kind;
   const runId = state.id;
   try {
-    if (runKind === "dm") {
-      const parsed = parseDm(runId);
-      const to = parsed.b;
-      await api("/api/dm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: "human", to, text, threadId: runId }),
-      });
-      state.bootstrap = await (await api("/api/bootstrap")).json();
-      bindPane(state.runPane);
-      await openThread("dm", runId);
-      await maybeAutoCompact("dm", runId);
-    } else {
       setRunning(true);
       const res = await fetch("/api/say", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channelId: runId,
-          text,
-          thinking: true,
-          verbose: true,
-        }),
+        body: JSON.stringify(
+          runKind === "dm"
+            ? { kind: "dm", id: runId, text, thinking: true, verbose: true }
+            : { channelId: runId, text, thinking: true, verbose: true },
+        ),
       });
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -3470,7 +3471,6 @@ async function onComposerSubmit(ev) {
           }
         }
       }
-    }
   } catch (err) {
     bindPane(state.runPane);
     addMessage({ who: "error", text: String(err), kind: "error" });
@@ -4141,7 +4141,7 @@ function openSlashHelp() {
 
 function openModeSheet() {
   if (els.modeBtn?.disabled) return;
-  const current = currentChannel()?.permissionMode;
+  const current = currentPermissionMode();
   for (const btn of document.querySelectorAll("#mode-list [data-mode]")) {
     btn.classList.toggle("on", btn.dataset.mode === current);
   }

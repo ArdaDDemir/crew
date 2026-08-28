@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import type { Clock } from "./post";
 import type { CrewEvent, ThreadRef } from "./events";
 import type { EventStore } from "./store";
-import type { Workspace } from "./workspace";
+import type { PermissionMode, Workspace } from "./workspace";
 import {
   decidePermission,
   effectiveMode,
@@ -52,6 +52,7 @@ export type RunBotTurnInput = Clock & {
   onStatus?: (message: string) => void;
   sendDm?: (toBotId: string, text: string) => Promise<string>;
   shouldStop?: () => boolean;
+  permissionMode?: PermissionMode;
 };
 
 function append(
@@ -144,9 +145,10 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
   input.onStatus?.(`${input.botId} → ${model}`);
 
   const modeRaw =
-    input.thread.kind === "channel"
+    input.permissionMode ??
+    (input.thread.kind === "channel"
       ? input.workspace.getChannel(input.thread.id)?.permissionMode
-      : "auto-accept";
+      : "auto-accept");
   const { mode } = effectiveMode(modeRaw ?? "auto-accept", input.hasReviewer);
 
   const tools: Tool[] = [...input.tools];

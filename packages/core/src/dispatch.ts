@@ -5,6 +5,7 @@ import type { Provider } from "./provider";
 import { runBotTurn, type AskFn, type Tool } from "./turn";
 import type { ChatEvent } from "./provider";
 import type { Participant } from "./router";
+import type { PermissionMode } from "./workspace";
 import { parseMentions } from "./mentions";
 
 export type BotProviderBind = {
@@ -30,6 +31,7 @@ export type DispatchBase = Clock & {
   onStatus?: (message: string) => void;
   onEvent?: (botId: string, event: ChatEvent) => void;
   shouldStop?: () => boolean;
+  permissionModeFor?: (thread: { kind: "channel" | "dm"; id: string }) => PermissionMode | undefined;
 };
 
 function bindTurn(input: DispatchBase, botId: string) {
@@ -106,6 +108,7 @@ export async function dispatchChannelPost(
           ...input,
           ...bindTurn(input, botId),
           thread: { kind: "channel", id: input.channelId },
+          permissionMode: input.permissionModeFor?.({ kind: "channel", id: input.channelId }),
           botId,
           onStatus: input.onStatus,
           onEvent: input.onEvent
@@ -176,6 +179,7 @@ export async function dispatchChannelPost(
       ...input,
       ...bindTurn(input, item.botId),
       thread: { kind: "dm", id: item.threadId },
+      permissionMode: input.permissionModeFor?.({ kind: "dm", id: item.threadId }),
       botId: item.botId,
       onStatus: input.onStatus,
       onEvent: input.onEvent
@@ -231,6 +235,7 @@ export async function dispatchDm(
       ...input,
       ...bindTurn(input, botId),
       thread: { kind: "dm", id: posted.threadId },
+      permissionMode: input.permissionModeFor?.({ kind: "dm", id: posted.threadId }),
       botId,
       onStatus: input.onStatus,
       onEvent: input.onEvent

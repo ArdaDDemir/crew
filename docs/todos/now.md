@@ -15,7 +15,7 @@ See `CHANGELOG.md` `[0.4.0]`.
 
 ## In ([Unreleased])
 
-`dist/latest.json` from `desktop:build`; relative download URLs (`ADR-0040`). `GET /api/health` has `version`.
+`dist/latest.json` from `desktop:build`; relative download URLs (`ADR-0040`). `GET /api/health` has `version`. DM permission mode (`ADR-0041`).
 
 ## In (0.5.0)
 

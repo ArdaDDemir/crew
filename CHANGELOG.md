@@ -14,6 +14,7 @@ See `docs/versioning.md`.
 
 - **`dist/latest.json`** (`ADR-0040`): `bun run desktop:build` writes `{ version, notes, url, platforms }` next to the installers. Relative `url` in that file is resolved against the hosted `latest.json` path. Optional `CREW_RELEASE_BASE` prefixes GitHub-style absolute URLs. Still no silent install.
 - `GET /api/health` includes `version`.
+- **DM permission mode** (`ADR-0041`): new Direct chats use Settings **New room mode**. Mode chip, Shift+Tab, and `/mode` work on a DM. Stored in `.crew/dm-prefs.json` `modes`. Legacy DMs without a row stay auto-accept. DM send streams through `POST /api/say` so supervised can show Allow/Deny cards.
 
 ## [0.5.0] - 2026-08-28
 

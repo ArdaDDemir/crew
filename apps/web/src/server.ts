@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import type { ChatEvent } from "@crew/core";
+import { parseDmThreadId, type ChatEvent } from "@crew/core";
 import {
   addAlways,
   botDetail,
@@ -595,17 +595,14 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   if (req.method === "POST" && path === "/api/say") {
     return ndjsonStream(async (push) => {
       const body = await readBody(req);
-      const channelId = String(body.channelId ?? "");
       const text = String(body.text ?? "").trim();
+      const kind = body.kind === "dm" ? "dm" : "channel";
+      const channelId = String(body.channelId ?? body.id ?? "");
       if (!channelId || !text) {
         push({ type: "error", message: "channelId and text required" });
         return;
       }
-      const result = await sayChannel(
-        host,
-        channelId,
-        text,
-        (botId: string, event: ChatEvent) => {
+      const onEvent = (botId: string, event: ChatEvent) => {
           if (event.type === "text-delta") {
             push({ type: "text", botId, text: event.text });
           } else if (event.type === "error") {
@@ -621,9 +618,33 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
             }
             push({ type: "tool", botId, name: event.name, args });
           }
-        },
-        (message) => push({ type: "status", message }),
-        (botId, tool, args) => push({ type: "ask", botId, tool, args }),
+        };
+      const onStatus = (message: string) => push({ type: "status", message });
+      const onAsk = (botId: string, tool: string, args: Record<string, unknown>) =>
+        push({ type: "ask", botId, tool, args });
+      if (kind === "dm") {
+        let to = "";
+        try {
+          to = parseDmThreadId(channelId).right;
+        } catch (err) {
+          push({ type: "error", message: err instanceof Error ? err.message : String(err) });
+          return;
+        }
+        const result = await sendDm(host, "human", to, text, channelId, onEvent, onStatus, onAsk);
+        push({
+          type: "done",
+          woken: result.woken,
+          dms: [{ threadId: result.threadId, botId: result.replies[0]?.botId }],
+        });
+        return;
+      }
+      const result = await sayChannel(
+        host,
+        channelId,
+        text,
+        onEvent,
+        onStatus,
+        onAsk,
       );
       push({
         type: "done",

@@ -5,19 +5,22 @@ import { join } from "node:path";
 import {
   archiveDm,
   deleteDm,
+  ensureDmMode,
   loadDmPrefs,
   parseDmPrefsBody,
   saveDmPrefs,
+  setDmMode,
   unarchiveDm,
 } from "./dm-prefs";
 
 test("save and load archive and delete lists", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-dm-"));
-  expect(loadDmPrefs(cwd)).toEqual({ archived: [], deleted: [] });
-  saveDmPrefs(cwd, { archived: ["human__coder__t1"], deleted: ["human__coder__t2"] });
+  expect(loadDmPrefs(cwd)).toEqual({ archived: [], deleted: [], modes: {} });
+  saveDmPrefs(cwd, { archived: ["human__coder__t1"], deleted: ["human__coder__t2"], modes: {} });
   expect(loadDmPrefs(cwd)).toEqual({
     archived: ["human__coder__t1"],
     deleted: ["human__coder__t2"],
+    modes: {},
   });
 });
 
@@ -41,4 +44,23 @@ test("parse ignores junk ids", () => {
   });
   expect(prefs.archived).toEqual(["human__coder"]);
   expect(prefs.deleted).toEqual(["nope"]);
+  expect(prefs.modes).toEqual({});
+});
+
+test("modes round-trip and ensureDmMode keeps the first write", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-dm-mode-"));
+  let prefs = parseDmPrefsBody({
+    modes: { human__coder: "supervised", bad: "nope" },
+  });
+  expect(prefs.modes).toEqual({ "human__coder": "supervised" });
+  prefs = ensureDmMode(prefs, "human__coder__n1", "full-access");
+  expect(prefs.modes["human__coder__n1"]).toBe("full-access");
+  prefs = ensureDmMode(prefs, "human__coder__n1", "supervised");
+  expect(prefs.modes["human__coder__n1"]).toBe("full-access");
+  prefs = setDmMode(prefs, "human__coder__n1", "auto");
+  expect(prefs.modes["human__coder__n1"]).toBe("auto");
+  saveDmPrefs(cwd, prefs);
+  expect(loadDmPrefs(cwd).modes["human__coder__n1"]).toBe("auto");
+  prefs = archiveDm(prefs, "human__coder");
+  expect(prefs.modes["human__coder"]).toBe("supervised");
 });

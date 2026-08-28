@@ -99,7 +99,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 54. Compact: **fixed** (`ADR-0019`, `ADR-0028`). Over 80 `message.posted`, append `thread.compacted`; LLM compact appends `thread.summary`; JSONL is not rewritten.
 55. Clock is ISO now. Replaying logs does not re-run tools. Fine. Re-`say` the same text **does** re-run tools (not idempotent).
 56. Permission mode `auto` without reviewer → supervised, warn on stderr. Easy to miss.
-57. DM permission is hardcoded `auto-accept` in the turn (not stored on the DM). Cannot `crew mode` a DM.
+57. DM permission is hardcoded `auto-accept` in the turn (not stored on the DM). Cannot `crew mode` a DM. **Fixed (`ADR-0041`):** `dm-prefs.json` `modes`; new DMs use `defaultPermissionMode`; office mode chip works.
 
 ---
 

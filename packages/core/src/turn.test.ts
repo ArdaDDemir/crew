@@ -578,3 +578,61 @@ test("provider error is returned on the turn, not swallowed", async () => {
   expect(result.text).toBe("");
   expect(store.read(thread).some((e) => e.type === "error")).toBe(true);
 });
+
+test("DM turn honors permissionMode instead of hardcoded auto-accept", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  const thread = { kind: "dm" as const, id: "human__coder" };
+  store.append({
+    v: 1,
+    id: "seed",
+    ts: "t",
+    thread,
+    type: "message.posted",
+    parent: null,
+    payload: { author: { kind: "human" }, text: "patch it", mentions: [] },
+  });
+  let executed = false;
+  let asked = 0;
+  const patch: Tool = {
+    name: "apply_patch",
+    description: "patch",
+    parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+    async execute() {
+      executed = true;
+      return "ok";
+    },
+  };
+  await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "c1",
+          name: "apply_patch",
+          arguments: JSON.stringify({ path: "a.ts", old_text: "a", new_text: "b" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "stopped" }, { type: "done" }],
+    ]),
+    tools: [patch],
+    nextId: seq(),
+    now: () => "t",
+    thread,
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    permissionMode: "supervised",
+    ask: async () => {
+      asked += 1;
+      return "deny";
+    },
+    hasReviewer: false,
+  });
+  expect(asked).toBe(1);
+  expect(executed).toBe(false);
+});

@@ -206,11 +206,26 @@ test("POST /api/dm appears in bootstrap Direct list", async () => {
     expect(ids).toContain("human__coder");
     expect(ids).toContain(opened.id);
     expect(boot2.dms.filter((d: { peerId: string }) => d.peerId === "coder").length).toBe(2);
+    expect(boot2.dms.find((d: { id: string }) => d.id === opened.id)?.permissionMode).toBe(
+      "auto-accept",
+    );
+    const modeRes = await fetch(`${url}/api/mode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId: opened.id, mode: "supervised" }),
+    });
+    expect(modeRes.ok).toBe(true);
+    const boot3 = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot3.dms.find((d: { id: string }) => d.id === opened.id)?.permissionMode).toBe(
+      "supervised",
+    );
     const page = await (await fetch(`${url}/`)).text();
     expect(page).toContain("id=\"direct\"");
     const js = await (await fetch(`${url}/app.js`)).text();
     expect(js).toContain("renderDirect");
     expect(js).toContain("/api/dm/new");
+    expect(js).toContain("kind: \"dm\"");
+    expect(js).toContain("currentPermissionMode");
   } finally {
     server.stop(true);
   }
