@@ -49,4 +49,4 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS: `dist/crew-windows-nsis/` (`Crew_0.7.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.7.0_x64_en-US.msi`). Portable: `dist/crew-windows/`. `dist/latest.json` is 0.7.0.
+NSIS: `dist/crew-windows-nsis/` (`Crew_0.8.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.8.0_x64_en-US.msi`). Portable: `dist/crew-windows/`. `dist/latest.json` is 0.8.0.
