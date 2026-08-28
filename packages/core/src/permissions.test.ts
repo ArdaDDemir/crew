@@ -4,6 +4,7 @@ import {
   decidePermission,
   effectiveMode,
   isDeniedPath,
+  parseReviewerVerdict,
 } from "./permissions";
 
 const root = join("C:", "proj");
@@ -87,4 +88,10 @@ test("auto without reviewer becomes supervised", () => {
     warned: true,
   });
   expect(effectiveMode("auto", true)).toEqual({ mode: "auto", warned: false });
+});
+
+test("parseReviewerVerdict reads ALLOW DENY or ASK", () => {
+  expect(parseReviewerVerdict("ALLOW\n")).toBe("allow");
+  expect(parseReviewerVerdict("deny because secrets")).toBe("deny");
+  expect(parseReviewerVerdict("not sure")).toBe("ask");
 });

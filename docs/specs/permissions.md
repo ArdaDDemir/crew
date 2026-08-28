@@ -43,4 +43,4 @@ Settings → Permissions:
 
 ## Auto reviewer
 
-v1: if no reviewer model is configured, `auto` **falls back to `supervised`** and the CLI warns once. It must not fall back to `full-access`. Settings → Permissions can set `reviewerModel`; empty keeps this fallback.
+If `reviewerModel` is empty, `auto` **falls back to `supervised`**. It must not fall back to `full-access`. When set, `auto` one-shots that model (`ALLOW` / `DENY` / else the human card). `permission.resolved` includes `reviewer: true` when the model settled it (`ADR-0042`).

@@ -38,8 +38,8 @@ export {
   type ToolCall,
   type ToolSpec,
 } from "./provider";
-export { decidePermission, effectiveMode } from "./permissions";
-export { runBotTurn, type AskFn, type Tool } from "./turn";
+export { decidePermission, effectiveMode, parseReviewerVerdict } from "./permissions";
+export { runBotTurn, type AskFn, type ReviewFn, type Tool } from "./turn";
 export { runOrgTool, MAX_BOTS, MAX_CHANNELS } from "./org";
 export {
   fingerprint,

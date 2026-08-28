@@ -8,6 +8,7 @@ export type CrewConfig = {
   fallbackModel?: string;
   allowedModels?: string[];
   baseUrl?: string;
+  reviewerModel?: string;
 };
 
 export function userConfigPath(home: string): string {
@@ -54,6 +55,7 @@ export function mergeConfig(input: {
     fallbackModel: project.fallbackModel || user.fallbackModel,
     allowedModels: project.allowedModels ?? user.allowedModels,
     baseUrl: input.env.CREW_BASE_URL || project.baseUrl || user.baseUrl,
+    reviewerModel: (project.reviewerModel || user.reviewerModel || "").trim(),
   };
 }
 

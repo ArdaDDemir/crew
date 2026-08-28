@@ -12,7 +12,7 @@ Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: *
 
 Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
 
-Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`–`0041`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings → Providers feeds the Person / Default / Jobs implementation picker (`ADR-0030`, `ADR-0031`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio/HTTP tools, resources, and prompts attach to OpenRouter turns (`ADR-0036`, `ADR-0038`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
+Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`–`0042`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings → Providers feeds the Person / Default / Jobs implementation picker (`ADR-0030`, `ADR-0031`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio/HTTP tools, resources, and prompts attach to OpenRouter turns (`ADR-0036`, `ADR-0038`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
 
 ## What this is NOT
 
@@ -69,7 +69,7 @@ packages/provider-harness Claude / Codex / OpenCode / Grok spawn (`ADR-0035`)
 apps/cli               `crew` argv adapter
 apps/web               local UI adapter (Bun.serve); providers, jobs, mcp json
 apps/desktop           Crew.exe (Tauri + WebView2); sidecar is compiled `apps/web`
-docs/adr               decisions (immutable once accepted; next is 0042)
+docs/adr               decisions (immutable once accepted; next is 0043)
 docs/specs             wire contracts
 ```
 

@@ -34,6 +34,12 @@ export type AskFn = (input: {
   botId?: string;
 }) => Promise<"allow" | "deny" | "always">;
 
+export type ReviewFn = (input: {
+  tool: string;
+  args: Record<string, unknown>;
+  botId: string;
+}) => Promise<"allow" | "deny" | "ask">;
+
 export type RunBotTurnInput = Clock & {
   store: EventStore;
   workspace: Workspace;
@@ -47,6 +53,7 @@ export type RunBotTurnInput = Clock & {
   workspaceRoot: string;
   ask: AskFn;
   hasReviewer: boolean;
+  review?: ReviewFn;
   maxRounds?: number;
   onEvent?: (event: ChatEvent) => void;
   onStatus?: (message: string) => void;
@@ -54,6 +61,44 @@ export type RunBotTurnInput = Clock & {
   shouldStop?: () => boolean;
   permissionMode?: PermissionMode;
 };
+
+async function settleAsk(
+  input: RunBotTurnInput,
+  mode: PermissionMode,
+  call: { name: string; args: Record<string, unknown> },
+): Promise<boolean> {
+  if (mode === "auto" && input.review) {
+    const judged = await input.review({
+      tool: call.name,
+      args: call.args,
+      botId: input.botId,
+    });
+    if (judged === "allow" || judged === "deny") {
+      append(input, input.thread, "permission.asked", {
+        botId: input.botId,
+        name: call.name,
+        args: call.args,
+        reviewer: true,
+      });
+      append(input, input.thread, "permission.resolved", {
+        decision: judged,
+        reviewer: true,
+      });
+      return judged === "allow";
+    }
+  }
+  const answer = await input.ask({ tool: call.name, args: call.args, botId: input.botId });
+  const allowed = answer === "allow" || answer === "always";
+  append(input, input.thread, "permission.asked", {
+    botId: input.botId,
+    name: call.name,
+    args: call.args,
+  });
+  append(input, input.thread, "permission.resolved", {
+    decision: allowed ? "allow" : "deny",
+  });
+  return allowed;
+}
 
 function append(
   input: Clock & { store: EventStore },
@@ -325,16 +370,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
       } else if (ORG_TOOL_NAMES.has(call.name)) {
         let allowed = !orgNeedsAsk(mode, call.name);
         if (!allowed) {
-          const answer = await input.ask({ tool: call.name, args, botId: input.botId });
-          allowed = answer === "allow" || answer === "always";
-          append(input, input.thread, "permission.asked", {
-            botId: input.botId,
-            name: call.name,
-            args,
-          });
-          append(input, input.thread, "permission.resolved", {
-            decision: allowed ? "allow" : "deny",
-          });
+          allowed = await settleAsk(input, mode, { name: call.name, args });
         }
         if (!allowed) {
           denials += 1;
@@ -363,16 +399,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         });
         let allowed = verdict === "allow";
         if (verdict === "ask") {
-          const answer = await input.ask({ tool: call.name, args, botId: input.botId });
-          allowed = answer === "allow" || answer === "always";
-          append(input, input.thread, "permission.asked", {
-            botId: input.botId,
-            name: call.name,
-            args,
-          });
-          append(input, input.thread, "permission.resolved", {
-            decision: allowed ? "allow" : "deny",
-          });
+          allowed = await settleAsk(input, mode, { name: call.name, args });
         }
         if (verdict === "deny") {
           allowed = false;

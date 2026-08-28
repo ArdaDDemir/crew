@@ -17,10 +17,12 @@ import {
   saveAlways,
   shortenChatError,
   summarizeThread,
+  parseReviewerVerdict,
   type AskFn,
   type ChatEvent,
   type PermissionMode,
   type Provider,
+  type ReviewFn,
   type Tool,
 } from "@crew/core";
 import { JsonlEventStore } from "@crew/store-jsonl";
@@ -480,7 +482,7 @@ export async function sayChannel(
       fallbackModel: host.fallbackModel,
       workspaceRoot: host.cwd,
       ask,
-      hasReviewer: false,
+      ...bindReview(host),
       turnGapMs: 0,
       rateLimitGapMs: host.live ? 8000 : 0,
       shouldStop: () => {
@@ -757,7 +759,7 @@ export async function sendDm(
       fallbackModel: host.fallbackModel,
       workspaceRoot: host.cwd,
       ask,
-      hasReviewer: false,
+      ...bindReview(host),
       turnGapMs: 0,
       rateLimitGapMs: host.live ? 8000 : 0,
       permissionModeFor: (thread) =>
@@ -847,6 +849,44 @@ export function resolveThreadMode(host: Host, kind: "channel" | "dm", id: string
     return (host.workspace.getChannel(id)?.permissionMode as PermissionMode) || "auto-accept";
   }
   return dmModeOf(loadDmPrefs(host.cwd), id, "auto-accept");
+}
+
+async function collectReviewText(
+  provider: Provider,
+  model: string,
+  tool: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  let text = "";
+  for await (const ev of provider.complete({
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW = routine and safe. DENY = secrets or destructive. ASK = the human must decide.",
+      },
+      { role: "user", content: `tool=${tool}\n${JSON.stringify(args)}` },
+    ],
+  })) {
+    if (ev.type === "text-delta") text += ev.text;
+  }
+  return text;
+}
+
+function bindReview(host: Host): { hasReviewer: boolean; review?: ReviewFn } {
+  const model = (host.cfg.reviewerModel ?? "").trim();
+  if (!model) return { hasReviewer: false };
+  return {
+    hasReviewer: true,
+    review: async ({ tool, args }) => {
+      try {
+        return parseReviewerVerdict(await collectReviewText(host.provider, model, tool, args));
+      } catch {
+        return "ask";
+      }
+    },
+  };
 }
 
 function rememberDmMode(host: Host, id: string, isNew: boolean): PermissionMode {

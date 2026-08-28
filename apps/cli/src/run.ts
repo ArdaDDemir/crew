@@ -15,7 +15,9 @@ import {
   type Tool,
   loadAlways,
   matchesAlways,
+  parseReviewerVerdict,
   rememberAlways,
+  type ReviewFn,
 } from "@crew/core";
 import { JsonlEventStore } from "@crew/store-jsonl";
 import { FsWorkspace } from "@crew/workspace-fs";
@@ -338,7 +340,31 @@ export async function runCli(
     model,
     workspaceRoot: io.cwd,
     ask,
-    hasReviewer: false,
+    hasReviewer: Boolean((cfg.reviewerModel ?? "").trim()),
+    review: (cfg.reviewerModel ?? "").trim()
+      ? (async ({ tool, args }) => {
+          try {
+            const provider = resolveProvider(deps, cfg);
+            let text = "";
+            for await (const ev of provider.complete({
+              model: cfg.reviewerModel!.trim(),
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW = routine and safe. DENY = secrets or destructive. ASK = the human must decide.",
+                },
+                { role: "user", content: `tool=${tool}\n${JSON.stringify(args)}` },
+              ],
+            })) {
+              if (ev.type === "text-delta") text += ev.text;
+            }
+            return parseReviewerVerdict(text);
+          } catch {
+            return "ask";
+          }
+        }) satisfies ReviewFn
+      : undefined,
     shouldStop: () => halt.stopped,
     turnGapMs: deps.provider ? 0 : Number(process.env.CREW_TURN_GAP_MS ?? 0),
     rateLimitGapMs: deps.provider ? 0 : Number(process.env.CREW_RATE_LIMIT_GAP_MS ?? 8000),

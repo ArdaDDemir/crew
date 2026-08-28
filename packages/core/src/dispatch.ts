@@ -2,7 +2,7 @@ import { postToChannel, postToDm, type Clock } from "./post";
 import type { EventStore } from "./store";
 import type { Workspace } from "./workspace";
 import type { Provider } from "./provider";
-import { runBotTurn, type AskFn, type Tool } from "./turn";
+import { runBotTurn, type AskFn, type ReviewFn, type Tool } from "./turn";
 import type { ChatEvent } from "./provider";
 import type { Participant } from "./router";
 import type { PermissionMode } from "./workspace";
@@ -25,6 +25,7 @@ export type DispatchBase = Clock & {
   workspaceRoot: string;
   ask: AskFn;
   hasReviewer: boolean;
+  review?: ReviewFn;
   sleep?: (ms: number) => Promise<void>;
   turnGapMs?: number;
   rateLimitGapMs?: number;

@@ -11,7 +11,7 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | DMs / conflicting human orders | 0015, 0016, 0025 → **0033** |
 | Skills / SKILL.md | 0008 → 0021 → 0023 |
 | JSONL / compact / delete | 0004 → 0018, 0019 → **0028**; titled/jobs → **0029** → 0031 |
-| Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) → **0041** (DM mode) |
+| Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) → **0041** (DM mode) → **0042** (`auto` reviewer) |
 | Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** → **0041** |
 | Desktop window | **0032** → **0039** (tray + opt-in updates) → **0040** (`latest.json`) |
 | Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) |
@@ -63,3 +63,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0039 | Opt-in update check and Crew.exe tray | accepted; qualified by **0040** |
 | 0040 | `desktop:build` writes `dist/latest.json`; relative download URLs | accepted |
 | 0041 | DM threads honor permission mode | accepted |
+| 0042 | `auto` uses Settings reviewerModel | accepted |

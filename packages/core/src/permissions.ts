@@ -76,3 +76,13 @@ export function effectiveMode(
   }
   return { mode, warned: false };
 }
+
+export function parseReviewerVerdict(text: string): "allow" | "deny" | "ask" {
+  const first = String(text ?? "")
+    .trim()
+    .split(/\s+/)[0]
+    ?.toUpperCase() ?? "";
+  if (first === "ALLOW" || first === "ALLOWED" || first === "YES") return "allow";
+  if (first === "DENY" || first === "DENIED" || first === "NO") return "deny";
+  return "ask";
+}

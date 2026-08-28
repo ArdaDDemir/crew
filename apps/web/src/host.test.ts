@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadAlways, matchesAlways, ScriptedProvider } from "@crew/core";
+import { loadAlways, matchesAlways, ScriptedProvider, type Provider } from "@crew/core";
 import {
   checkHostUpdate,
   createChannel,
@@ -443,4 +443,47 @@ test("new DM stores workspace defaultPermissionMode; setMode updates it", async 
   expect(snapshot(host).dms.find((d) => d.id === opened.id)?.permissionMode).toBe("supervised");
   expect(setMode(host, opened.id, "full-access").mode).toBe("full-access");
   expect(snapshot(host).dms.find((d) => d.id === opened.id)?.permissionMode).toBe("full-access");
+});
+
+test("auto channel with reviewerModel calls that model before a patch", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  writeConfigFile(projectConfigPath(cwd), {
+    apiKey: "sk-test",
+    reviewerModel: "review/cheap",
+  });
+  const models: string[] = [];
+  let round = 0;
+  const provider: Provider = {
+    async *complete(req) {
+      models.push(req.model);
+      if (req.model === "review/cheap") {
+        yield { type: "text-delta", text: "ALLOW" };
+        yield { type: "done" };
+        return;
+      }
+      round += 1;
+      if (round === 1) {
+        yield {
+          type: "tool-call",
+          id: "c1",
+          name: "apply_patch",
+          arguments: JSON.stringify({ path: "n.ts", old_text: "", new_text: "hi" }),
+        };
+        yield { type: "done" };
+        return;
+      }
+      yield { type: "text-delta", text: "patched" };
+      yield { type: "done" };
+    },
+  };
+  const host = createHost({ cwd, provider });
+  host.workspace.addBot({ id: "coder", name: "Coder" });
+  createChannel(host, {
+    id: "lab",
+    memberBotIds: ["coder"],
+    leadBotId: "coder",
+    permissionMode: "auto",
+  });
+  await sayChannel(host, "lab", "@coder patch n.ts");
+  expect(models).toContain("review/cheap");
 });

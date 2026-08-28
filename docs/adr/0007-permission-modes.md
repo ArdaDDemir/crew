@@ -1,5 +1,5 @@
 ---
-status: accepted; auto-accept shell row superseded by ADR-0011
+status: accepted; auto-accept shell row superseded by ADR-0011; auto reviewer → **0042**
 date: 2026-08-27
 decision-makers: Arda
 ---
