@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; skill loader qualified by ADR-0021
 date: 2026-08-27
 decision-makers: Arda
 ---

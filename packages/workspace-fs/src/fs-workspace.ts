@@ -3,11 +3,16 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 import {
+  asSkillDoc,
+  assertBotId,
   assertSlug,
+  parseSkillMd,
+  skillSlug,
   type BotPatch,
   type BotRecord,
   type ChannelPatch,
@@ -30,25 +35,37 @@ type BotFile = {
   id: string;
   name: string;
   model?: string;
+  fallbackModel?: string;
   icon?: string;
 };
+
+function applyDefined<T extends object>(base: T, patch: Partial<T>): T {
+  const next = { ...base };
+  for (const [key, value] of Object.entries(patch) as [keyof T, T[keyof T] | undefined][]) {
+    if (value !== undefined) next[key] = value;
+  }
+  return next;
+}
 
 export class FsWorkspace implements Workspace {
   constructor(private readonly root: string) {}
 
   addBot(bot: BotRecord): void {
-    assertSlug(bot.id);
+    assertBotId(bot.id);
+    if (this.getBot(bot.id)) throw new Error(`bot exists: ${bot.id}`);
     const dir = join(this.root, "bots", bot.id);
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "bot.json"),
-      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model, icon: bot.icon }, null, 2)}\n`,
+      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model, fallbackModel: bot.fallbackModel, icon: bot.icon }, null, 2)}\n`,
     );
     writeFileSync(
       join(dir, "SOUL.md"),
-      `# ${bot.name}\n\nYou are ${bot.name} (${bot.id}).\n`,
+      bot.soul?.trim()
+        ? bot.soul
+        : `# ${bot.name}\n\nYou are ${bot.name} (${bot.id}).\n`,
     );
-    writeFileSync(join(dir, "AGENTS.md"), "");
+    writeFileSync(join(dir, "AGENTS.md"), bot.standingOrders ?? "");
     mkdirSync(join(dir, "skills"), { recursive: true });
   }
 
@@ -77,6 +94,7 @@ export class FsWorkspace implements Workspace {
 
   addChannel(channel: ChannelRecord): void {
     assertSlug(channel.id);
+    if (this.getChannel(channel.id)) throw new Error(`channel exists: ${channel.id}`);
     for (const id of channel.memberBotIds) {
       if (!this.getBot(id)) {
         throw new Error(`unknown bot: ${id}`);
@@ -97,10 +115,8 @@ export class FsWorkspace implements Workspace {
       folders: channel.folders,
     };
     writeFileSync(join(dir, "channel.json"), `${JSON.stringify(file, null, 2)}\n`);
-    const rules = join(dir, "RULES.md");
-    const context = join(dir, "CONTEXT.md");
-    if (!existsSync(rules)) writeFileSync(rules, "");
-    if (!existsSync(context)) writeFileSync(context, "");
+    writeFileSync(join(dir, "RULES.md"), channel.rules ?? "");
+    writeFileSync(join(dir, "CONTEXT.md"), channel.context ?? "");
   }
 
   getChannel(id: string): ChannelRecord | undefined {
@@ -128,11 +144,12 @@ export class FsWorkspace implements Workspace {
     const bot = this.getBot(id);
     if (!bot) throw new Error(`unknown bot: ${id}`);
     const dir = join(this.root, "bots", id);
-    const next: BotRecord = { ...bot, ...patch };
+    const next: BotRecord = applyDefined(bot, patch);
     const file: BotFile = {
       id: next.id,
       name: next.name,
       model: next.model,
+      fallbackModel: next.fallbackModel,
       icon: next.icon,
     };
     writeFileSync(join(dir, "bot.json"), `${JSON.stringify(file, null, 2)}\n`);
@@ -150,21 +167,69 @@ export class FsWorkspace implements Workspace {
     skill: { name: string; description: string; body?: string },
   ): void {
     if (!this.getBot(botId)) throw new Error(`unknown bot: ${botId}`);
-    const slug =
-      skill.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") || "skill";
-    const dir = join(this.root, "bots", botId, "skills", slug);
+    const doc = asSkillDoc({
+      name: skill.name,
+      description: skill.description,
+      body: skill.body ?? "",
+    });
+    const dir = join(this.root, "bots", botId, "skills", doc.name);
     mkdirSync(dir, { recursive: true });
-    const md = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${skill.body ?? ""}\n`;
-    writeFileSync(join(dir, "SKILL.md"), md);
+    writeFileSync(join(dir, "SKILL.md"), doc.markdown);
+  }
+
+  getSkill(botId: string, name: string) {
+    if (!this.getBot(botId)) return undefined;
+    const dir = join(this.root, "bots", botId, "skills");
+    if (!existsSync(dir)) return undefined;
+    let want = name.toLowerCase();
+    try {
+      want = skillSlug(name);
+    } catch {
+      /* keep raw */
+    }
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const skillMd = join(dir, entry.name, "SKILL.md");
+      if (!existsSync(skillMd)) continue;
+      const parsed = parseSkillMd(readFileSync(skillMd, "utf8"));
+      const parsedName = parsed.name || entry.name;
+      if (parsedName.toLowerCase() !== want && entry.name !== want) continue;
+      return asSkillDoc({
+        name: parsedName || entry.name,
+        description: parsed.description,
+        body: parsed.body,
+      });
+    }
+    return undefined;
+  }
+
+  removeSkill(botId: string, name: string): void {
+    if (!this.getBot(botId)) throw new Error(`unknown bot: ${botId}`);
+    const dir = join(this.root, "bots", botId, "skills");
+    if (!existsSync(dir)) throw new Error(`unknown skill: ${botId}/${name}`);
+    let want = name.toLowerCase();
+    try {
+      want = skillSlug(name);
+    } catch {
+      /* keep raw */
+    }
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const skillMd = join(dir, entry.name, "SKILL.md");
+      if (!existsSync(skillMd)) continue;
+      const parsed = parseSkillMd(readFileSync(skillMd, "utf8"));
+      const parsedName = parsed.name || entry.name;
+      if (parsedName.toLowerCase() !== want && entry.name !== want) continue;
+      rmSync(join(dir, entry.name), { recursive: true, force: true });
+      return;
+    }
+    throw new Error(`unknown skill: ${botId}/${name}`);
   }
 
   updateChannel(id: string, patch: ChannelPatch): ChannelRecord {
     const channel = this.getChannel(id);
     if (!channel) throw new Error(`unknown channel: ${id}`);
-    const next: ChannelRecord = { ...channel, ...patch };
+    const next: ChannelRecord = applyDefined(channel, patch);
     if (next.memberBotIds) {
       for (const botId of next.memberBotIds) {
         if (!this.getBot(botId)) throw new Error(`unknown bot: ${botId}`);
@@ -196,11 +261,9 @@ export class FsWorkspace implements Workspace {
       if (!entry.isDirectory()) continue;
       const skillMd = join(dir, entry.name, "SKILL.md");
       if (!existsSync(skillMd)) continue;
-      const body = readFileSync(skillMd, "utf8");
-      const name = body.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? entry.name;
-      const description =
-        body.match(/^description:\s*(.+)$/m)?.[1]?.trim() ?? "";
-      items.push({ name, description });
+      const parsed = parseSkillMd(readFileSync(skillMd, "utf8"));
+      const name = parsed.name || entry.name;
+      items.push({ name, description: parsed.description });
     }
     return items;
   }
@@ -212,5 +275,22 @@ export class FsWorkspace implements Workspace {
       .filter((d) => d.isDirectory())
       .map((d) => this.getChannel(d.name))
       .filter((c): c is ChannelRecord => c !== undefined);
+  }
+
+  removeBot(id: string): void {
+    if (!this.getBot(id)) throw new Error(`unknown bot: ${id}`);
+    for (const ch of this.listChannels()) {
+      const members = ch.memberBotIds ?? [];
+      if (!members.includes(id) && ch.leadBotId !== id) continue;
+      const memberBotIds = members.filter((b) => b !== id);
+      const leadBotId = ch.leadBotId === id ? memberBotIds[0] : ch.leadBotId;
+      this.updateChannel(ch.id, { memberBotIds, leadBotId });
+    }
+    rmSync(join(this.root, "bots", id), { recursive: true, force: true });
+  }
+
+  removeChannel(id: string): void {
+    if (!this.getChannel(id)) throw new Error(`unknown channel: ${id}`);
+    rmSync(join(this.root, "channels", id), { recursive: true, force: true });
   }
 }

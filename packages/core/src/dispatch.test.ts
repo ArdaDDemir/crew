@@ -195,6 +195,90 @@ test("channel dm_send opens a DM and wakes the other bot once", async () => {
   ).toContain("hero is in #hero");
 });
 
+test("dm_send to human opens human__bot and does not run a DM turn", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const provider = new ScriptedProvider([
+    [
+      {
+        type: "tool-call",
+        id: "d1",
+        name: "dm_send",
+        arguments: JSON.stringify({ to: "human", text: "need the hero copy" }),
+      },
+      { type: "done" },
+    ],
+    [{ type: "text-delta", text: "I pinged you in DM" }, { type: "done" }],
+  ]);
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@coder go",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.dms).toEqual([]);
+  const dm = store.read({ kind: "dm", id: "human__coder" });
+  expect(dm.some((e) => e.type === "dm.opened")).toBe(true);
+  expect(
+    dm.filter((e) => e.type === "message.posted").map((e) => e.payload.text),
+  ).toContain("need the hero copy");
+});
+
+test("shouldStop drops remaining waves", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "lead", name: "Lead" });
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead", "coder"],
+    permissionMode: "auto-accept",
+  });
+  let waves = 0;
+  const provider: Provider = {
+    async *complete() {
+      waves += 1;
+      yield { type: "text-delta" as const, text: waves === 1 ? "@coder go" : "coder here" };
+      yield { type: "done" as const };
+    },
+  };
+  let seen = 0;
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "kick",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+    shouldStop: () => {
+      seen += 1;
+      return seen > 1;
+    },
+  });
+  expect(result.replies.map((r) => r.botId)).toEqual(["lead"]);
+});
+
 test("lead handoff still runs; a 429 on that wave is returned", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

@@ -9,4 +9,4 @@ This repository is a **local multi-bot runtime** (working name `crew`), not a Di
 - Keep I/O out of `packages/core`.
 - Mention routing (`@slug`) decides which bots wake. See `docs/specs/mentions-and-routing.md`.
 - Architecture changes need a new file in `docs/adr/`.
-- Do not add a GUI, Discord adapter, or extra LLM SDK unless the user asked.
+- Local UI is `apps/web` (`bun run ui`). Do not add Electron, Discord API, MCP, or `crew serve` unless asked.

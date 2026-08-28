@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -261,6 +262,51 @@ test("log hides thinking and tools unless flagged", async () => {
   const tools = await cli(cwd, ["log", "landing", "--verbose"]);
   expect(tools.stdout).toContain("[lead tool] read");
   expect(tools.stdout).not.toContain("secret plan");
+});
+
+test("bot update soul and skill copy round-trip", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await cli(cwd, ["bot", "create", "coder"]);
+  await cli(cwd, ["bot", "create", "lead"]);
+  const soul = join(cwd, "soul.md");
+  writeFileSync(soul, "I write HTML.");
+  const body = join(cwd, "skill.md");
+  writeFileSync(body, "Use sections.");
+  expect((await cli(cwd, ["bot", "update", "coder", "--soul", soul, "--name", "Frontend"])).code).toBe(0);
+  const shown = await cli(cwd, ["bot", "show", "coder"]);
+  expect(shown.stdout).toContain("name: Frontend");
+  expect((await cli(cwd, ["skill", "add", "coder", "--name", "html", "--desc", "HTML", "--body", body])).code).toBe(0);
+  expect((await cli(cwd, ["skill", "copy", "coder", "html", "lead"])).code).toBe(0);
+  const listed = await cli(cwd, ["skill", "list"]);
+  expect(listed.stdout).toContain("coder/html");
+  expect(listed.stdout).toContain("lead/html");
+  const skill = await cli(cwd, ["skill", "show", "lead", "html"]);
+  expect(skill.stdout).toContain("Use sections.");
+  expect(skill.stdout).toContain("name: html");
+  expect((await cli(cwd, ["skill", "rm", "lead", "html"])).code).toBe(0);
+  const after = await cli(cwd, ["skill", "show", "lead", "html"]);
+  expect(after.code).toBe(1);
+});
+
+test("config set fallback and allowed", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  const home = await mkdtemp(join(tmpdir(), "crew-home-"));
+  let stdout = "";
+  const io = {
+    cwd,
+    home,
+    env: {},
+    writeOut: (s: string) => {
+      stdout += s;
+    },
+    writeErr: () => {},
+  };
+  expect(await runCli(["config", "set", "fallback", "x-ai/grok-4"], io, { provider: ack() })).toBe(0);
+  expect(await runCli(["config", "set", "allowed", "x-ai/grok-4,openai/gpt-4o"], io, { provider: ack() })).toBe(0);
+  stdout = "";
+  expect(await runCli(["config", "show"], io, { provider: ack() })).toBe(0);
+  expect(stdout).toContain("x-ai/grok-4");
+  expect(stdout).toContain("openai/gpt-4o");
 });
 
 test("say with no text exits 1", async () => {

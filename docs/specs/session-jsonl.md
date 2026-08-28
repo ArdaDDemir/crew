@@ -16,7 +16,7 @@ One JSON object per line. Never rewrite a line. `v` is required.
 
 `thread.kind` is `channel` | `dm`.
 
-For `dm`, `thread.id` is `botA__botB` with sorted slugs, or `human__bot`.
+For `dm`, `thread.id` is `botA__botB` (sorted) or `human__bot`. Extra human chats with the same person: `human__bot__<slug>` (`ADR-0025`). Old two-part ids stay valid.
 
 ## Event types (v1)
 
@@ -35,7 +35,9 @@ For `dm`, `thread.id` is `botA__botB` with sorted slugs, or `human__bot`.
 | `bot.turn.completed` | engine |
 | `dm.opened` | engine |
 | `error` | engine |
-| `thread.compacted` | engine |
+| `thread.compacted` | engine (`ADR-0019`; prompt window, JSONL stays) |
+| `thread.summary` | engine (`ADR-0028`; LLM compact, JSONL stays) |
+| `thread.titled` | engine (`ADR-0029`; DM title job, JSONL stays) |
 
 `message.posted` from a bot is the **account** after desk work (`ADR-0012`). Tool-round mutter stays in `assistant.delta`, not in `message.posted`.
 
@@ -52,3 +54,27 @@ Unknown `type` values: skip, do not crash. Additive types are a patch/minor; ren
 ```
 
 Author kind: `human` | `bot`. Bot authors include `botId`.
+
+## `thread.compacted` payload
+
+```json
+{ "keptFrom": "evt_...", "dropped": 12 }
+```
+
+Prompt readers start at `keptFrom` (a `message.posted` id) and keep at most 80 messages (`ADR-0019`). The log file is not truncated.
+
+## `thread.summary` payload
+
+```json
+{ "text": "User intent: …", "keptFrom": "evt_...", "model": "z-ai/glm-5.3-flash", "botId": null }
+```
+
+Latest summary is a user note in the prompt, then windowed `message.posted` after `keptFrom` (verbatim). `tool.completed` bodies stay out of `buildHistory` (`ADR-0028`). The log file is not truncated. Empty model text is not stored.
+
+## `thread.titled` payload
+
+```json
+{ "title": "Hello Coder", "description": "First hello in Direct.", "model": "z-ai/glm-5.3-flash", "botId": null }
+```
+
+Append-only. Last event wins. Title ≤ 48 chars. Description is one line. Direct list prefers this over the first-message gist (`ADR-0029`). The log file is not truncated.

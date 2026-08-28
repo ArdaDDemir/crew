@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; live office qualified by ADR-0020
 date: 2026-08-27
 decision-makers: Arda
 ---

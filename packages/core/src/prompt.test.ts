@@ -55,8 +55,12 @@ test("channel prompt names the self, roster, lead, rules, and tools", () => {
   expect(text).toContain("If it didn't work");
   expect(text).toContain("Don't fake success");
   expect(text).toContain("The team only sees your account");
+  expect(text).toContain("Ping teammates only as @id");
   expect(text).toContain("If you need the human, stop");
   expect(text).toContain("Use dm_send");
+  expect(text).toContain("skill_acquire");
+  expect(text).toContain("bot_create");
+  expect(text).toContain('to: "human"');
   expect(text).toContain("Do not @ to CC");
   expect(text).not.toContain('post "done:');
   expect(text).toContain("Write copy and layout.");
@@ -99,6 +103,25 @@ test("history treats other bots as user lines, self as assistant", () => {
   expect(hist[0]).toEqual({ role: "user", content: "human: go" });
   expect(hist[1]).toEqual({ role: "user", content: "@lead: plan: ..." });
   expect(hist[2]).toEqual({ role: "assistant", content: "html ready" });
+});
+
+test("skill body is in the system prompt, not just the catalog line", () => {
+  const workspace = crew();
+  workspace.addSkill("coder", {
+    name: "html",
+    description: "HTML pages",
+    body: "Always use semantic <section> landmarks.",
+  });
+  const text = buildSystemPrompt({
+    workspace,
+    botId: "coder",
+    thread: { kind: "channel", id: "landing" },
+    toolNames: ["read"],
+  });
+  expect(text).toContain("SKILL.md");
+  expect(text).toContain("name: html");
+  expect(text).toContain("HTML pages");
+  expect(text).toContain("Always use semantic <section> landmarks.");
 });
 
 test("DM prompt lists only the two parties", () => {

@@ -139,3 +139,30 @@ test("human-bot DM thread id is human__<bot>", async () => {
   expect(result.threadId).toEqual("human__coder");
   expect(result.woken).toEqual(["coder"]);
 });
+
+test("human can post on a second conversation with the same bot", async () => {
+  const store = new MemoryEventStore();
+  const deps = {
+    store,
+    nextId: seq("evt"),
+    now: () => "2026-08-27T12:00:00.000Z",
+    from: { kind: "human" as const },
+    to: { kind: "bot" as const, botId: "coder" },
+  };
+  await postToDm({ ...deps, text: "job one" });
+  const extra = await postToDm({
+    ...deps,
+    threadId: "human__coder__tabc12",
+    text: "job two",
+  });
+  expect(extra.threadId).toBe("human__coder__tabc12");
+  expect(store.read({ kind: "dm", id: "human__coder" }).some((e) => e.type === "message.posted")).toBe(
+    true,
+  );
+  expect(
+    store.read({ kind: "dm", id: "human__coder__tabc12" }).some((e) => e.type === "message.posted"),
+  ).toBe(true);
+  await expect(
+    postToDm({ ...deps, threadId: "human__lead", text: "nope" }),
+  ).rejects.toThrow("is not human__coder");
+});

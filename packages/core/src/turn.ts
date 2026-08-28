@@ -15,9 +15,11 @@ import type {
   ToolCall,
   ToolSpec,
 } from "./provider";
+import { maybeCompact } from "./compact";
 import { buildHistory, buildSystemPrompt } from "./prompt";
 import { buildCrossThreadNote } from "./orders";
 import type { Participant } from "./router";
+import { ORG_TOOL_NAMES, orgNeedsAsk, orgToolSpecs, runOrgTool } from "./org";
 
 export type Tool = ToolSpec & {
   execute: (
@@ -29,6 +31,7 @@ export type Tool = ToolSpec & {
 export type AskFn = (input: {
   tool: string;
   args: Record<string, unknown>;
+  botId?: string;
 }) => Promise<"allow" | "deny" | "always">;
 
 export type RunBotTurnInput = Clock & {
@@ -39,6 +42,7 @@ export type RunBotTurnInput = Clock & {
   thread: ThreadRef;
   botId: string;
   model: string;
+  fallbackModel?: string;
   workspaceRoot: string;
   ask: AskFn;
   hasReviewer: boolean;
@@ -46,6 +50,7 @@ export type RunBotTurnInput = Clock & {
   onEvent?: (event: ChatEvent) => void;
   onStatus?: (message: string) => void;
   sendDm?: (toBotId: string, text: string) => Promise<string>;
+  shouldStop?: () => boolean;
 };
 
 function append(
@@ -131,7 +136,8 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
 }> {
   const bot = input.workspace.getBot(input.botId);
   if (!bot) throw new Error(`unknown bot: ${input.botId}`);
-  const model = bot.model ?? input.model;
+  let model = bot.model ?? input.model;
+  const fallback = bot.fallbackModel || input.fallbackModel;
 
   append(input, input.thread, "bot.turn.started", { botId: input.botId, model });
   input.onStatus?.(`${input.botId} → ${model}`);
@@ -143,15 +149,28 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
   const { mode } = effectiveMode(modeRaw ?? "auto-accept", input.hasReviewer);
 
   const tools: Tool[] = [...input.tools];
+  if (input.thread.kind === "channel") {
+    for (const spec of orgToolSpecs) {
+      tools.push({
+        ...spec,
+        async execute() {
+          return "use org";
+        },
+      });
+    }
+  }
   if (input.sendDm && input.thread.kind === "channel") {
     tools.push({
       name: "dm_send",
       description:
-        "Private 1:1 note to another bot. The human can read every DM. Not a channel mention.",
+        "Private 1:1 note. `to` is a channel member bot id, or `human` to message the operator. The human can read every DM. Not a channel mention.",
       parameters: {
         type: "object",
         properties: {
-          to: { type: "string", description: "bot id" },
+          to: {
+            type: "string",
+            description: 'bot id, or "human"',
+          },
           text: { type: "string" },
         },
         required: ["to", "text"],
@@ -168,6 +187,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
     parameters,
   }));
 
+  maybeCompact(input.store, input.thread, input);
   const messages: ChatMessage[] = [
     {
       role: "system",
@@ -197,35 +217,44 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
   let accountNudged = false;
 
   for (let round = 0; round < maxRounds; round += 1) {
+    if (input.shouldStop?.()) {
+      error = "stopped";
+      append(input, input.thread, "error", { message: "stopped", botId: input.botId });
+      break;
+    }
     let collected: { text: string; toolCalls: ToolCall[]; error?: string };
     const reasoning: string[] = [];
-    try {
-      collected = await collect(
+    const onDelta = (event: ChatEvent) => {
+      if (event.type === "reasoning-delta") reasoning.push(event.text);
+      input.onEvent?.(event);
+    };
+    const runModel = async (id: string) => {
+      let next = await collect(
         input.provider.complete({
-          model,
+          model: id,
           messages,
           tools: denials >= 2 ? undefined : toolSpecs,
         }),
-        (event) => {
-          if (event.type === "reasoning-delta") reasoning.push(event.text);
-          input.onEvent?.(event);
-        },
+        onDelta,
       );
-      if (
-        collected.error &&
-        /inference processing failed/i.test(collected.error)
-      ) {
-        collected = await collect(
+      if (next.error && /inference processing failed/i.test(next.error)) {
+        next = await collect(
           input.provider.complete({
-            model,
+            model: id,
             messages,
             tools: undefined,
           }),
-          (event) => {
-            if (event.type === "reasoning-delta") reasoning.push(event.text);
-            input.onEvent?.(event);
-          },
+          onDelta,
         );
+      }
+      return next;
+    };
+    try {
+      collected = await runModel(model);
+      if (collected.error && fallback && fallback !== model) {
+        input.onStatus?.(`${input.botId} → fallback ${fallback}`);
+        model = fallback;
+        collected = await runModel(model);
       }
     } catch (err) {
       collected = {
@@ -290,6 +319,34 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
             output = `tool error (dm_send): ${err instanceof Error ? err.message : String(err)}`;
           }
         }
+      } else if (ORG_TOOL_NAMES.has(call.name)) {
+        let allowed = !orgNeedsAsk(mode, call.name);
+        if (!allowed) {
+          const answer = await input.ask({ tool: call.name, args, botId: input.botId });
+          allowed = answer === "allow" || answer === "always";
+          append(input, input.thread, "permission.asked", {
+            botId: input.botId,
+            name: call.name,
+            args,
+          });
+          append(input, input.thread, "permission.resolved", {
+            decision: allowed ? "allow" : "deny",
+          });
+        }
+        if (!allowed) {
+          denials += 1;
+          output = `permission denied for ${call.name}. Do not retry this turn.`;
+        } else {
+          try {
+            output = runOrgTool(call.name, args, {
+              workspace: input.workspace,
+              botId: input.botId,
+              channelId: input.thread.kind === "channel" ? input.thread.id : undefined,
+            });
+          } catch (err) {
+            output = `tool error (${call.name}): ${err instanceof Error ? err.message : String(err)}`;
+          }
+        }
       } else if (!tool) {
         output = `unknown tool: ${call.name}`;
       } else {
@@ -303,7 +360,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         });
         let allowed = verdict === "allow";
         if (verdict === "ask") {
-          const answer = await input.ask({ tool: call.name, args });
+          const answer = await input.ask({ tool: call.name, args, botId: input.botId });
           allowed = answer === "allow" || answer === "always";
           append(input, input.thread, "permission.asked", {
             botId: input.botId,

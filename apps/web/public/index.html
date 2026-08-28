@@ -10,105 +10,370 @@
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
+  <svg class="icons" aria-hidden="true">
+    <symbol id="i-plus" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1-4 8-8 3 3-8 8-4 1zM9 4l3 3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h10M6 5V3.5h4V5M5 5l.5 8h5L11 5M6.5 7.5v4M9.5 7.5v4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l11-5-5 11-1.5-4.5L3 8z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h6l4 4v9H4V2zM10 2v4h4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h5l1.5 2H14v6.5H2V5z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 2.5v1.6M8 11.9v1.6M2.5 8h1.6M11.9 8h1.6M4.1 4.1l1.1 1.1M10.8 10.8l1.1 1.1M11.9 4.1l-1.1 1.1M5.2 10.8l-1.1 1.1"/></symbol>
+    <symbol id="i-download" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v7M5 7.5L8 11l3-3.5M3.5 13h9"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3l-1 10M12.5 3l-1 10M2.5 6h11M2 10h11"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h10M3 8h10M3 11h10"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></symbol>
+  </svg>
+  <div id="nav-scrim" hidden></div>
   <div class="app">
     <aside class="rail">
       <p class="logo">Crew</p>
-      <p class="rail-label">Channels</p>
+      <p class="rail-label">Channels <button type="button" class="add" id="add-channel" title="New channel">+</button></p>
       <nav id="channel-list" class="nav"></nav>
-      <p class="rail-label">People</p>
+      <p class="rail-label">People <button type="button" class="add" id="add-person" title="New person">+</button></p>
       <nav id="people" class="people"></nav>
-      <p class="meta" id="meta"></p>
+      <p class="rail-label">Direct</p>
+      <nav id="direct" class="direct"></nav>
+      <button type="button" class="rail-settings" id="app-settings">Settings</button>
     </aside>
-    <section class="chat">
-      <header class="chat-top">
-        <div>
-          <span class="kicker" id="room-kicker">channel</span>
-          <h1 id="room-title">#landing</h1>
-        </div>
-        <button type="button" class="chip" id="settings-btn">settings</button>
-      </header>
-      <div class="thread" id="thread">
-        <ol class="log" id="log"></ol>
-      </div>
-      <div class="dock">
-        <form class="composer" id="composer">
-          <textarea id="draft" rows="1" placeholder="Message #landing" required></textarea>
-          <div class="dock-row">
-            <select id="mode" title="Permission mode">
-              <option value="supervised">supervised</option>
-              <option value="auto-accept" selected>auto-accept</option>
-              <option value="auto">auto</option>
-              <option value="full-access">full-access</option>
-            </select>
-            <button type="button" class="chip" id="model-btn" title="Model">model</button>
-            <button type="button" class="chip" id="thinking-btn" aria-pressed="false">thinking</button>
-            <button type="button" class="chip" id="tools-btn" aria-pressed="false">tools</button>
-            <button type="submit" id="send">Send</button>
+    <div class="stage">
+      <div id="panes" class="panes split-none">
+        <section class="chat pane" id="pane-0" data-pane="0">
+          <header class="chat-top">
+            <div>
+              <span class="kicker room-kicker">channel</span>
+              <h1 class="room-title">#landing</h1>
+            </div>
+            <div class="pin-strip" hidden></div>
+            <div class="work-chip" id="work-chip" hidden></div>
+            <div class="context-chip" id="context-chip">0/80</div>
+            <div class="chat-actions">
+              <button type="button" class="chip menu-btn" id="menu-btn">Menu</button>
+              <input class="search" id="search" type="search" placeholder="Search" />
+              <button type="button" class="chip files-btn" id="files-btn">files</button>
+              <button type="button" class="chip export-btn" id="export-btn">export</button>
+              <button type="button" class="chip title-regen" id="title-regen" hidden>Regenerate title</button>
+              <button type="button" class="chip settings-btn">room</button>
+            </div>
+          </header>
+          <div class="thread">
+            <ol class="log"></ol>
           </div>
-        </form>
+          <div class="dock">
+            <form class="composer">
+              <div class="palette" id="palette" hidden></div>
+              <ul class="attach-chips" hidden></ul>
+              <textarea class="draft" rows="1" placeholder="Message #landing — @ to ping, / for commands"></textarea>
+              <div class="dock-row">
+                <button type="button" class="chip attach-file" id="attach-file" title="Add a file from disk. Saved under inbox/.">+ File</button>
+                <button type="button" class="chip attach-folder" id="attach-folder" title="Add a folder from disk. Saved under inbox/.">+ Folder</button>
+                <button type="button" class="chip mode-btn" id="mode-btn">auto-accept</button>
+                <button type="button" class="chip jump-latest" id="jump-latest" hidden>↓ new</button>
+                <button type="button" class="danger stop" id="stop" hidden>Stop</button>
+                <button type="submit" class="send">Send</button>
+              </div>
+              <input type="file" class="draft-file-pick" hidden multiple />
+              <input type="file" class="draft-folder-pick" hidden webkitdirectory />
+            </form>
+          </div>
+        </section>
+        <div id="split-handle" class="split-handle" hidden></div>
+        <section class="chat pane" id="pane-1" data-pane="1" hidden>
+          <header class="chat-top">
+            <div>
+              <span class="kicker room-kicker">channel</span>
+              <h1 class="room-title">#landing</h1>
+            </div>
+            <div class="pin-strip" hidden></div>
+            <div class="work-chip" hidden></div>
+            <div class="context-chip">0/80</div>
+            <div class="chat-actions">
+              <button type="button" class="chip menu-btn">Menu</button>
+              <input class="search" type="search" placeholder="Search" />
+              <button type="button" class="chip files-btn">files</button>
+              <button type="button" class="chip export-btn">export</button>
+              <button type="button" class="chip title-regen" hidden>Regenerate title</button>
+              <button type="button" class="chip settings-btn">room</button>
+              <button type="button" class="chip pane-close" title="Close pane">Close</button>
+            </div>
+          </header>
+          <div class="thread">
+            <ol class="log"></ol>
+          </div>
+          <div class="dock">
+            <form class="composer">
+              <div class="palette" hidden></div>
+              <ul class="attach-chips" hidden></ul>
+              <textarea class="draft" rows="1" placeholder="Message #landing — @ to ping, / for commands"></textarea>
+              <div class="dock-row">
+                <button type="button" class="chip attach-file" title="Add a file from disk. Saved under inbox/.">+ File</button>
+                <button type="button" class="chip attach-folder" title="Add a folder from disk. Saved under inbox/.">+ Folder</button>
+                <button type="button" class="chip mode-btn">auto-accept</button>
+                <button type="button" class="chip jump-latest" hidden>↓ new</button>
+                <button type="button" class="danger stop" hidden>Stop</button>
+                <button type="submit" class="send">Send</button>
+              </div>
+              <input type="file" class="draft-file-pick" hidden multiple />
+              <input type="file" class="draft-folder-pick" hidden webkitdirectory />
+            </form>
+          </div>
+        </section>
+        <div id="drop-right" class="drop-ghost" hidden>Open to the right</div>
+        <div id="drop-below" class="drop-ghost" hidden>Open below</div>
       </div>
-    </section>
+      <aside class="desk" id="desk">
+        <p class="rail-label" id="desk-label">Members</p>
+        <div id="here-list" class="here-list"></div>
+      </aside>
+    </div>
   </div>
-  <dialog id="channel-modal" class="modal wide">
-    <form id="channel-form">
-      <p class="modal-title">Channel</p>
-      <label>Icon <input id="ch-icon" maxlength="4" /></label>
-      <label>Name <input id="ch-title" /></label>
-      <label>Lead
-        <select id="ch-lead"></select>
-      </label>
-      <p class="rail-label">Members</p>
-      <div id="ch-members" class="checks"></div>
-      <label>What this room is about
-        <textarea id="ch-context" rows="5"></textarea>
-      </label>
-      <label>Rules
-        <textarea id="ch-rules" rows="4"></textarea>
-      </label>
-      <label>Folders (one path per line)
-        <textarea id="ch-folders" rows="3"></textarea>
-      </label>
+  <div id="jump" class="jump" hidden>
+    <input id="jump-q" type="search" placeholder="Jump to channel, person, or chat" />
+    <ul id="jump-list"></ul>
+  </div>
+  <ul id="ctx-menu" class="ctx-menu" hidden></ul>
+  <div id="toast" class="toast" hidden></div>
+  <dialog id="slash-help" class="modal">
+    <p class="modal-title">Commands</p>
+    <ul id="slash-help-list" class="slash-help-list"></ul>
+    <div class="modal-actions">
+      <button type="button" class="ghost" id="slash-help-close" data-close>Close</button>
+    </div>
+  </dialog>
+  <dialog id="channel-modal" class="modal sheet">
+    <form id="channel-form" autocomplete="off">
+      <header class="sheet-top">
+        <p class="modal-title">Channel <button type="button" class="help" data-tip="A room. Members, lead, CONTEXT.md and RULES.md live here. Deleting the room does not erase the JSONL log.">?</button></p>
+      </header>
+      <section class="field">
+        <p class="field-label">Id <button type="button" class="help" data-tip="Permanent slug (#landing). Mentions and logs use this. Assigned at create. It never changes.">?</button></p>
+        <input id="ch-id" readonly spellcheck="false" tabindex="-1" />
+      </section>
+      <div class="ident">
+        <span class="ident-face" id="ch-face">#</span>
+        <div class="ident-fields ident-stack">
+          <p class="field-label">Icon <button type="button" class="help" data-tip="Mark in the rail so rooms are not all #. Auto uses a hashed face from the id.">?</button></p>
+          <div class="icon-dd" data-icon="ch-icon" data-face="ch-face">
+            <button type="button" class="icon-dd-btn" id="ch-icon-btn">Auto</button>
+            <div class="icon-dd-menu" id="ch-icon-menu" hidden></div>
+            <input type="hidden" id="ch-icon" />
+          </div>
+          <p class="field-label">Name <button type="button" class="help" data-tip="Display title. The slug (#landing) never changes.">?</button></p>
+          <input id="ch-title" placeholder="Name" />
+        </div>
+      </div>
+      <section class="field">
+        <p class="field-label">People <button type="button" class="help" data-tip="Who is in this room. Toggle a row to add or drop them. Lead wakes when you post with no @.">?</button></p>
+        <div id="ch-roster" class="roster"></div>
+      </section>
+      <section class="field">
+        <p class="field-label">How they work <button type="button" class="help" data-tip="supervised asks before writes. auto-accept writes in the project. auto needs a reviewer. full-access asks less (closest to always-allow).">?</button></p>
+        <select id="ch-mode">
+          <option value="supervised">supervised — ask before writes</option>
+          <option value="auto-accept">auto-accept — write in the project</option>
+          <option value="auto">auto — reviewer, else ask</option>
+          <option value="full-access">full-access — fewer asks</option>
+        </select>
+      </section>
+      <section class="field">
+        <p class="field-label">About <button type="button" class="help" data-tip="CONTEXT.md. Loaded every turn in this room: the job, the product, the constraints. Not personality.">?</button></p>
+        <textarea id="ch-context" rows="4" placeholder="What this room is for"></textarea>
+      </section>
+      <section class="field">
+        <p class="field-label">Rules <button type="button" class="help" data-tip="RULES.md. How they work in this room. Standing orders for the space, not a person's Soul.">?</button></p>
+        <textarea id="ch-rules" rows="5" placeholder="How people work here"></textarea>
+      </section>
+      <section class="field">
+        <p class="field-label">Files <button type="button" class="help" data-tip="Paths this room cares about. Add a file, a folder, or type a path. Hint for tools; disk is still the project.">?</button></p>
+        <ul id="ch-paths" class="path-list"></ul>
+        <div class="path-add">
+          <button type="button" class="ghost" id="ch-add-file">+ File</button>
+          <button type="button" class="ghost" id="ch-add-folder">+ Folder</button>
+          <input id="ch-path-extra" placeholder="or type a path" spellcheck="false" />
+          <button type="button" class="add" id="ch-path-plus" title="Add path">+</button>
+        </div>
+        <input type="file" id="ch-file-pick" hidden multiple />
+        <input type="file" id="ch-folder-pick" hidden webkitdirectory />
+      </section>
       <div class="modal-actions">
-        <button type="button" class="ghost" id="ch-cancel">Cancel</button>
-        <button type="submit" id="ch-save">Save</button>
+        <button type="button" class="ghost" id="ch-cancel" data-close>Cancel</button>
+        <button type="button" class="danger" id="ch-delete">Delete</button>
+        <button type="submit" class="primary" id="ch-save">Save</button>
       </div>
     </form>
   </dialog>
-  <dialog id="bot-modal" class="modal wide">
-    <form id="bot-form">
-      <p class="modal-title">Person</p>
-      <label>Icon <input id="bot-icon" maxlength="4" /></label>
-      <label>Name <input id="bot-name" /></label>
-      <label>Soul (voice / prompt)
-        <textarea id="bot-soul" rows="6"></textarea>
-      </label>
-      <label>Standing orders
-        <textarea id="bot-orders" rows="4"></textarea>
-      </label>
-      <p class="rail-label">Skills</p>
-      <ul id="bot-skills" class="skill-list"></ul>
-      <label>New skill name <input id="skill-name" /></label>
-      <label>Description <input id="skill-desc" /></label>
-      <label>Body
-        <textarea id="skill-body" rows="3"></textarea>
-      </label>
+  <dialog id="bot-modal" class="modal sheet">
+    <form id="bot-form" autocomplete="off">
+      <header class="sheet-top">
+        <p class="modal-title">Person <button type="button" class="help" data-tip="A coworker. @id is permanent. Soul is voice; skills are procedures. Delete removes the person, not their chat log.">?</button></p>
+      </header>
+      <section class="field">
+        <p class="field-label">Id <button type="button" class="help" data-tip="Permanent slug (@coder). Mentions and logs use this. Assigned at create. It never changes.">?</button></p>
+        <input id="bot-id" readonly spellcheck="false" tabindex="-1" />
+      </section>
+      <div class="ident">
+        <span class="ident-face" id="bot-face">?</span>
+        <div class="ident-fields ident-stack">
+          <p class="field-label">Icon <button type="button" class="help" data-tip="Face in People and in chat. Auto derives a glyph from @id.">?</button></p>
+          <div class="icon-dd" data-icon="bot-icon" data-face="bot-face">
+            <button type="button" class="icon-dd-btn" id="bot-icon-btn">Auto</button>
+            <div class="icon-dd-menu" id="bot-icon-menu" hidden></div>
+            <input type="hidden" id="bot-icon" />
+          </div>
+          <p class="field-label">Name <button type="button" class="help" data-tip="Display name. Mentions always use @id (the slug in the header), not this name.">?</button></p>
+          <input id="bot-name" placeholder="Name" />
+        </div>
+      </div>
+      <section class="field">
+        <p class="field-label">Rooms <button type="button" class="help" data-tip="On create you pick rooms. After that, membership is edited on the channel, not here.">?</button></p>
+        <div id="bot-rooms" class="roster"></div>
+        <p class="field-hint" id="bot-rooms-hint" hidden>Membership is edited on the channel.</p>
+      </section>
+      <div class="field-row">
+        <section class="field">
+          <p class="field-label">Model <button type="button" class="help" data-tip="This person's model. Empty = workspace default from Settings.">?</button></p>
+          <select id="bot-model"></select>
+        </section>
+        <section class="field">
+          <p class="field-label">Fallback <button type="button" class="help" data-tip="Tried if the primary model errors (429, crash). Empty = workspace fallback.">?</button></p>
+          <select id="bot-fallback"></select>
+        </section>
+      </div>
+      <section class="field">
+        <p class="field-label">Soul <button type="button" class="help" data-tip="Personality: voice, taste, how they show up. Loaded every turn. Not a how-to — that is a skill.">?</button></p>
+        <textarea id="bot-soul" rows="6" placeholder="Who they are when they speak"></textarea>
+      </section>
+      <section class="field">
+        <p class="field-label">Standing orders <button type="button" class="help" data-tip="Always-do list (AGENTS.md). Short durable rules, like never invent specs. Not the room's Rules.">?</button></p>
+        <textarea id="bot-orders" rows="4" placeholder="Always do this"></textarea>
+      </section>
+      <section class="field skill-block">
+        <p class="field-label">Skills <button type="button" class="help" data-tip="SKILL.md procedures. Click a card to edit in its own sheet. Name is a slug. Description = what and when. Body = how.">?</button></p>
+        <ul id="bot-skills" class="skill-list"></ul>
+        <button type="button" class="skill-open" id="skill-open">+ Add skill</button>
+        <p class="field-hint" id="skill-open-hint" hidden>Save the person first, then add skills.</p>
+      </section>
       <div class="modal-actions">
-        <button type="button" class="ghost" id="bot-cancel">Cancel</button>
-        <button type="button" class="ghost" id="skill-add">Add skill</button>
-        <button type="submit" id="bot-save">Save</button>
+        <button type="button" class="ghost" id="bot-cancel" data-close>Cancel</button>
+        <button type="button" class="danger" id="bot-delete">Delete</button>
+        <button type="submit" class="primary" id="bot-save">Save</button>
       </div>
     </form>
   </dialog>
-  <dialog id="model-modal" class="modal">
-    <form method="dialog" id="model-form">
-      <p class="modal-title">Model</p>
-      <div id="model-list" class="model-list"></div>
-      <input id="model-custom" type="text" placeholder="openrouter model id" />
+  <dialog id="skill-modal" class="modal sheet">
+    <form id="skill-form" autocomplete="off">
+      <header class="sheet-top">
+        <p class="modal-title">Skill <button type="button" class="help" data-tip="A SKILL.md. Name is the folder slug. Description is when to use it. Body is the how-to. The prompt gets the full file.">?</button></p>
+        <p class="sheet-sub" id="skill-bot-label"></p>
+      </header>
+      <section class="field">
+        <p class="field-label">Name <button type="button" class="help" data-tip="Slug only: html, landing-copy. Lowercase, digits, hyphens. Becomes the folder name.">?</button></p>
+        <input id="skill-name" placeholder="html" spellcheck="false" />
+      </section>
+      <section class="field">
+        <p class="field-label">Description <button type="button" class="help" data-tip="One line: what it does and when to use it. Agents read this to decide if the skill applies.">?</button></p>
+        <input id="skill-desc" placeholder="What it does and when to use it" />
+      </section>
+      <section class="field">
+        <p class="field-label">Body <button type="button" class="help" data-tip="Markdown instructions. Steps, examples, edge cases. This is the SKILL.md body after the frontmatter.">?</button></p>
+        <textarea id="skill-body" class="mono skill-body" rows="14" placeholder="## Steps&#10;1. …"></textarea>
+      </section>
+      <section class="field">
+        <p class="field-label">SKILL.md <button type="button" class="help" data-tip="The file that will be written. Frontmatter plus body. Agents get this whole file in the prompt.">?</button></p>
+        <pre id="skill-preview" class="skill-md"></pre>
+      </section>
       <div class="modal-actions">
-        <button value="cancel" class="ghost">Cancel</button>
-        <button value="ok" id="model-save">Use</button>
+        <button type="button" class="ghost" id="skill-cancel" data-close>Cancel</button>
+        <button type="button" class="danger" id="skill-delete" hidden>Delete</button>
+        <button type="submit" class="primary" id="skill-save">Add skill</button>
       </div>
     </form>
+  </dialog>
+  <dialog id="mode-modal" class="modal">
+    <p class="modal-title">How they work <button type="button" class="help" data-tip="Gates file writes and shell. supervised asks first. auto-accept writes in the project. auto needs a reviewer (else asks). full-access asks less. Never writes .env or ssh keys.">?</button></p>
+    <div class="model-list" id="mode-list">
+      <button type="button" data-mode="supervised">supervised — ask before writes</button>
+      <button type="button" data-mode="auto-accept">auto-accept — write in the project</button>
+      <button type="button" data-mode="auto">auto — reviewer (falls back to ask)</button>
+      <button type="button" data-mode="full-access">full-access — fewer asks</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="ghost" id="mode-close" data-close>Close</button>
+    </div>
+  </dialog>
+  <dialog id="app-modal" class="modal sheet">
+    <form id="app-form" autocomplete="off">
+      <header class="sheet-top">
+        <p class="modal-title">Settings <button type="button" class="help" data-tip="Workspace models and key. People only pick from Allowed. Always allow is per-project, not per person.">?</button></p>
+      </header>
+      <section class="field">
+        <p class="field-label">OpenRouter key <button type="button" class="help" data-tip="API key for models. Saved on this machine. The UI never talks to OpenRouter directly — the engine does.">?</button></p>
+        <div class="key-row">
+          <input id="app-key" type="password" placeholder="sk-or-…" />
+          <button type="button" class="primary" id="app-key-save">Save key</button>
+        </div>
+        <p class="field-hint" id="app-key-meta"></p>
+      </section>
+      <div class="field-row">
+        <section class="field">
+          <p class="field-label">Default model <button type="button" class="help" data-tip="Used when a person has no model of their own.">?</button></p>
+          <select id="app-default-model"></select>
+        </section>
+        <section class="field">
+          <p class="field-label">Default fallback <button type="button" class="help" data-tip="Workspace backup if the default model errors. People can override with their own fallback.">?</button></p>
+          <select id="app-fallback-model"></select>
+        </section>
+      </div>
+      <section class="field">
+        <p class="field-label">Allowed for people <button type="button" class="help" data-tip="Whitelist. Person Model/Fallback dropdowns only offer these. Approve from the catalog below.">?</button></p>
+        <div id="allowed-chips" class="allowed-chips"></div>
+      </section>
+      <section class="field" id="jobs-section">
+        <p class="field-label">Jobs <button type="button" class="help" data-tip="Hidden workers, not People. They title chats, compact threads, and caption images. Empty vision or read skips that job. Empty title or compact uses the workspace default.">?</button></p>
+        <div class="job-row">
+          <span class="job-name">Title <button type="button" class="help" data-tip="Names a Direct chat after the first human message. Not a channel wake. Appends thread.titled.">?</button></span>
+          <select id="job-title-model" aria-label="Title model"></select>
+          <select id="job-title-bot" aria-label="Title person"></select>
+        </div>
+        <div class="job-row">
+          <span class="job-name">Compact <button type="button" class="help" data-tip="Summarizes a long thread. JSONL stays; the next prompt gets the summary.">?</button></span>
+          <select id="job-compact-model" aria-label="Compact model"></select>
+          <select id="job-compact-bot" aria-label="Compact person"></select>
+        </div>
+        <div class="job-row">
+          <span class="job-name">Vision <button type="button" class="help" data-tip="Captions attached images in English. Off skips the job. Path-only if the caption fails.">?</button></span>
+          <select id="job-vision-model" aria-label="Vision model"></select>
+          <select id="job-vision-bot" aria-label="Vision person"></select>
+        </div>
+        <div class="job-row">
+          <span class="job-name">Read <button type="button" class="help" data-tip="Optional gist of a text file. Off skips the job in this version.">?</button></span>
+          <select id="job-read-model" aria-label="Read model"></select>
+          <select id="job-read-bot" aria-label="Read person"></select>
+        </div>
+      </section>
+      <section class="field">
+        <p class="field-label">Always allow <button type="button" class="help" data-tip="Tool fingerprints you accepted with Always (same path/command). Stored in .crew/permissions.json. Clear all here.">?</button></p>
+        <ul id="always-list" class="skill-list"></ul>
+        <button type="button" class="danger" id="always-clear">Clear always rules</button>
+      </section>
+      <section class="field">
+        <p class="field-label">Add from OpenRouter <button type="button" class="help" data-tip="Type at least two characters to search. Click a row to whitelist it. Needs a saved key.">?</button></p>
+        <input id="model-search" placeholder="Search models…" />
+        <div id="catalog" class="catalog"></div>
+      </section>
+      <div class="modal-actions">
+        <button type="button" class="ghost" id="app-close" data-close>Close</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="files-modal" class="modal">
+    <p class="modal-title">Files in this thread <button type="button" class="help" data-tip="Paths this thread's tools touched (read, patch, shell). Read-only. Logs are not rewritten.">?</button></p>
+    <ul id="files-list" class="files-list"></ul>
+    <div class="modal-actions">
+      <button type="button" class="ghost" id="files-close" data-close>Close</button>
+    </div>
   </dialog>
   <script src="/app.js" type="module"></script>
 </body>

@@ -17,7 +17,10 @@ function isHumanPost(event: CrewEvent): boolean {
 }
 
 function dmInvolvesBot(store: EventStore, thread: ThreadRef, botId: string): boolean {
-  if (thread.id === `human__${botId}`) return true;
+  if (thread.kind !== "dm") return false;
+  if (thread.id === `human__${botId}` || thread.id.startsWith(`human__${botId}__`)) {
+    return true;
+  }
   const opened = store.read(thread).find((e) => e.type === "dm.opened");
   const raw = opened?.payload.participants;
   if (!Array.isArray(raw)) {

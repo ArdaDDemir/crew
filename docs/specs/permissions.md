@@ -25,11 +25,11 @@ Path jail:
 Tool executor does not read stdin.
 
 1. Policy says ask → emit `permission.asked`
-2. Driving adapter (CLI today) collects yes/no/always-this-session
+2. Driving adapter (CLI or web) collects yes / no / always
 3. `permission.resolved`
 4. Continue or skip with a tool error result to the model
 
-`always-this-session` remembers (thread, tool, normalized args fingerprint). It does not switch the thread to `full-access`.
+Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). Fingerprint subset: `path`, `command`, `name`, `id`. A matching later ask is allowed with no prompt and no `type:"ask"` stream row. Settings → Always allow lists and clears them. It does not switch the channel to `full-access`.
 
 ## Auto reviewer
 

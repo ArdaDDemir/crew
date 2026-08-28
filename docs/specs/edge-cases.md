@@ -25,7 +25,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 ## 1. Channel vs DM vs files
 
-1. Human DM “never edit files”, then channel “edit the title”. **HIT:** channel wins because DM is invisible. Should: detect conflict, follow latest human, say so.
+1. Human DM “never edit files”, then channel “edit the title”. **HIT** (old). **Fixed (`ADR-0016`):** latest human across channel + human↔bot DM wins; the turn gets a pointer, not a dump.
 2. Channel “edit the title”, then DM “revert that”. DM turn does not see the channel patch unless it re-reads the file. Should: always read disk first.
 3. Human DMs coder “use red”; channel says `@designer` “use blue”. Designer never hears the DM. Coder may still paint red. Split-brain UI.
 4. Two human DMs to two bots with opposite file orders in one minute. Both wake, both patch, last write wins (lock only serializes, it does not merge).
@@ -54,7 +54,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 22. Designer and coder `apply_patch` the same `index.html` in one wave. Lock serializes; second patch can fail `old_text not found` or overwrite the first.
 23. `old_text` matches twice → tool error. Model may invent a second patch or claim success.
-24. Empty `old_text` on existing file **overwrites the whole file**. Easy to clobber a teammate’s work.
+24. Empty `old_text` on existing file. **Fixed:** does not overwrite an existing file.
 25. Coder writes via `shell` (`echo > file`) instead of `apply_patch`. Lock does not cover that path the same way (different command, same file).
 26. `shell` timeout 30s; hung `npm`. Turn looks stuck; other parallel bot continues.
 27. `list_dir` without path lists workspace root including `.crew`? Path is cwd. `.crew` is in cwd. Secrets not in `.crew/config` project file by default (key is `~/.crew`) but project config could be.
@@ -68,7 +68,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 32. Other bots’ lines are `user` role labeled `@id`. Weak models still answer as the lead. (Mitigated, not gone.)
 33. Human writes Turkish, system says English. Live **HIT:** accounts were English. Long Turkish history in JSONL may pull later turns back to Turkish.
 34. Soul says “be terse”, channel context says “write a novel”. Soul vs rules vs human: human should win; today all three are concatenated.
-35. Skill catalog only (name + description). Body of `SKILL.md` is not injected unless we add a loader. Bot may hallucinate the skill.
+35. Skill catalog only (name + description). **Fixed (`ADR-0021`):** full `SKILL.md` is in the prompt (capped).
 36. Standing orders empty `AGENTS.md` on disk. Fine, but looks like a missing file.
 
 ## 5. Provider, money, length
@@ -76,7 +76,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 37. Two parallel OpenRouter calls. One 429, one OK. Rate gap waits the next **wave**, not the sibling. Sibling already in flight.
 38. `Inference processing failed` retries once **without tools**. Account may say they patched when they did not (no second tool round).
 39. 45s fetch timeout. User sees hang, then timeout error. Parallel peer may still finish.
-40. Context: `buildHistory` is **all** `message.posted` in the thread. Landing log is already long. Slow, expensive, models “remember” cancelled jobs.
+40. Context: `buildHistory` used to send **all** `message.posted`. **Fixed (`ADR-0019`, `ADR-0028`):** last 80 + `thread.compacted`; trim posted-only; optional `thread.summary`.
 41. Reasoning stored every turn. `--thinking` dump is huge; default `say` hides it. Fine.
 42. `maxRounds` 4. Tool, tool, tool, then forced stop with empty account if they never speak.
 43. Empty model text → CLI `ERROR: empty reply`. Fine.
@@ -89,14 +89,14 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 47. `say` unknown channel → throw. `dms show` missing thread → `(empty)`. Inconsistent.
 48. `open` REPL `/dm` vs `crew dm` — two paths, same engine. Fine if both use `dispatchDm`.
 49. `--thinking` on `say` mixes desk into the standup again (user opted in).
-50. No `crew stop`. A runaway was kill-process. After 0013/0014 this is rare; still no cancel.
+50. No `crew stop`. **Fixed:** `/stop` in `crew open` and UI Stop. `shouldStop` drops remaining waves.
 
 ## 7. State, membership, time
 
 51. Bot removed from channel but old log still `@`s them. They are not woken (not a member). Orphan @.
 52. Two channels, one cwd. Both bots can write `index.html`. No per-channel worktree.
 53. `researcher` exists but is not in `#landing`. `@researcher` in landing is ignored.
-54. Compact event type exists in the spec; nothing writes `thread.compacted`. History never shrinks.
+54. Compact: **fixed** (`ADR-0019`, `ADR-0028`). Over 80 `message.posted`, append `thread.compacted`; LLM compact appends `thread.summary`; JSONL is not rewritten.
 55. Clock is ISO now. Replaying logs does not re-run tools. Fine. Re-`say` the same text **does** re-run tools (not idempotent).
 56. Permission mode `auto` without reviewer → supervised, warn on stderr. Easy to miss.
 57. DM permission is hardcoded `auto-accept` in the turn (not stored on the DM). Cannot `crew mode` a DM.
@@ -109,4 +109,4 @@ Do now if we touch memory: **1, 2, 6, 7, 11** (conflict + unread DM pointer + ha
 
 `ADR-0016` covers 1, 2, 7. Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11 still open (half-done handoff is the stop rule).
 
-Later: history cap/compact (40, 54), file-ownership lock beyond `apply_patch` (22–25), cancel (50).
+`ADR-0019` covers 40 and 54 (prompt window + `thread.compacted`). `ADR-0028` adds trim + `thread.summary`. Later: file-ownership lock beyond `apply_patch` (22–25). Cancel is `/stop` in `crew open` and the UI Stop button.

@@ -16,9 +16,9 @@ Breaking: `feat!:` or a `BREAKING CHANGE:` footer. In 0.x that is a **minor** bu
 
 ## Architecture decisions
 
-Irreversible choices go in `docs/adr/` as the next `NNNN-kebab.md`. Accepted ADRs are not rewritten; supersede them.
+Irreversible choices go in `docs/adr/` as the next `NNNN-kebab.md` (index: `docs/adr/README.md`, currently 0029). Accepted ADRs are not rewritten; supersede them.
 
-User-visible change: a bullet under `CHANGELOG.md` `[Unreleased]`.
+User-visible change: a bullet under `CHANGELOG.md` `[Unreleased]`. Current version is root `package.json` (**0.3.0**). Release ritual: `docs/versioning.md`.
 
 ## Tests
 
@@ -26,4 +26,15 @@ TDD: failing test first, then minimal production code. Domain tests do not call 
 
 ```
 bun test
+bun run ui
 ```
+
+Local UI: `http://127.0.0.1:7734`. Core tests never call OpenRouter.
+
+With `bun run ui` already up:
+
+```
+bun run tour/visual.ts
+```
+
+Chrome headless checks jump, context menu, Settings Jobs, and slash palette.

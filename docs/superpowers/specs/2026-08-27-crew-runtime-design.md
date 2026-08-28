@@ -1,14 +1,14 @@
 # Crew runtime — design
 
 Date: 2026-08-27  
-Status: accepted for v1 implementation  
+Status: accepted. Shipped: local office UI (`bun run ui`, `ADR-0017`–`0029`); CLI is tests/scripts. Electron / Discord API / `crew serve` still out. Current law: `AGENTS.md` + `docs/adr/`.  
 CLI working name: `crew` (repo: `aibuildingapp`)
 
 ## What this is
 
 A **local Grok Bot**. You create bots (lead, designer, coder, tester). You create a **channel**, pick who is in it, give that channel **rules** and **context**. A lead `@designer şunu yap @coder şunu yap` der. Etiketlenmeyenler bekler. Botlar kanalda konuşur ve birbirlerine **DM** atabilir.
 
-First surface: **CLI**. Later: a GUI on the same engine (T3-like composer + permission modes). Not a wrapper around Claude/Codex. We own the loop. OpenRouter (or any OpenAI-compatible `base_url`) is the brain.
+Surface: local web UI (`bun run ui`) on the same engine; CLI is tests/scripts (`docs/todos/cli-is-script.md`). Not a wrapper around Claude/Codex. We own the loop. OpenRouter (or any OpenAI-compatible `base_url`) is the brain.
 
 Coding is not a separate app. A `coder` bot has file/shell hands. T3’s three-pane UI and PR buttons are later.
 
@@ -37,6 +37,7 @@ Human opens channel `landing` with members `lead, designer, coder, tester`.
 
 ```
 apps/cli                 driving adapter (argv + REPL)
+apps/web                 driving adapter (Bun.serve, 127.0.0.1:7734)
         │ Command / Event
 packages/core            bots, channels, mentions, turns, permissions
         │ ports
@@ -45,7 +46,7 @@ adapters: provider-openai | jsonl-store | native-tools
 
 `core` has no `fetch`, no `console` as product output, no Discord. Tests construct core with a `ScriptedProvider` and an in-memory store.
 
-v1 transport is in-process. HTTP is not required until a GUI needs a process boundary.
+CLI talks in-process. The local UI is HTTP on localhost (`ADR-0017`). Core still has no HTTP.
 
 ### Components
 
@@ -87,15 +88,16 @@ packages/core          domain + ports
 packages/provider-openai
 packages/tools-native
 packages/store-jsonl
-apps/cli
+apps/web               bun run ui
+apps/cli               tests/scripts
 docs/adr docs/specs
 ```
 
 ## v1 / not v1
 
-**v1:** bot create, channel create (members + lead + rules/context), `say` / `open` / `log` / `config`, `@` routing, parallel wakes, one turn per bot per `say`, human-tagged stop, bot-bot and human-bot DM, four permission modes (default auto-accept including workspace shell), OpenRouter, read/apply_patch/list_dir/shell, JSONL, ADRs, 0.1.0.
+**v1 (0.3.0):** local web UI `bun run ui` on the hexagonal core. CLI `crew` is tests/scripts, not a TUI. Bots/channels/DMs, `@` routing, one turn per bot per `say`, human-tagged stop, four permission modes, OpenRouter, tools (`read`, `apply_patch`, `list_dir`, `shell`, `dm_send`, org tools), SKILL.md, JSONL, Always persist, compact layers, Jobs, ADRs.
 
-**Not v1:** second GUI, real Discord, fullscreen TUI, MCP, git auto-PR, cloud computer, routines/cron, `@everyone` abuse controls beyond “wake all bots”.
+**Not v1:** Electron, real Discord API, fullscreen TUI, MCP, git auto-PR, cloud computer, `crew serve` / multi-human remote, routines/cron.
 
 ## Open names
 

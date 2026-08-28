@@ -5,7 +5,7 @@ alwaysApply: true
 
 Read and obey `AGENTS.md` at the repo root.
 
-This is not a Discord bot and not a Claude/Codex wrapper. It is a local Grok-Bot-style runtime: bots, channels, `@` mentions (wake), DMs, CLI first.
+This is not a Discord bot and not a Claude/Codex wrapper. It is a local Grok-Bot-style runtime: bots, channels, `@` mentions (wake), DMs, CLI + `bun run ui`.
 
 - Bun + TypeScript. `bun test`.
 - TDD: failing test first.

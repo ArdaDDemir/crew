@@ -13,6 +13,7 @@ export type DispatchBase = Clock & {
   provider: Provider;
   tools: Tool[];
   model: string;
+  fallbackModel?: string;
   workspaceRoot: string;
   ask: AskFn;
   hasReviewer: boolean;
@@ -21,6 +22,7 @@ export type DispatchBase = Clock & {
   rateLimitGapMs?: number;
   onStatus?: (message: string) => void;
   onEvent?: (botId: string, event: ChatEvent) => void;
+  shouldStop?: () => boolean;
 };
 
 function isRateLimit(error?: string): boolean {
@@ -62,6 +64,7 @@ export async function dispatchChannelPost(
   let safety = 0;
   let previousWaveHadRateLimit = false;
   while (queue.length > 0 && safety < 8) {
+    if (input.shouldStop?.()) break;
     safety += 1;
     const wave: string[] = [];
     for (const botId of queue.splice(0, queue.length)) {
@@ -84,25 +87,37 @@ export async function dispatchChannelPost(
           onEvent: input.onEvent
             ? (event) => input.onEvent!(botId, event)
             : undefined,
-          sendDm: async (toBotId, text) => {
-            const ch = input.workspace.getChannel(input.channelId);
-            if (!ch?.memberBotIds.includes(toBotId)) {
-              return `unknown or non-member bot: ${toBotId}`;
-            }
-            if (toBotId === botId) return "cannot DM yourself";
+          sendDm: async (toId, text) => {
             if (!text.trim()) return "text is required";
+            const toHuman = toId === "human" || toId === "you";
+            if (toHuman) {
+              const dm = await postToDm({
+                store: input.store,
+                nextId: input.nextId,
+                now: input.now,
+                from: { kind: "bot", botId },
+                to: { kind: "human" },
+                text,
+              });
+              return `dm sent to human (${dm.threadId})`;
+            }
+            const ch = input.workspace.getChannel(input.channelId);
+            if (!ch?.memberBotIds.includes(toId)) {
+              return `unknown or non-member bot: ${toId}`;
+            }
+            if (toId === botId) return "cannot DM yourself";
             const dm = await postToDm({
               store: input.store,
               nextId: input.nextId,
               now: input.now,
               from: { kind: "bot", botId },
-              to: { kind: "bot", botId: toBotId },
+              to: { kind: "bot", botId: toId },
               text,
             });
             for (const wokenId of dm.woken) {
               pendingDms.push({ threadId: dm.threadId, botId: wokenId });
             }
-            return `dm sent to @${toBotId} (${dm.threadId})`;
+            return `dm sent to @${toId} (${dm.threadId})`;
           },
         });
         return { botId, turn };
@@ -165,7 +180,12 @@ export async function dispatchChannelPost(
 }
 
 export async function dispatchDm(
-  input: DispatchBase & { from: Participant; to: Participant; text: string },
+  input: DispatchBase & {
+    from: Participant;
+    to: Participant;
+    text: string;
+    threadId?: string;
+  },
 ): Promise<{
   threadId: string;
   woken: string[];
@@ -178,6 +198,7 @@ export async function dispatchDm(
     from: input.from,
     to: input.to,
     text: input.text,
+    threadId: input.threadId,
   });
   const replies: { botId: string; text: string; error?: string }[] = [];
   for (const botId of posted.woken) {
@@ -199,6 +220,7 @@ export async function dispatchDm(
         from: { kind: "bot", botId },
         to: input.from.kind === "bot" && input.from.botId === botId ? input.to : input.from,
         text: turn.text,
+        threadId: posted.threadId,
       });
     }
   }

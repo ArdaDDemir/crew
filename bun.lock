@@ -19,6 +19,17 @@
         "@crew/workspace-fs": "workspace:*",
       },
     },
+    "apps/web": {
+      "name": "@crew/web",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crew/core": "workspace:*",
+        "@crew/provider-openai": "workspace:*",
+        "@crew/store-jsonl": "workspace:*",
+        "@crew/tools-native": "workspace:*",
+        "@crew/workspace-fs": "workspace:*",
+      },
+    },
     "packages/core": {
       "name": "@crew/core",
       "version": "0.1.0",
@@ -62,6 +73,8 @@
     "@crew/store-jsonl": ["@crew/store-jsonl@workspace:packages/store-jsonl"],
 
     "@crew/tools-native": ["@crew/tools-native@workspace:packages/tools-native"],
+
+    "@crew/web": ["@crew/web@workspace:apps/web"],
 
     "@crew/workspace-fs": ["@crew/workspace-fs@workspace:packages/workspace-fs"],
   }

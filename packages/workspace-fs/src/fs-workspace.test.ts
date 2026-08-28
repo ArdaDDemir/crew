@@ -51,7 +51,7 @@ test("channel create fails if a member bot is missing", async () => {
 });
 
 test("updateChannel and updateBot persist icon name soul and folders", async () => {
-  const { ws } = await tmpCrew();
+  const { dir, ws } = await tmpCrew();
   ws.addBot({ id: "lead", name: "Lead" });
   ws.addBot({ id: "coder", name: "Coder" });
   ws.addChannel({
@@ -72,14 +72,80 @@ test("updateChannel and updateBot persist icon name soul and folders", async () 
     folders: ["."],
     context: "Marketing site.",
   });
-  ws.updateBot("coder", { name: "Frontend", icon: "λ", soul: "Write HTML." });
+  ws.updateBot("coder", {
+    name: "Frontend",
+    icon: "λ",
+    soul: "Write HTML.",
+    model: "anthropic/claude-sonnet-4",
+    fallbackModel: "z-ai/glm-5.3-flash",
+  });
   expect(ws.getBot("coder")).toMatchObject({
     name: "Frontend",
     icon: "λ",
     soul: "Write HTML.",
+    model: "anthropic/claude-sonnet-4",
+    fallbackModel: "z-ai/glm-5.3-flash",
   });
   ws.addSkill("coder", { name: "html", description: "Semantic HTML", body: "Use sections." });
   expect(ws.getBot("coder")?.skills?.some((s) => s.name === "html")).toBe(true);
+  expect(ws.getSkill("coder", "html")?.body).toContain("Use sections.");
+  expect(() => ws.addBot({ id: "coder", name: "Dup" })).toThrow("bot exists");
+  const md = await readFile(join(dir, "bots", "coder", "skills", "html", "SKILL.md"), "utf8");
+  expect(md.startsWith("---")).toBe(true);
+  expect(md).toContain("name: html");
+  ws.removeSkill("coder", "html");
+  expect(ws.getSkill("coder", "html")).toBeUndefined();
+});
+
+test("updateChannel with undefined memberBotIds keeps the roster", async () => {
+  const { ws } = await tmpCrew();
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addBot({ id: "coder", name: "Coder" });
+  ws.addChannel({
+    id: "lab",
+    leadBotId: "lead",
+    memberBotIds: ["lead", "coder"],
+    permissionMode: "auto-accept",
+  });
+  ws.updateChannel("lab", { title: "Lab room", memberBotIds: undefined });
+  expect(ws.getChannel("lab")?.memberBotIds).toEqual(["lead", "coder"]);
+  ws.removeBot("coder");
+  expect(ws.getBot("coder")).toBeUndefined();
+  expect(ws.getChannel("lab")?.memberBotIds).toEqual(["lead"]);
+});
+
+test("removeBot drops membership and leaves logs alone", async () => {
+  const { dir, ws } = await tmpCrew();
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addBot({ id: "coder", name: "Coder" });
+  ws.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead", "coder"],
+    permissionMode: "auto-accept",
+  });
+  ws.removeBot("coder");
+  expect(ws.getBot("coder")).toBeUndefined();
+  expect(ws.getChannel("landing")?.memberBotIds).toEqual(["lead"]);
+  expect(() => ws.removeBot("ghost")).toThrow("unknown bot: ghost");
+  const { existsSync } = await import("node:fs");
+  expect(existsSync(join(dir, "bots", "coder"))).toBe(false);
+});
+
+test("removeChannel deletes the channel dir only", async () => {
+  const { dir, ws } = await tmpCrew();
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead"],
+    permissionMode: "auto-accept",
+  });
+  ws.removeChannel("landing");
+  expect(ws.getChannel("landing")).toBeUndefined();
+  expect(() => ws.removeChannel("ghost")).toThrow("unknown channel: ghost");
+  const { existsSync } = await import("node:fs");
+  expect(existsSync(join(dir, "channels", "landing"))).toBe(false);
 });
 
 test("rejects invalid bot slug", async () => {

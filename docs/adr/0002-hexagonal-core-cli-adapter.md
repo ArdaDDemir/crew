@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; HTTP UI is a later adapter (ADR-0017, ADR-0020)
 date: 2026-08-27
 decision-makers: Arda
 ---

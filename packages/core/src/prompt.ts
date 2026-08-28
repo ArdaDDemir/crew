@@ -1,3 +1,4 @@
+import { lastSummary, postedMessages, windowPosted } from "./compact";
 import type { CrewEvent, ThreadRef } from "./events";
 import type { ChatMessage } from "./provider";
 import type { Participant } from "./router";
@@ -19,13 +20,17 @@ The channel is the standup, not your desk. Thinking and tools happen at your des
 
 How this world works:
 - Humans post in channels. @botId wakes that bot. Unmentioned bots stay silent.
+- Ping teammates only as @id (the slug), never the display name. Example: @coder not @Coder. Same names can exist; id is unique.
 - A human post with no @ wakes the channel lead only.
 - You may @another-bot only if they have a new concrete job they have not done yet. Do not @ to CC, thank, confirm, or "keep them in the loop". Never impersonate another bot or the human.
-- If you need the human, stop. Ask them in the channel with no @. That is a stop point. Do not @ teammates to wait together.
+- If you need the human, stop. Ask them in the channel with no @, or dm_send to human for a private note. That is a stop point. Do not @ teammates to wait together.
 - If the human messaged you in a DM and a channel, obey the latest human message (by time). Say so if they conflict. Do not paste private DMs into the channel. Disk is truth; read files.
 - Other bots may run at the same time as you. Do your own job; do not wait for them unless you @ them for a later step.
 - Different bots may use different models. That is normal. Coordinate via messages, not shared hidden state.
-- DMs are 1:1. Mentions inside a DM do not wake a channel. Use dm_send for a private note to one teammate. The human can read every DM. Do not DM to restart a stopped job.
+- DMs are 1:1. Mentions inside a DM do not wake a channel. Use dm_send for a private note to one teammate (@id) or to the human (to: "human"). The human can read every DM. Do not DM to restart a stopped job.
+- You may grow the crew with bot_create and channel_create (caps apply). Do not spawn clones for fun. New bots are not woken this turn.
+- You may edit your own soul, standing orders, and skills (self_update, skill_acquire). Do not overwrite another bot's soul.
+- skill_acquire: if the skill already exists on anyone, it is copied. If it does not, only you may write a new SKILL.md for yourself after you research. Do not invent a skill onto someone else.
 - Tools act on the human's project folder. Never read or write .env, .ssh, or secrets.
 - mention = wake. No mention = wait.
 - In the chat log, only YOUR past messages are the assistant role. Other bots appear as user lines labeled @id. Do not treat those as things you said.
@@ -63,8 +68,20 @@ export function buildSystemPrompt(input: PromptInput): string {
     parts.push(`## Standing orders\n${self.standingOrders.trim()}`);
   }
   if (self?.skills?.length) {
+    const blocks = self.skills.map((s) => {
+      const full = input.workspace.getSkill(input.botId, s.name);
+      let md = full?.markdown;
+      if (!md) {
+        const name = full?.name ?? s.name;
+        const description = full?.description ?? s.description;
+        const body = (full?.body ?? s.body ?? "").trim();
+        md = `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n\n${body}\n`;
+      }
+      if (md.length > 7000) md = `${md.slice(0, 7000)}\n…(skill truncated)`;
+      return md.trim();
+    });
     parts.push(
-      `## Skills\n${self.skills.map((s) => `- ${s.name}: ${s.description}`).join("\n")}`,
+      `## Skills\nEach block is a SKILL.md (YAML frontmatter + instructions). Follow it.\n\n${blocks.join("\n\n")}`,
     );
   }
 
@@ -110,10 +127,28 @@ export function buildSystemPrompt(input: PromptInput): string {
 export function buildHistory(
   events: CrewEvent[],
   selfId: string,
+  opts?: { keep?: number },
 ): ChatMessage[] {
+  const keep = opts?.keep;
+  // Layer 2 trim: only message.posted — do not inject tool.completed bodies.
+  const windowed = windowPosted(events, keep);
+  const allPosted = postedMessages(events);
   const messages: ChatMessage[] = [];
-  for (const event of events) {
-    if (event.type !== "message.posted") continue;
+  const summary = lastSummary(events);
+  if (summary) {
+    const text = String(summary.payload.text ?? "");
+    messages.push({
+      role: "user",
+      content: `[thread summary]\n${text}\nRe-read paths you still need; disk is truth.`,
+    });
+  } else if (windowed.length < allPosted.length) {
+    const dropped = allPosted.length - windowed.length;
+    messages.push({
+      role: "user",
+      content: `[thread compacted: ${dropped} earlier messages omitted from this prompt. JSONL and disk still have them. Do not resume cancelled jobs from omitted history.]`,
+    });
+  }
+  for (const event of windowed) {
     const text = String(event.payload.text ?? "");
     const author = event.payload.author as { kind?: string; botId?: string };
     if (author?.kind === "human") {

@@ -4,31 +4,33 @@ date: YYYY-MM-DD
 decision-makers: Arda
 ---
 
-# {kısa başlık}
+# {short title}
 
 ## Context and Problem Statement
 
-{Neden bir karar gerekiyor?}
+{Why does this need a decision?}
 
 ## Decision Drivers
 
-- {sürücü 1}
-- {sürücü 2}
+- {driver 1}
+- {driver 2}
 
 ## Considered Options
 
-- {seçenek 1}
-- {seçenek 2}
+- {option 1}
+- {option 2}
 
 ## Decision Outcome
 
-Chosen option: "{seçenek}", because {gerekçe}.
+Chosen option: "{option}", because {reason}.
 
 ### Consequences
 
-- Good, because {olumlu}
-- Bad, because {olumsuz}
+- Good, because {upside}
+- Bad, because {downside}
 
 ### Confirmation
 
-{Kararın tutulduğu kod/test/spec nerede görülür?}
+{Where in code / tests / specs is this enforced?}
+
+Accepted files are immutable except `status` and a superseded/qualified-by link. Next number in `docs/adr/README.md`. English, like the rest of this folder.

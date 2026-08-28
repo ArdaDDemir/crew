@@ -27,3 +27,39 @@ export function dmThreadId(
   }
   throw new Error("DM requires at least one bot");
 }
+
+export type ParsedDmThread = {
+  pair: string;
+  conv: string;
+  withHuman: boolean;
+  left: string;
+  right: string;
+};
+
+export function parseDmThreadId(id: string): ParsedDmThread {
+  const parts = String(id).split("__").filter(Boolean);
+  if (parts.length < 2) throw new Error(`invalid dm thread: ${id}`);
+  if (parts[0] === "human") {
+    const bot = parts[1]!;
+    return {
+      pair: `human__${bot}`,
+      conv: parts.slice(2).join("__"),
+      withHuman: true,
+      left: "human",
+      right: bot,
+    };
+  }
+  const left = parts[0]!;
+  const right = parts[1]!;
+  return {
+    pair: `${left}__${right}`,
+    conv: parts.slice(2).join("__"),
+    withHuman: false,
+    left,
+    right,
+  };
+}
+
+export function dmConversationId(pair: string, conv: string): string {
+  return conv ? `${pair}__${conv}` : pair;
+}

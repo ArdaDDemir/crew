@@ -1,4 +1,4 @@
-import { dmThreadId, type CrewEvent, type ThreadRef } from "./events";
+import { dmThreadId, parseDmThreadId, type CrewEvent, type ThreadRef } from "./events";
 import type { EventStore } from "./store";
 import type { Workspace } from "./workspace";
 import { routeDmWake, routeWakes, type Participant, type Post } from "./router";
@@ -20,6 +20,7 @@ export type PostToDmInput = Clock & {
   from: Participant;
   to: Participant;
   text: string;
+  threadId?: string;
 };
 
 function event(
@@ -74,7 +75,11 @@ export async function postToChannel(input: PostToChannelInput) {
 }
 
 export async function postToDm(input: PostToDmInput) {
-  const threadId = dmThreadId(input.from, input.to);
+  const pair = dmThreadId(input.from, input.to);
+  const threadId = input.threadId ?? pair;
+  if (parseDmThreadId(threadId).pair !== pair) {
+    throw new Error(`thread ${threadId} is not ${pair}`);
+  }
   const thread: ThreadRef = { kind: "dm", id: threadId };
   const existing = input.store.read(thread);
   if (existing.length === 0) {

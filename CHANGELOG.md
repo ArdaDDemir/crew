@@ -10,31 +10,85 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-28
+
+Office chrome: jump, menus, split panes, `@path`, slash, compact layers, Settings Jobs.
+
 ### Added
 
-- Project governance: ADRs, specs, 0.x versioning.
-- Design for local multi-bot runtime (channels, mentions, DMs, permission modes).
-- Agent rule files: `AGENTS.md` (canonical) plus `CLAUDE.md`, `GEMINI.md`, Cursor/Copilot/Grok pointers (`ADR-0010`).
-- CLI `crew`: `bot create`, `channel create`, `say`, `dm`, `open`, `mode`, `log`, `config`. Mention routing persists as JSONL under `.crew/logs/`.
-- Agent turn loop with tools `read`, `apply_patch`, `list_dir`, `shell` and T3-shaped permission modes.
-- OpenRouter (OpenAI-compatible) provider adapter.
-- `crew config set/show` for model and API key (`~/.crew/config.json`).
-- Provider errors print to stderr (`bot ERROR: ...`). 429/5xx retried; 429 messages are short (no raw JSON). Bot turns pause after a rate-limit.
-- Default model `z-ai/glm-5.3-flash`. Live stream + thinking deltas. Fetch timeout 45s.
-- Chat style (no `done:` protocol). `crew log` / `--thinking`. Auto-accept allows workspace `shell`. `list_dir` tool. File write lock.
-- Coworker turns: work at the desk, then give an account in chat (ask if blocked, say if it failed). Default `say` / `log` hide thinking and tools; `--thinking` / `--verbose` (or `/thinking`, `/verbose`) show desk work.
-- Engine-enforced desk vs account (`ADR-0012`).
-- One turn per bot per `say` (`ADR-0013`). If you already `@` bots, this `say` does not wake anyone else (`ADR-0014`).
-- `dm_send` tool: a bot in a channel can DM a member; the other bot answers once in that DM (`ADR-0015`).
-- `crew dms` / `crew dms show a b` — human lists and reads every DM. Desk events stay in JSONL for the UI (`crew log` / `dms show --thinking --verbose`).
-- Bots always reply in English, even if the human writes another language.
-- Latest human message to a bot wins across channel and DM (`ADR-0016`). Channel turns get a DM pointer, not a dump. Disk is truth.
-- Local web UI (`bun run ui`) on the same core: channel log with per-bot nameplates, DMs, composer, permission mode (`ADR-0017`).
+- Ctrl/Cmd+K jump palette over channels, people, and DMs (`ADR-0026`).
+- Right-click context menu on channels, people, DMs, and messages (Open, Open to the right/below, copy, pin, mark unread).
+- `@path` file mention from workspace (`GET /api/paths`); picking a path leaves `@src/app.ts` in the draft (no inbox copy).
+- Composer Enter IME guard (`isComposing` / keyCode 229); Shift+Enter still newline.
+- Composer `+ File` / `+ Folder` (and drag-drop). Files land in `inbox/` and are listed on the message.
+- `ADR-0023` office sheet chrome (hover help, skill sheet, closed dialogs).
+- `ADR-0024` composer attach (`inbox/`), locked ids, Rooms create-only, green/red buttons.
+- Several DMs with the same person (`ADR-0025`). Direct groups by person; `+` opens a new chat.
+- Files chip shows a readable diff hunk from `apply_patch` args.
+- Header shows who is working, like Discord activity in the chat.
+- In-page split panes (Open to the right / below, drag from the rail; max two).
+- Composer `/` palette: `/help` `/clear` `/compact` `/stop` `/mode` `/model` `/status` `/diff` `/export` `/new` (office `/retry` `/new-person` `/new-channel` `/settings` stay).
+- LLM compact: `POST /api/compact` appends `thread.summary`; JSONL stays (`ADR-0028`). `/compact` toasts `Compacted.` Header `#context-chip` shows `{posted}/80` (and `compacted` after a summary). Auto-compact once when posted > 56.
+- Settings Jobs (title, compact, vision, read) in `.crew/jobs.json` — not People (`ADR-0029`). `GET`/`PUT /api/jobs`. First human DM post appends `thread.titled`; Direct list uses it. **Regenerate title** in the chat header. Vision captions attached images when a model is set.
 
 ### Fixed
 
-- OpenAI adapter sends `tool_calls` as `{type:function, function:{name,arguments}}`. Z.AI dropped round-2 after `read` (`Inference processing failed`). That error retries once without tools.
-- Courtesy `@` could restart the meeting until `ADR-0013` / `ADR-0014`.
-- `@` inside a URL path (`github.com/@user`) is not a wake.
-- `dm_send` does not give a second turn to a bot who already spoke this `say`.
-- `apply_patch` with empty `old_text` no longer overwrites an existing file.
+- Split pane: submit (and `/retry`) from the idle pane while the other is streaming toasts `Wait for the current run to finish.` and does not POST `/api/say`. Sequential send after `done` still works.
+- Re-compact (`summarizeThread`) feeds the previous `thread.summary` as `[previous summary]` before the last 40 posted so a second compact keeps earlier intent. JSONL stays append-only.
+- `.chip[hidden]` / `.danger[hidden]` honor the `hidden` attribute (Regenerate title and Stop no longer show on channels).
+
+### Changed
+
+- Modal `?` help is hover (and keyboard focus), not click.
+- Modal `?` no longer opens on first paint (open-focus / leftover cursor).
+- Skill add/edit is its own sheet; Person only lists skills.
+- Modal (and other) scrollbars match the dark theme.
+- Cancel / Close actually hide sheet modals (`display: flex` no longer overrides closed dialogs).
+- Person/channel Id is a locked field. Person Rooms cannot be toggled on edit.
+- Action buttons have color (Save green, Delete red) and icons.
+
+## [0.2.0] - 2026-08-27
+
+Office release: local web UI is a real adapter, skills are SKILL.md, Always persists, history windows.
+
+### Added
+
+- Local office UI (`bun run ui`): Discord-style members + activity, search, files chip, export, `/clear`, Stop, @ / palettes, icon dropdown, `?` help, random locked ids, + File / + Folder, full create sheets (`ADR-0017`, `ADR-0020`).
+- `GET /api/watch` SSE so an idle tab sees CLI / other-tab posts.
+- Skills: Agent Skills `SKILL.md` (slug + frontmatter + body) in prompt, UI edit/delete, `crew skill rm` (`ADR-0021`).
+- Persistent Always in `.crew/permissions.json`; Settings lists/clears (`ADR-0018`).
+- Prompt history window of 80; `thread.compacted` appended, JSONL not rewritten (`ADR-0019`).
+- Org tools `bot_create`, `channel_create`, `self_update`, `skill_acquire` (`ADR-0022`). Caps 16. Reserved ids `human` / `you` / `everyone` / `engine`.
+- Workspace `removeBot` / `removeChannel` (logs stay).
+- CLI: `bot update` / `show`, `--soul FILE`, `skill list|show|add|copy|rm`, `/stop`, `config set fallback|allowed`.
+- Settings: OpenRouter key, default/fallback, allowed whitelist, search catalog (2+ chars). Rail does not show the model id.
+
+### Fixed
+
+- Modal Close / Cancel / backdrop actually close the dialog.
+- Replay no longer leaves everyone “working”; activity is `Thinking` / `Reading index.html` / `Online`.
+- Phone: Menu drawer; desk hidden.
+- Old 429 JSON in the thread is shortened (no `user_id`).
+- Files chip: paths, not `cat` dumps.
+- Channel/bot PATCH no longer wipes omitted fields (`memberBotIds: undefined`).
+- Settings/Person: one sheet scrollbar; catalog is compact search rows.
+
+## [0.1.0] - 2026-08-27
+
+First cut: hexagonal core, CLI, JSONL, OpenRouter, first local UI.
+
+### Added
+
+- Hexagonal core + JSONL + FsWorkspace. CLI `crew`: bot/channel/say/dm/dms/open/mode/log/config.
+- Mention routing, one turn per bot per `say`, human-tagged stop (`ADR-0013`, `ADR-0014`).
+- Desk then account (`ADR-0012`). Tools `read`, `apply_patch`, `list_dir`, `shell`. Four permission modes; auto-accept includes workspace shell.
+- `dm_send`; human can read every DM (`ADR-0015`). Latest human wins (`ADR-0016`).
+- OpenRouter OpenAI-compatible adapter. Default model `z-ai/glm-5.3-flash`.
+- ADRs, specs, 0.x versioning. `AGENTS.md` is law (`ADR-0010`).
+- First `apps/web` adapter: channel log, DMs, composer, mode (`ADR-0017`).
+
+### Fixed
+
+- OpenAI adapter `tool_calls` shape; Z.AI `Inference processing failed` retries once without tools.
+- `@` inside a URL path is not a wake.
+- `apply_patch` with empty `old_text` does not overwrite an existing file.

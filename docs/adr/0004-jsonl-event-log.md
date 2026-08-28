@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; compact event is `thread.compacted` (ADR-0019), not `session.compacted`
 date: 2026-08-27
 decision-makers: Arda
 ---

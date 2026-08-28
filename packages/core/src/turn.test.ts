@@ -384,6 +384,93 @@ test("after tools, next model call is nudged to give an account", async () => {
   expect(seen[1].toLowerCase()).toContain("give an account");
 });
 
+test("bot_create tool persists a new bot on the workspace", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "lead", name: "Lead" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead"],
+    permissionMode: "auto-accept",
+  });
+  const provider = new ScriptedProvider([
+    [
+      {
+        type: "tool-call",
+        id: "c1",
+        name: "bot_create",
+        arguments: JSON.stringify({ id: "writer", name: "Writer", soul: "You write." }),
+      },
+      { type: "done" },
+    ],
+    [{ type: "text-delta", text: "hired a writer" }, { type: "done" }],
+  ]);
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "lead",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.toolNames).toContain("bot_create");
+  expect(workspace.getBot("writer")?.name).toBe("Writer");
+  expect(workspace.getChannel("landing")?.memberBotIds).toContain("writer");
+});
+
+test("bot.fallbackModel is used when the primary model errors", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({
+    id: "coder",
+    name: "Coder",
+    model: "broken/model",
+    fallbackModel: "ok/model",
+  });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const seen: string[] = [];
+  const provider: Provider = {
+    async *complete(req) {
+      seen.push(req.model);
+      if (req.model === "broken/model") {
+        yield { type: "error", message: "provider 500: boom" };
+        yield { type: "done" };
+        return;
+      }
+      yield { type: "text-delta", text: "recovered" };
+      yield { type: "done" };
+    },
+  };
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "workspace/default",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(seen).toEqual(["broken/model", "ok/model"]);
+  expect(result.text).toBe("recovered");
+  expect(result.error).toBeUndefined();
+});
+
 test("inference processing failed retries once without tools", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

@@ -1,31 +1,71 @@
-# aibuildingapp (`crew`)
+# Crew
 
-Local multi-bot runtime. You create bots and channels. A lead assigns work with `@`. Mentioned bots act (in parallel if several are tagged). The rest wait. Each bot works at its desk, then accounts in chat. If they need you, they stop — a `say` where you already `@` named bots does not wake anyone else. Bots can talk in the channel or DM each other.
+Local multi-bot **office**. You own channels and people. `@id` wakes that bot; everyone else waits. They work at the desk (tools + thinking), then **account** in chat. Need-you is a stop. They may DM. You can read every DM.
 
-CLI first. GUI later, same core.
+**Surface:** `bun run ui` → [http://127.0.0.1:7734](http://127.0.0.1:7734)
 
-**Agents:** read [`AGENTS.md`](./AGENTS.md) first (`CLAUDE.md` / `GEMINI.md` point there).
+**0.3.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
 
-- Design: `docs/superpowers/specs/2026-08-27-crew-runtime-design.md`
-- Decisions: `docs/adr/`
-- Contracts: `docs/specs/`
-- Versions: `docs/versioning.md` · `CHANGELOG.md`
+## Requirements
 
-Stack: TypeScript + Bun. Tests: `bun test`.
+- [Bun](https://bun.sh) 1.4+
+- An [OpenRouter](https://openrouter.ai) API key (or any OpenAI-compatible `base_url`)
 
-```
+## Quick start
+
+```bash
+git clone <this-repo>
+cd aibuildingapp
 bun install
 bun test
-set OPENROUTER_API_KEY=sk-or-...
-bun run crew -- bot create lead
-bun run crew -- bot create designer
-bun run crew -- bot create coder
-bun run crew -- channel create landing --bots lead,designer,coder --lead lead
-bun run crew -- say landing "@designer hero yaz. Aynı anda @coder API kur."
-bun run crew -- log landing
-bun run crew -- open landing
+```
+
+Windows (PowerShell):
+
+```powershell
+$env:OPENROUTER_API_KEY="sk-or-..."
+bun run crew -- config set key $env:OPENROUTER_API_KEY
 bun run ui
 ```
-Then open the printed `http://127.0.0.1:7734`. Same `.crew` logs as the CLI.
 
-Default permission: auto-accept (workspace file writes and workspace shell). `.env` / `.ssh` still deny. Chat is the account; thinking/tools stay in the log (`crew log landing --thinking --verbose`). Logs: `.crew/logs/*.jsonl`.
+Then open `http://127.0.0.1:7734`. Hard-refresh (**Ctrl+F5**) after UI pulls.
+
+Optional: seed people/rooms from the CLI (same `.crew` as the UI):
+
+```powershell
+bun run crew -- bot create lead --name Lead
+bun run crew -- bot create coder --name Coder
+bun run crew -- channel create landing --bots lead,coder --lead lead
+```
+
+## What you get
+
+| In the office | How |
+|---|---|
+| Channels + People + Direct | Discord-like rail; many DMs per person |
+| Jump | Ctrl/Cmd+K |
+| Context menu | Right-click → Open / Open to the right / below |
+| Split panes | Max two, in-page (not Electron windows) |
+| Composer | Enter sends; `@path` from disk; `/help` `/compact` `/status` … |
+| Jobs | Settings → Title / Compact / Vision / Read (not extra People) |
+| Compact | Last 80 messages + trim + LLM `thread.summary`; JSONL is never rewritten |
+
+Default permission is **auto-accept** (workspace file writes + workspace shell). `.env` and `~/.ssh` are always denied.
+
+## Docs
+
+Agents (and humans writing agents) start at [`AGENTS.md`](./AGENTS.md).
+
+| | |
+|---|---|
+| Map | [`docs/README.md`](docs/README.md) |
+| Decisions | [`docs/adr/`](docs/adr/) (0001–0029) |
+| UI contract | [`docs/specs/web-ui.md`](docs/specs/web-ui.md) |
+| Versions | [`docs/versioning.md`](docs/versioning.md) · [`CHANGELOG.md`](CHANGELOG.md) |
+| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+
+Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). Always rules: `.crew/permissions.json`. User key: `~/.crew/config.json`.
+
+## Not this
+
+Electron, Discord API, MCP, git auto-PR, `crew serve`, computer-use, in-app browser. Parked notes: `docs/todos/`.

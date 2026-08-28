@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline/promises";
+import { readFileSync } from "node:fs";
 import { stdin as stdinStream, stdout as stdoutStream } from "node:process";
 import { join } from "node:path";
 import {
@@ -12,6 +13,9 @@ import {
   type CrewEvent,
   type Provider,
   type Tool,
+  loadAlways,
+  matchesAlways,
+  rememberAlways,
 } from "@crew/core";
 import { JsonlEventStore } from "@crew/store-jsonl";
 import { FsWorkspace } from "@crew/workspace-fs";
@@ -194,8 +198,15 @@ function resolveProvider(
 }
 
 const USAGE = `crew — local multi-bot CLI
-  crew bot create <id> [--name TEXT] [--model ID]
+  crew bot create <id> [--name TEXT] [--model ID] [--soul FILE] [--icon TEXT]
+  crew bot update <id> [--name TEXT] [--model ID] [--fallback ID] [--soul FILE] [--orders FILE] [--icon TEXT]
+  crew bot show <id>
   crew bot list
+  crew skill list [bot]
+  crew skill show <bot> <name>
+  crew skill add <bot> --name N --desc D [--body FILE]
+  crew skill rm <bot> <name>
+  crew skill copy <fromBot> <name> <toBot>
   crew channel create <id> --bots a,b [--lead id]
   crew channel list|show <id>
   crew mode <channel> <supervised|auto-accept|auto|full-access>
@@ -203,10 +214,9 @@ const USAGE = `crew — local multi-bot CLI
   crew dm <from> <to> <text>
   crew dms
   crew dms show <a> <b>
-  crew open <channel>     (/thinking on|off, /verbose on|off, /quit)
+  crew open <channel>     (/thinking /verbose /mode /stop /quit)
   crew log <channel> [--thinking] [--verbose]
-  crew config set model <openrouter-model-id>
-  crew config set key <OPENROUTER_KEY>
+  crew config set model|fallback|key|base-url|allowed <value>
   crew config show
   --yes   allow asked tools this process
   --thinking   stream thoughts (desk). default: crew log --thinking
@@ -214,18 +224,23 @@ const USAGE = `crew — local multi-bot CLI
 Env (overrides file): OPENROUTER_API_KEY  CREW_MODEL  CREW_BASE_URL
 `;
 
+function readOptionalFile(path: string | undefined): string | undefined {
+  if (!path) return undefined;
+  return readFileSync(path, "utf8");
+}
+
 function defaultAsk(io: Io, yes: boolean): AskFn {
-  const remembered = new Set<string>();
+  const root = join(io.cwd, ".crew");
   return async ({ tool, args }) => {
-    const key = `${tool}:${JSON.stringify(args)}`;
-    if (yes || remembered.has(key)) return "allow";
+    if (yes) return "allow";
+    if (matchesAlways(loadAlways(root), tool, args)) return "allow";
     if (!io.readLine) return "deny";
     io.writeOut(
       `allow ${tool} ${JSON.stringify(args).slice(0, 200)}? [y/N/always] `,
     );
     const answer = (await io.readLine())?.trim().toLowerCase() ?? "n";
     if (answer === "always") {
-      remembered.add(key);
+      rememberAlways(root, tool, args);
       return "always";
     }
     if (answer === "y" || answer === "yes") return "allow";
@@ -271,6 +286,7 @@ export async function runCli(
   const ask = deps.ask ?? defaultAsk(io, yes);
   const liveFlags = { thinking: showThinking, verbose };
 
+  const halt = { stopped: false };
   const dispatchBase = () => ({
     store,
     workspace,
@@ -280,6 +296,7 @@ export async function runCli(
     workspaceRoot: io.cwd,
     ask,
     hasReviewer: false,
+    shouldStop: () => halt.stopped,
     turnGapMs: deps.provider ? 0 : Number(process.env.CREW_TURN_GAP_MS ?? 0),
     rateLimitGapMs: deps.provider ? 0 : Number(process.env.CREW_RATE_LIMIT_GAP_MS ?? 8000),
     ...liveIo(io, liveFlags),
@@ -290,11 +307,13 @@ export async function runCli(
     if (cmd === "bot" && sub === "create") {
       const { flags, positional } = parseFlags(rest);
       const id = positional[0];
-      if (!id) throw new Error("usage: crew bot create <id> [--name TEXT] [--model ID]");
+      if (!id) throw new Error("usage: crew bot create <id> [--name TEXT] [--model ID] [--soul FILE]");
       workspace.addBot({
         id,
         name: flags.name || id,
         model: flags.model || undefined,
+        soul: readOptionalFile(flags.soul),
+        icon: flags.icon || undefined,
       });
       io.writeOut(
         `bot created: ${id}${flags.model ? ` model=${flags.model}` : ""}\n`,
@@ -302,10 +321,105 @@ export async function runCli(
       return 0;
     }
 
+    if (cmd === "bot" && sub === "update") {
+      const { flags, positional } = parseFlags(rest);
+      const id = positional[0];
+      if (!id) throw new Error("usage: crew bot update <id> [--name TEXT] [--soul FILE]");
+      const patch: {
+        name?: string;
+        model?: string;
+        fallbackModel?: string;
+        soul?: string;
+        standingOrders?: string;
+        icon?: string;
+      } = {};
+      if (flags.name) patch.name = flags.name;
+      if (flags.model) patch.model = flags.model;
+      if (flags.fallback) patch.fallbackModel = flags.fallback;
+      if (flags.soul) patch.soul = readOptionalFile(flags.soul);
+      if (flags.orders) patch.standingOrders = readOptionalFile(flags.orders);
+      if (flags.icon) patch.icon = flags.icon;
+      workspace.updateBot(id, patch);
+      io.writeOut(`bot updated: ${id}\n`);
+      return 0;
+    }
+
+    if (cmd === "bot" && sub === "show") {
+      const id = rest[0];
+      if (!id) throw new Error("usage: crew bot show <id>");
+      const bot = workspace.getBot(id);
+      if (!bot) throw new Error(`unknown bot: ${id}`);
+      io.writeOut(`id: ${bot.id}\n`);
+      io.writeOut(`name: ${bot.name}\n`);
+      io.writeOut(`model: ${bot.model ?? "-"}\n`);
+      io.writeOut(`fallback: ${bot.fallbackModel ?? "-"}\n`);
+      io.writeOut(`skills: ${(bot.skills ?? []).map((s) => s.name).join(",") || "-"}\n`);
+      return 0;
+    }
+
     if (cmd === "bot" && sub === "list") {
       for (const bot of workspace.listBots()) {
         io.writeOut(`${bot.id}\t${bot.name}\n`);
       }
+      return 0;
+    }
+
+    if (cmd === "skill" && sub === "list") {
+      const only = rest[0];
+      for (const bot of workspace.listBots()) {
+        if (only && bot.id !== only) continue;
+        for (const s of bot.skills ?? []) {
+          io.writeOut(`${bot.id}/${s.name}\t${s.description}\n`);
+        }
+      }
+      return 0;
+    }
+
+    if (cmd === "skill" && sub === "show") {
+      const botId = rest[0];
+      const name = rest[1];
+      if (!botId || !name) throw new Error("usage: crew skill show <bot> <name>");
+      const skill = workspace.getSkill(botId, name);
+      if (!skill) throw new Error(`unknown skill: ${botId}/${name}`);
+      io.writeOut(skill.markdown ?? `${skill.name}\n${skill.description}\n\n${skill.body}\n`);
+      return 0;
+    }
+
+    if (cmd === "skill" && sub === "add") {
+      const { flags, positional } = parseFlags(rest);
+      const botId = positional[0];
+      if (!botId || !flags.name || !flags.desc) {
+        throw new Error("usage: crew skill add <bot> --name N --desc D [--body FILE]");
+      }
+      workspace.addSkill(botId, {
+        name: flags.name,
+        description: flags.desc,
+        body: readOptionalFile(flags.body) ?? "",
+      });
+      io.writeOut(`skill added: ${botId}/${flags.name}\n`);
+      return 0;
+    }
+
+    if (cmd === "skill" && sub === "rm") {
+      const botId = rest[0];
+      const name = rest[1];
+      if (!botId || !name) throw new Error("usage: crew skill rm <bot> <name>");
+      workspace.removeSkill(botId, name);
+      io.writeOut(`skill removed: ${botId}/${name}\n`);
+      return 0;
+    }
+
+    if (cmd === "skill" && sub === "copy") {
+      const fromBot = rest[0];
+      const name = rest[1];
+      const toBot = rest[2];
+      if (!fromBot || !name || !toBot) {
+        throw new Error("usage: crew skill copy <fromBot> <name> <toBot>");
+      }
+      const skill = workspace.getSkill(fromBot, name);
+      if (!skill) throw new Error(`unknown skill: ${fromBot}/${name}`);
+      workspace.addSkill(toBot, skill);
+      io.writeOut(`skill copied: ${fromBot}/${name} -> ${toBot}\n`);
       return 0;
     }
 
@@ -348,6 +462,8 @@ export async function runCli(
 
     if (cmd === "config" && sub === "show") {
       io.writeOut(`model: ${cfg.model ?? "(default z-ai/glm-5.3-flash)"}\n`);
+      io.writeOut(`fallback: ${cfg.fallbackModel ?? "-"}\n`);
+      io.writeOut(`allowed: ${(cfg.allowedModels ?? []).join(",") || "-"}\n`);
       io.writeOut(`key:   ${maskKey(cfg.apiKey)}\n`);
       io.writeOut(`base:  ${cfg.baseUrl ?? "(default https://openrouter.ai/api/v1)"}\n`);
       io.writeOut(`user:  ${userConfigPath(home)}\n`);
@@ -360,7 +476,7 @@ export async function runCli(
       const value = rest.slice(1).join(" ");
       if (!field || !value) {
         throw new Error(
-          "usage: crew config set <model|key|base-url> <value> [--global]",
+          "usage: crew config set <model|fallback|key|base-url|allowed> <value> [--global]",
         );
       }
       const global = globalFlag || field === "key" || field === "api-key";
@@ -368,12 +484,16 @@ export async function runCli(
       const patch =
         field === "model"
           ? { model: value }
-          : field === "key" || field === "api-key"
-            ? { apiKey: value }
-            : field === "base-url"
-              ? { baseUrl: value }
-              : undefined;
-      if (!patch) throw new Error("unknown config field (model|key|base-url)");
+          : field === "fallback"
+            ? { fallbackModel: value }
+            : field === "allowed"
+              ? { allowedModels: value.split(",").map((s) => s.trim()).filter(Boolean) }
+              : field === "key" || field === "api-key"
+                ? { apiKey: value }
+                : field === "base-url"
+                  ? { baseUrl: value }
+                  : undefined;
+      if (!patch) throw new Error("unknown config field (model|fallback|key|base-url|allowed)");
       writeConfigFile(path, patch);
       if (field === "key" || field === "api-key") {
         io.writeOut(`key saved to ${path} (${maskKey(value)})\n`);
@@ -471,7 +591,7 @@ export async function runCli(
         throw new Error(`unknown channel: ${channelId}`);
       }
       io.writeOut(
-        `opened #${channelId}  (/thinking on|off | /verbose on|off | /mode ... | /quit)\n`,
+        `opened #${channelId}  (/thinking on|off | /verbose on|off | /mode ... | /stop | /quit)\n`,
       );
       const read = io.readLine ?? defaultReadLine;
       while (true) {
@@ -519,6 +639,11 @@ export async function runCli(
           io.writeOut("verbose: off\n");
           continue;
         }
+        if (trimmed === "/stop") {
+          if (!halt.stopped) io.writeOut("nothing running\n");
+          halt.stopped = true;
+          continue;
+        }
         if (trimmed.startsWith("/mode ")) {
           const mode = trimmed.slice(6).trim() as PermissionMode;
           if (!MODES.has(mode)) {
@@ -532,6 +657,7 @@ export async function runCli(
           io.writeOut(`mode: ${mode}\n`);
           continue;
         }
+        halt.stopped = false;
         const result = await dispatchChannelPost({
           ...dispatchBase(),
           channelId,

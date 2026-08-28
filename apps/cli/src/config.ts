@@ -5,6 +5,8 @@ import { join } from "node:path";
 export type CrewConfig = {
   apiKey?: string;
   model?: string;
+  fallbackModel?: string;
+  allowedModels?: string[];
   baseUrl?: string;
 };
 
@@ -49,6 +51,8 @@ export function mergeConfig(input: {
       project.apiKey ||
       user.apiKey,
     model: input.env.CREW_MODEL || project.model || user.model,
+    fallbackModel: project.fallbackModel || user.fallbackModel,
+    allowedModels: project.allowedModels ?? user.allowedModels,
     baseUrl: input.env.CREW_BASE_URL || project.baseUrl || user.baseUrl,
   };
 }

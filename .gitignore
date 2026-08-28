@@ -5,3 +5,8 @@ dist/
 .env
 .env.*
 !.env.example
+
+.superpowers/sdd/
+tour/.chrome-profile/
+tour/*.png
+/index.html
