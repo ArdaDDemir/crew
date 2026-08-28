@@ -4,6 +4,8 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Provider } from "@crew/core";
+import { FsWorkspace } from "@crew/workspace-fs";
+import { defaultProviders, saveProviders } from "../../web/src/providers";
 import { runCli } from "./run";
 
 function ack(): Provider {
@@ -18,7 +20,11 @@ function ack(): Provider {
 async function cli(
   cwd: string,
   args: string[],
-  extra?: { readLine?: () => Promise<string | null>; provider?: Provider },
+  extra?: {
+    readLine?: () => Promise<string | null>;
+    provider?: Provider;
+    harnessRun?: import("@crew/provider-harness").HarnessRunner;
+  },
 ) {
   let stdout = "";
   let stderr = "";
@@ -34,7 +40,7 @@ async function cli(
       },
       readLine: extra?.readLine,
     },
-    { provider: extra?.provider ?? ack() },
+    { provider: extra?.provider ?? ack(), harnessRun: extra?.harnessRun },
   );
   return { code, stdout, stderr };
 }
@@ -329,4 +335,23 @@ test("unknown command exits 1", async () => {
   const result = await cli(cwd, ["nope"]);
   expect(result.code).toBe(1);
   expect(result.stderr).toContain("unknown command");
+});
+
+test("say with Grok harness spawns grok not OpenRouter", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  saveProviders(cwd, { ...defaultProviders(), grok: { enabled: true, binary: "grok" } });
+  new FsWorkspace(join(cwd, ".crew")).updateBot("coder", { harness: "grok", harnessModel: "grok-4.6" });
+  const argvLog: string[][] = [];
+  const said = await cli(cwd, ["say", "landing", "@coder list files"], {
+    provider: ack(),
+    harnessRun: async function* (argv) {
+      argvLog.push(argv);
+      yield '{"type":"text","data":"from grok"}';
+      return 0;
+    },
+  });
+  expect(said.code).toBe(0);
+  expect(said.stdout).toContain("from grok");
+  expect(argvLog[0]?.includes("--prompt-file")).toBe(true);
 });

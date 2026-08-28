@@ -50,6 +50,39 @@ test("woken bots reply in parallel and a @handoff wakes the next bot", async () 
   expect(replies).toContain("coder:api done");
 });
 
+test("providerForBot binds a different provider per woken bot", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "lead", name: "Lead" });
+  workspace.addBot({ id: "coder", name: "Coder", harness: "grok" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead", "coder"],
+    permissionMode: "auto-accept",
+  });
+  const grok = new ScriptedProvider([[{ type: "text-delta", text: "grok account" }, { type: "done" }]]);
+  const openrouter = new ScriptedProvider([[{ type: "text-delta", text: "or account" }, { type: "done" }]]);
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider: openrouter,
+    providerForBot: (botId) => (botId === "coder" ? { provider: grok, model: "grok-4.6" } : undefined),
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@lead @coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  const replies = Object.fromEntries(result.replies.map((r) => [r.botId, r.text]));
+  expect(replies.lead).toBe("or account");
+  expect(replies.coder).toBe("grok account");
+});
+
 test("a bot that already spoke this say is not woken again by courtesy @", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

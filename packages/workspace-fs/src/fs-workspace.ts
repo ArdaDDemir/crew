@@ -36,7 +36,10 @@ type BotFile = {
   name: string;
   model?: string;
   fallbackModel?: string;
+  titleModel?: string;
   icon?: string;
+  harness?: string | null;
+  harnessModel?: string | null;
 };
 
 function applyDefined<T extends object>(base: T, patch: Partial<T>): T {
@@ -57,7 +60,7 @@ export class FsWorkspace implements Workspace {
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "bot.json"),
-      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model, fallbackModel: bot.fallbackModel, icon: bot.icon }, null, 2)}\n`,
+      `${JSON.stringify({ id: bot.id, name: bot.name, model: bot.model, fallbackModel: bot.fallbackModel, titleModel: bot.titleModel, icon: bot.icon, harness: bot.harness ?? null, harnessModel: bot.harnessModel ?? null }, null, 2)}\n`,
     );
     writeFileSync(
       join(dir, "SOUL.md"),
@@ -150,7 +153,10 @@ export class FsWorkspace implements Workspace {
       name: next.name,
       model: next.model,
       fallbackModel: next.fallbackModel,
+      titleModel: next.titleModel,
       icon: next.icon,
+      harness: next.harness ?? null,
+      harnessModel: next.harnessModel ?? null,
     };
     writeFileSync(join(dir, "bot.json"), `${JSON.stringify(file, null, 2)}\n`);
     if (patch.soul !== undefined) {

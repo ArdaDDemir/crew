@@ -13,6 +13,7 @@ import {
   loadAlways,
   matchesAlways,
   rememberAlways,
+  removeAlwaysRule,
   saveAlways,
   shortenChatError,
   summarizeThread,
@@ -25,6 +26,14 @@ import {
 import { JsonlEventStore } from "@crew/store-jsonl";
 import { FsWorkspace } from "@crew/workspace-fs";
 import { OpenAICompatProvider } from "@crew/provider-openai";
+import {
+  DEFAULT_HARNESS_MODEL,
+  HarnessCliProvider,
+  shouldSpawnHarness,
+  type CrewPermissionMode,
+  type HarnessKind,
+  type HarnessRunner,
+} from "@crew/provider-harness";
 import { nativeTools } from "@crew/tools-native";
 import {
   defaultHome,
@@ -42,6 +51,19 @@ import {
   titleThread,
   VISION_PROMPT,
 } from "./jobs";
+import { loadDmPrefs } from "./dm-prefs";
+import { loadMcp, parseMcpBody, saveMcp, writeHarnessMcpConfig, type McpFile, type McpServer } from "./mcp";
+import { collectMcpSessions, type McpRpc } from "./mcp-client";
+import {
+  healthProviders,
+  listAllProviderModels,
+  listProviderCards,
+  loadProviders,
+  parseHarness,
+  parseProvidersBody,
+  saveProviders,
+  whichBinary,
+} from "./providers";
 
 const MODES = new Set<PermissionMode>([
   "supervised",
@@ -61,8 +83,12 @@ export type Host = {
   cfg: ReturnType<typeof mergeConfig>;
   provider: Provider;
   live: boolean;
+  grokRun?: HarnessRunner;
+  harnessRun?: HarnessRunner;
+  mcpConnect?: (server: McpServer) => McpRpc;
   run?: {
     stopped: boolean;
+    abort?: AbortController;
     resolveAsk?: (decision: "allow" | "deny" | "always") => void;
     askTool?: string;
     askArgs?: Record<string, unknown>;
@@ -85,6 +111,9 @@ export function createHost(input: {
   env?: NodeJS.ProcessEnv;
   provider?: Provider;
   tools?: Tool[];
+  grokRun?: HarnessRunner;
+  harnessRun?: HarnessRunner;
+  mcpConnect?: (server: McpServer) => McpRpc;
 }): Host {
   const cwd = input.cwd;
   const home = input.home ?? defaultHome();
@@ -113,7 +142,50 @@ export function createHost(input: {
     cfg,
     provider,
     live: !input.provider,
+    grokRun: input.grokRun,
+    harnessRun: input.harnessRun ?? input.grokRun,
+    mcpConnect: input.mcpConnect,
   };
+}
+
+async function withMcpTools<T>(host: Host, fn: (tools: Tool[]) => Promise<T>): Promise<T> {
+  const mcp = await collectMcpSessions({
+    servers: loadMcp(host.cwd).servers,
+    cwd: host.cwd,
+    signal: host.run?.abort?.signal,
+    connect: host.mcpConnect,
+  });
+  try {
+    return await fn([...host.tools, ...mcp.tools]);
+  } finally {
+    await mcp.close();
+  }
+}
+
+export function getMcp(host: Host): McpFile {
+  return loadMcp(host.cwd);
+}
+
+export function putMcp(host: Host, body: unknown): McpFile {
+  return saveMcp(host.cwd, parseMcpBody(body));
+}
+
+export async function listMcpTools(host: Host) {
+  const mcp = await collectMcpSessions({
+    servers: loadMcp(host.cwd).servers,
+    cwd: host.cwd,
+    connect: host.mcpConnect,
+  });
+  try {
+    return {
+      tools: mcp.tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+      })),
+    };
+  } finally {
+    await mcp.close();
+  }
 }
 
 function clock() {
@@ -215,6 +287,16 @@ export function snapshot(host: Host) {
     models: allowedList(host),
     key: host.cfg.apiKey ? maskKey(host.cfg.apiKey) : "",
     keySet: Boolean(host.cfg.apiKey),
+    cwd: host.cwd,
+    baseUrl: host.cfg.baseUrl ?? "",
+    defaultPermissionMode: host.cfg.defaultPermissionMode ?? "auto-accept",
+    autoCompact: host.cfg.autoCompact !== false,
+    reviewerModel: host.cfg.reviewerModel ?? "",
+    defaultHarness: host.cfg.defaultHarness ?? null,
+    defaultHarnessModel: host.cfg.defaultHarnessModel ?? null,
+    providers: loadProviders(host.cwd),
+    providerCards: listProviderCards(host.cwd),
+    mcp: loadMcp(host.cwd),
     posted: postedCounts(host),
     channels: host.workspace.listChannels().map((ch) => ({
       id: ch.id,
@@ -230,37 +312,45 @@ export function snapshot(host: Host) {
       model: b.model ?? null,
       fallbackModel: b.fallbackModel ?? null,
       icon: b.icon ?? null,
+      harness: b.harness ?? null,
+      harnessModel: b.harnessModel ?? null,
     })),
-    dms: host.store
-      .listThreads()
-      .filter((t) => t.kind === "dm")
-      .map((t) => {
-        const events = host.store.read(t);
-        const last = [...events].reverse().find((e) => e.type === "message.posted");
-        const first = events.find((e) => e.type === "message.posted");
-        const titled = lastTitled(events);
-        const author = last?.payload.author as { kind?: string; botId?: string } | undefined;
-        const parsed = parseDmThreadId(t.id);
-        const raw = String(first?.payload.text ?? "").replace(/\s+/g, " ").trim();
-        const gist = raw ? (raw.length > 42 ? `${raw.slice(0, 40)}…` : raw) : "New chat";
-        const titledName = String(titled?.payload.title ?? "").trim();
-        const title = titledName || gist;
-        return {
-          id: t.id,
-          withHuman: parsed.withHuman,
-          a: parsed.withHuman ? "you" : parsed.left,
-          b: parsed.right,
-          peerId: parsed.withHuman ? parsed.right : parsed.pair,
-          conv: parsed.conv,
-          title,
-          description: String(titled?.payload.description ?? ""),
-          lastText: String(last?.payload.text ?? ""),
-          lastWho: author?.kind === "human" ? "you" : author?.botId ?? null,
-          lastTs: last?.ts ?? events[events.length - 1]?.ts ?? "",
-          posted: events.filter((e) => e.type === "message.posted").length,
-        };
-      })
-      .sort((x, y) => String(y.lastTs).localeCompare(String(x.lastTs))),
+    dms: (() => {
+      const prefs = loadDmPrefs(host.cwd);
+      const gone = new Set(prefs.deleted);
+      const archived = new Set(prefs.archived);
+      return host.store
+        .listThreads()
+        .filter((t) => t.kind === "dm" && !gone.has(t.id))
+        .map((t) => {
+          const events = host.store.read(t);
+          const last = [...events].reverse().find((e) => e.type === "message.posted");
+          const first = events.find((e) => e.type === "message.posted");
+          const titled = lastTitled(events);
+          const author = last?.payload.author as { kind?: string; botId?: string } | undefined;
+          const parsed = parseDmThreadId(t.id);
+          const raw = String(first?.payload.text ?? "").replace(/\s+/g, " ").trim();
+          const gist = raw ? (raw.length > 42 ? `${raw.slice(0, 40)}…` : raw) : "New chat";
+          const titledName = String(titled?.payload.title ?? "").trim();
+          const title = titledName || gist;
+          return {
+            id: t.id,
+            withHuman: parsed.withHuman,
+            a: parsed.withHuman ? "you" : parsed.left,
+            b: parsed.right,
+            peerId: parsed.withHuman ? parsed.right : parsed.pair,
+            conv: parsed.conv,
+            title,
+            description: String(titled?.payload.description ?? ""),
+            lastText: String(last?.payload.text ?? ""),
+            lastWho: author?.kind === "human" ? "you" : author?.botId ?? null,
+            lastTs: last?.ts ?? events[events.length - 1]?.ts ?? "",
+            posted: events.filter((e) => e.type === "message.posted").length,
+            archived: archived.has(t.id),
+          };
+        })
+        .sort((x, y) => String(y.lastTs).localeCompare(String(x.lastTs)));
+    })(),
   };
 }
 
@@ -313,6 +403,35 @@ export function readThread(
     .filter(Boolean);
 }
 
+function harnessBind(host: Host, botId: string, mode: CrewPermissionMode) {
+  if (!shouldSpawnHarness(mode)) return undefined;
+  const bot = host.workspace.getBot(botId);
+  const file = loadProviders(host.cwd);
+  const kind = (bot?.harness || (!bot?.harness ? host.cfg.defaultHarness : "") || "") as string;
+  if (kind !== "grok" && kind !== "claude" && kind !== "codex" && kind !== "opencode") return undefined;
+  const slot = file[kind];
+  if (!slot.enabled) return undefined;
+  const fromBot = bot?.harness === kind;
+  const binary = (slot.binary || "").trim() || whichBinary(kind) || kind;
+  const model =
+    (fromBot ? bot?.harnessModel : host.cfg.defaultHarnessModel)?.trim() ||
+    DEFAULT_HARNESS_MODEL[kind as HarnessKind] ||
+    kind;
+  return {
+    provider: new HarnessCliProvider({
+      kind: kind as HarnessKind,
+      binary,
+      cwd: host.cwd,
+      signal: host.run?.abort?.signal,
+      run: host.harnessRun ?? host.grokRun,
+      mode,
+      mcpConfigPath: writeHarnessMcpConfig(host.cwd, loadMcp(host.cwd)),
+    }),
+    model,
+    fallbackModel: undefined,
+  };
+}
+
 export async function sayChannel(
   host: Host,
   channelId: string,
@@ -323,7 +442,7 @@ export async function sayChannel(
 ) {
   const channel = host.workspace.getChannel(channelId);
   if (!channel) throw new Error(`unknown channel: ${channelId}`);
-  host.run = { stopped: false };
+  host.run = { stopped: false, abort: new AbortController() };
   const crewDir = join(host.cwd, ".crew");
   const ask: AskFn = async ({ tool, args, botId }) => {
     if (host.run?.stopped) return "deny";
@@ -339,11 +458,14 @@ export async function sayChannel(
     });
   };
   try {
-    return await dispatchChannelPost({
+    return await withMcpTools(host, (tools) =>
+      dispatchChannelPost({
       store: host.store,
       workspace: host.workspace,
       provider: host.provider,
-      tools: host.tools,
+      providerForBot: (botId) =>
+        harnessBind(host, botId, (channel.permissionMode as CrewPermissionMode) || "auto-accept"),
+      tools,
       model: host.model,
       fallbackModel: host.fallbackModel,
       workspaceRoot: host.cwd,
@@ -351,13 +473,17 @@ export async function sayChannel(
       hasReviewer: false,
       turnGapMs: 0,
       rateLimitGapMs: host.live ? 8000 : 0,
-      shouldStop: () => Boolean(host.run?.stopped),
+      shouldStop: () => {
+        if (host.run?.stopped) host.run.abort?.abort();
+        return Boolean(host.run?.stopped);
+      },
       onEvent,
       onStatus,
       channelId,
       text,
       ...clock(),
-    });
+    }),
+    );
   } finally {
     host.run = undefined;
   }
@@ -366,6 +492,7 @@ export async function sayChannel(
 export function stopRun(host: Host) {
   if (!host.run) return { stopped: false };
   host.run.stopped = true;
+  host.run.abort?.abort();
   host.run.resolveAsk?.("deny");
   host.run.resolveAsk = undefined;
   return { stopped: true };
@@ -397,6 +524,29 @@ export function listAlways(host: Host) {
 export function clearAlways(host: Host) {
   saveAlways(join(host.cwd, ".crew"), []);
   return { rules: [] };
+}
+
+export function addAlways(host: Host, tool: string, args: Record<string, unknown>) {
+  const kind = tool.trim();
+  if (kind !== "apply_patch" && kind !== "shell") {
+    throw new Error("tool must be apply_patch or shell");
+  }
+  if (kind === "apply_patch" && !String(args.path ?? "").trim()) {
+    throw new Error("path required");
+  }
+  if (kind === "shell" && !String(args.command ?? "").trim()) {
+    throw new Error("command required");
+  }
+  const pick =
+    kind === "apply_patch"
+      ? { path: String(args.path).trim() }
+      : { command: String(args.command).trim() };
+  return { rules: rememberAlways(join(host.cwd, ".crew"), kind, pick) };
+}
+
+export function removeAlways(host: Host, tool: string, key: string) {
+  if (!tool.trim() || !key.trim()) throw new Error("tool and key required");
+  return { rules: removeAlwaysRule(join(host.cwd, ".crew"), tool.trim(), key) };
 }
 
 export function createBot(
@@ -442,9 +592,9 @@ export function createChannel(
   const bots = host.workspace.listBots().map((b) => b.id);
   const members = input.memberBotIds?.length ? input.memberBotIds : bots;
   const lead = input.leadBotId && members.includes(input.leadBotId) ? input.leadBotId : members[0];
-  const mode = MODES.has(input.permissionMode as PermissionMode)
-    ? (input.permissionMode as PermissionMode)
-    : "auto-accept";
+  const fallback = host.cfg.defaultPermissionMode ?? "auto-accept";
+  const raw = (input.permissionMode?.trim() || fallback) as PermissionMode;
+  const mode = MODES.has(raw) ? raw : fallback;
   host.workspace.addChannel({
     id,
     title: input.title?.trim() || id,
@@ -560,29 +710,43 @@ export async function sendDm(
   text: string,
   threadId?: string,
 ) {
-  const result = await dispatchDm({
-    store: host.store,
-    workspace: host.workspace,
-    provider: host.provider,
-    tools: host.tools,
-    model: host.model,
-    fallbackModel: host.fallbackModel,
-    workspaceRoot: host.cwd,
-    ask: async () => "allow",
-    hasReviewer: false,
-    turnGapMs: 0,
-    rateLimitGapMs: 0,
-    from: party(from),
-    to: party(to),
-    text,
-    threadId: threadId || undefined,
-    ...clock(),
-  });
+  const previous = host.run;
+  host.run = { stopped: false, abort: new AbortController() };
+  let result: Awaited<ReturnType<typeof dispatchDm>>;
+  try {
+    result = await withMcpTools(host, (tools) =>
+      dispatchDm({
+      store: host.store,
+      workspace: host.workspace,
+      provider: host.provider,
+      providerForBot: (botId) => harnessBind(host, botId, "auto-accept"),
+      tools,
+      model: host.model,
+      fallbackModel: host.fallbackModel,
+      workspaceRoot: host.cwd,
+      ask: async () => "allow",
+      hasReviewer: false,
+      turnGapMs: 0,
+      rateLimitGapMs: 0,
+      shouldStop: () => {
+        if (host.run?.stopped) host.run.abort?.abort();
+        return Boolean(host.run?.stopped);
+      },
+      from: party(from),
+      to: party(to),
+      text,
+      threadId: threadId || undefined,
+      ...clock(),
+    }),
+    );
+  } finally {
+    host.run = previous;
+  }
   if (from === "human") {
     try {
       const parsed = parseDmThreadId(result.threadId);
       if (parsed.withHuman) {
-        await titleThread(host, { kind: "dm", id: result.threadId });
+        await titleThread(host, { kind: "dm", id: result.threadId }, { botId: parsed.right });
       }
     } catch {
       /* title is best-effort; the DM already posted */
@@ -593,7 +757,12 @@ export async function sendDm(
 
 export async function regenerateTitle(host: Host, kind: "channel" | "dm", id: string) {
   if (!id) throw new Error("id required");
-  const event = await titleThread(host, { kind, id }, { force: true });
+  const parsed = kind === "dm" ? parseDmThreadId(id) : null;
+  const event = await titleThread(
+    host,
+    { kind, id },
+    { force: true, botId: parsed?.withHuman ? parsed.right : undefined },
+  );
   return {
     ok: true as const,
     title: String(event.payload.title ?? ""),
@@ -659,6 +828,9 @@ export function botDetail(host: Host, id: string) {
     standingOrders: bot.standingOrders ?? "",
     skills: bot.skills ?? [],
     fallbackModel: bot.fallbackModel ?? "",
+    titleModel: bot.titleModel ?? "",
+    harness: bot.harness ?? null,
+    harnessModel: bot.harnessModel ?? null,
   };
 }
 
@@ -758,14 +930,85 @@ export function setFallbackModel(host: Host, model: string) {
   return { fallbackModel: host.fallbackModel ?? "" };
 }
 
-export function setModel(host: Host, model: string) {
+export function setModel(
+  host: Host,
+  model: string,
+  extra?: { harness?: string | null; harnessModel?: string | null },
+) {
+  if (extra?.harness) {
+    const harness = parseHarness(extra.harness);
+    if (!harness) throw new Error("unknown harness");
+    const harnessModel = String(extra.harnessModel ?? "").trim();
+    host.cfg.defaultHarness = harness;
+    host.cfg.defaultHarnessModel = harnessModel;
+    writeConfigFile(projectConfigPath(host.cwd), {
+      defaultHarness: harness,
+      defaultHarnessModel: harnessModel,
+    });
+    return { model: host.model, harness, harnessModel };
+  }
   const id = model.trim();
   if (!id) throw new Error("model required");
   host.model = id;
   host.cfg.model = id;
-  writeConfigFile(projectConfigPath(host.cwd), { model: id });
-  return { model: id };
+  host.cfg.defaultHarness = null;
+  host.cfg.defaultHarnessModel = null;
+  writeConfigFile(projectConfigPath(host.cwd), {
+    model: id,
+    defaultHarness: null,
+    defaultHarnessModel: null,
+  });
+  return { model: id, harness: null, harnessModel: "" };
 }
+
+export function setBaseUrl(host: Host, baseUrl: string) {
+  const id = baseUrl.trim();
+  host.cfg.baseUrl = id || undefined;
+  writeConfigFile(projectConfigPath(host.cwd), { baseUrl: id || undefined });
+  if (host.live && host.cfg.apiKey) {
+    host.provider = new OpenAICompatProvider({ apiKey: host.cfg.apiKey, baseUrl: host.cfg.baseUrl });
+  }
+  catalogCache = { at: 0, models: [] };
+  return { baseUrl: host.cfg.baseUrl ?? "" };
+}
+
+export function setDefaultPermissionMode(host: Host, mode: string) {
+  if (!MODES.has(mode as PermissionMode)) throw new Error("unknown mode");
+  host.cfg.defaultPermissionMode = mode as PermissionMode;
+  writeConfigFile(projectConfigPath(host.cwd), { defaultPermissionMode: mode as PermissionMode });
+  return { defaultPermissionMode: mode };
+}
+
+export function setAutoCompact(host: Host, on: boolean) {
+  host.cfg.autoCompact = on;
+  writeConfigFile(projectConfigPath(host.cwd), { autoCompact: on });
+  return { autoCompact: on };
+}
+
+export function setReviewerModel(host: Host, model: string) {
+  const id = model.trim();
+  host.cfg.reviewerModel = id;
+  writeConfigFile(projectConfigPath(host.cwd), { reviewerModel: id || undefined });
+  return { reviewerModel: id };
+}
+
+export function getProviders(host: Host) {
+  return loadProviders(host.cwd);
+}
+
+export function putProviders(host: Host, body: Record<string, unknown>) {
+  return saveProviders(host.cwd, parseProvidersBody(body));
+}
+
+export async function checkProviders(host: Host) {
+  return { cards: await healthProviders(host.cwd) };
+}
+
+export async function listProviderModels(host: Host) {
+  return listAllProviderModels(host.cwd, allowedList(host));
+}
+
+export { parseHarness };
 
 const ATTACH_MAX = 8 * 1024 * 1024;
 const ATTACH_COUNT = 32;
@@ -811,11 +1054,13 @@ export async function attachFiles(
   }
   const captions: Record<string, string> = {};
   const jobs = loadJobs(host);
-  if (resolveJobModel(host, "vision", jobs.vision)) {
+  const visionModel = resolveJobModel(host, "vision", jobs.vision);
+  if (visionModel) {
+    const job = { model: visionModel, botId: jobs.vision.botId };
     for (const rel of paths) {
       if (!IMAGE_EXT.has(extname(rel).toLowerCase())) continue;
       try {
-        const caption = await runJob(host, jobs.vision, VISION_PROMPT, { image: rel });
+        const caption = await runJob(host, job, VISION_PROMPT, { image: rel });
         if (caption) captions[rel] = caption.replace(/\s+/g, " ").trim();
       } catch {
         /* path-only on vision failure */

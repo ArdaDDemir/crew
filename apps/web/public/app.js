@@ -14,6 +14,7 @@ const state = {
   split: "none",
   activePane: 0,
   runPane: 0,
+  deskOpen: sessionStorage.getItem("crew.deskOpen") !== "0",
 };
 
 const paneAttach = [[], []];
@@ -210,12 +211,39 @@ function applySplitClass(how) {
   host.style.gridTemplateRows = "";
   const extra = document.getElementById("pane-1");
   const handle = document.getElementById("split-handle");
+  if (handle) {
+    handle.hidden = false;
+    handle.removeAttribute("hidden");
+  }
   if (how === "none") {
     if (extra) extra.hidden = true;
-    if (handle) handle.hidden = true;
+    extra?.classList.remove("vacant");
+    host.style.gridTemplateColumns = "";
   } else {
-    if (extra) extra.hidden = false;
-    if (handle) handle.hidden = false;
+    if (extra) {
+      extra.hidden = false;
+      extra.removeAttribute("hidden");
+    }
+  }
+  applyDesk();
+}
+
+function setPaneVacant(on) {
+  const extra = document.getElementById("pane-1");
+  const empty = document.getElementById("pane-1-empty");
+  extra?.classList.toggle("vacant", on);
+  if (empty) empty.hidden = !on;
+}
+
+function applyDesk() {
+  const stage = document.querySelector(".stage");
+  stage?.classList.toggle("desk-off", !state.deskOpen);
+  const btn = document.getElementById("desk-toggle");
+  if (btn) btn.setAttribute("aria-pressed", state.deskOpen ? "true" : "false");
+  try {
+    sessionStorage.setItem("crew.deskOpen", state.deskOpen ? "1" : "0");
+  } catch {
+    /* ignore */
   }
 }
 
@@ -223,6 +251,8 @@ function closeSplit() {
   state.split = "none";
   state.panes[1] = null;
   state.activePane = 0;
+  state.deskOpen = true;
+  setPaneVacant(false);
   applySplitClass("none");
   bindPane(0);
   const p = state.panes[0];
@@ -248,6 +278,7 @@ function paneOpen(index, kind, id) {
   const i = index === 1 ? 1 : 0;
   const next = resolvePaneTarget(kind, id);
   state.panes[i] = { kind: next.kind, id: next.id };
+  if (i === 1) setPaneVacant(false);
   state.activePane = i;
   bindPane(i);
   markActivePane(i);
@@ -258,12 +289,57 @@ function paneOpen(index, kind, id) {
 function splitOpen(kind, id, how) {
   const next = resolvePaneTarget(kind, id);
   if (how === "right" || how === "below") {
+    if (state.split === "none" && how === "right") state.deskOpen = false;
     state.split = how;
     applySplitClass(how);
     saveSplit();
     return paneOpen(1, next.kind, next.id);
   }
   return paneOpen(state.activePane, next.kind, next.id);
+}
+
+function splitCurrent(how) {
+  const p = state.panes[state.activePane] || { kind: state.kind, id: state.id };
+  if (!p?.kind || !p?.id) return;
+  return splitOpen(p.kind, p.id, how);
+}
+
+function isDesktopShell() {
+  return Boolean(window.__CREW_DESKTOP__ || window.__TAURI_INTERNALS__ || window.__TAURI__);
+}
+
+function deskInvoke(cmd, payload) {
+  const fn = window.__TAURI_INTERNALS__?.invoke;
+  if (!fn) return Promise.reject(new Error("no tauri"));
+  return fn(cmd, payload || {});
+}
+
+async function windowCall(kind) {
+  try {
+    if (kind === "close") return await deskInvoke("plugin:window|close");
+    if (kind === "minimize") return await deskInvoke("plugin:window|minimize");
+    if (kind === "toggle") return await deskInvoke("plugin:window|toggle_maximize");
+    if (kind === "openProject") {
+      return await deskInvoke("plugin:event|emit", { event: "crew-open-project", payload: null });
+    }
+  } catch (err) {
+    console.warn("window", kind, err);
+  }
+}
+
+function fillAppTop() {
+  const cwd = document.getElementById("app-cwd");
+  if (cwd) {
+    const path = String(state.bootstrap?.cwd || "").trim();
+    cwd.textContent = path;
+    cwd.title = path || "Project folder";
+  }
+  const desk = isDesktopShell();
+  document.documentElement.classList.toggle("is-desktop", desk);
+  const open = document.getElementById("win-open-project");
+  const btns = document.getElementById("win-btns");
+  if (open) open.hidden = !desk;
+  if (btns) btns.hidden = !desk;
 }
 
 bindPane(0);
@@ -358,7 +434,420 @@ function allowedModels() {
   return state.bootstrap?.models ?? [];
 }
 
+const VENDOR_NAMES = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+  "google-ai-studio": "Google",
+  "z-ai": "Z.AI",
+  "x-ai": "xAI",
+  "meta-llama": "Meta",
+  mistralai: "Mistral",
+  qwen: "Qwen",
+  deepseek: "DeepSeek",
+  cohere: "Cohere",
+  perplexity: "Perplexity",
+  nvidia: "NVIDIA",
+  amazon: "Amazon",
+  moonshotai: "Moonshot",
+  minimax: "MiniMax",
+  openrouter: "OpenRouter",
+};
+
+function providerGroup(id) {
+  if (!id) return "";
+  if (id.startsWith("harness:")) {
+    const h = id.slice("harness:".length).split(":")[0];
+    if (h === "claude") return "Claude";
+    if (h === "codex") return "Codex";
+    if (h === "grok") return "Grok";
+    if (h === "opencode") return "OpenCode";
+    return "Harnesses";
+  }
+  return "OpenRouter";
+}
+
+function modelShortName(id, label) {
+  if (!id) return label || "";
+  if (id.startsWith("harness:")) return label || id.slice("harness:".length);
+  const rest = String(id).split("/").slice(1).join("/");
+  return rest || label || id;
+}
+
+function vendorLogo(name) {
+  const key = String(name || "all").toLowerCase();
+  const svg = (path, view = "0 0 24 24") => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    el.setAttribute("viewBox", view);
+    el.setAttribute("class", "model-picker-logo");
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML = path;
+    return el;
+  };
+  if (key === "all") {
+    return svg(
+      '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    );
+  }
+  if (key === "openrouter") {
+    return svg('<circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8" fill="none" stroke="currentColor" stroke-width="2"/>');
+  }
+  if (key === "claude") {
+    return svg('<path d="M12 3l2.4 6.2L21 10l-5 4.1 1.6 6.9L12 17.6 6.4 21 8 14.1 3 10l6.6-.8z"/>');
+  }
+  if (key === "codex") {
+    return svg(
+      '<path d="M12 3.2c1.7-1 3.9-.6 5.2.9 1.3 1.5 1.5 3.7.7 5.5 1.7 1.2 2.4 3.4 1.8 5.4-.6 2-2.4 3.5-4.5 3.8-1.1 1.7-3.1 2.5-5.1 2.1-2-.4-3.5-1.9-4.1-3.8-1.8-.6-3.1-2.1-3.4-4-.3-1.9.5-3.8 2-4.9C3.8 6.4 4.6 4.3 6.3 3.2 8 2.1 10.2 2.2 12 3.2z"/>',
+    );
+  }
+  if (key === "grok") {
+    return svg('<path d="M5 5l6.2 7.4L5 19h3.2l4.4-5.3L17.2 19H19l-6.4-7.6L19 5h-3.2l-4.2 5.1L7.8 5z"/>');
+  }
+  if (key === "opencode") {
+    return svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8" fill="none" stroke="currentColor" stroke-width="2"/>');
+  }
+  if (key === "openai") {
+    return svg(
+      '<path d="M12 3.2c1.7-1 3.9-.6 5.2.9 1.3 1.5 1.5 3.7.7 5.5 1.7 1.2 2.4 3.4 1.8 5.4-.6 2-2.4 3.5-4.5 3.8-1.1 1.7-3.1 2.5-5.1 2.1-2-.4-3.5-1.9-4.1-3.8-1.8-.6-3.1-2.1-3.4-4-.3-1.9.5-3.8 2-4.9C3.8 6.4 4.6 4.3 6.3 3.2 8 2.1 10.2 2.2 12 3.2z"/>',
+    );
+  }
+  if (key === "anthropic") {
+    return svg('<path d="M12 3l2.4 6.2L21 10l-5 4.1 1.6 6.9L12 17.6 6.4 21 8 14.1 3 10l6.6-.8z"/>');
+  }
+  if (key === "google") {
+    return svg(
+      '<circle cx="8" cy="8" r="3.2" fill="#ea4335"/><circle cx="16" cy="8" r="3.2" fill="#4285f4"/><circle cx="8" cy="16" r="3.2" fill="#fbbc04"/><circle cx="16" cy="16" r="3.2" fill="#34a853"/>',
+    );
+  }
+  if (key === "xai" || key === "x-ai") {
+    return svg('<path d="M5 5l6.2 7.4L5 19h3.2l4.4-5.3L17.2 19H19l-6.4-7.6L19 5h-3.2l-4.2 5.1L7.8 5z"/>');
+  }
+  if (key === "meta" || key === "meta-llama") {
+    return svg('<path d="M7 16c-2.2-2.4-3-5-3-7.2C4 5.4 6 3.5 8.4 3.5c1.7 0 3 1 3.6 2.6.6-1.6 1.9-2.6 3.6-2.6C17.9 3.5 20 5.4 20 8.8c0 2.2-.8 4.8-3 7.2-1.6 1.8-3.4 3-5 3s-3.4-1.2-5-3z"/>');
+  }
+  if (key === "mistral" || key === "mistralai") {
+    return svg('<path d="M4 18V6h3.2l2.2 5.5L12 6h3.2L12.8 18H9.6l1.5-5.2L8.6 18H4zm12.2 0V6H20v12h-3.8z"/>');
+  }
+  if (key === "harnesses") {
+    return svg('<path d="M8 4h8v3H8zM5 9h14v3H5zm3 5h8v6H8z"/>');
+  }
+  if (key === "z.ai" || key === "z-ai") {
+    return svg('<path d="M6 6h12v3.2L10.4 15H18V18H6v-3.2L13.6 9H6z"/>');
+  }
+  if (key === "qwen") {
+    return svg('<circle cx="12" cy="12" r="8"/><path d="M9 12h6M12 9v6" fill="none" stroke="currentColor" stroke-width="2"/>');
+  }
+  if (key === "deepseek") {
+    return svg('<path d="M5 12c0-4 3-7 7-7s7 3 7 7-3 8-7 8c-2 0-3-.6-4.2-1.6"/>');
+  }
+  const letter = document.createElement("span");
+  letter.className = "model-picker-logo letter";
+  letter.textContent = (name || "?").slice(0, 1).toUpperCase();
+  return letter;
+}
+
+function catId(label) {
+  if (!label || label === "All") return "all";
+  return String(label).toLowerCase();
+}
+
+function pickerGroups(select) {
+  const by = new Map();
+  const order = [];
+  const add = (group, value, label) => {
+    if (!by.has(group)) {
+      by.set(group, []);
+      order.push(group);
+    }
+    by.get(group).push({ value, label });
+  };
+  for (const child of [...select.children]) {
+    if (child.tagName === "OPTION") {
+      if (!child.value) continue;
+      add(providerGroup(child.value), child.value, child.textContent);
+    } else if (child.tagName === "OPTGROUP") {
+      const g = child.label || "OpenRouter";
+      for (const opt of child.querySelectorAll("option")) {
+        add(g, opt.value, opt.textContent);
+      }
+    }
+  }
+  const rank = ["OpenRouter", "Claude", "Codex", "Grok", "OpenCode"];
+  const names = [...order].sort((a, b) => {
+    const ia = rank.indexOf(a);
+    const ib = rank.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return names.map((n) => ({ label: n, items: by.get(n) || [] }));
+}
+
+function closeModelPickers(except) {
+  for (const menu of document.querySelectorAll(".model-picker-menu")) {
+    if (menu === except) continue;
+    menu.hidden = true;
+    const wrap = menu._wrap;
+    if (wrap && menu.parentNode !== wrap) wrap.append(menu);
+  }
+}
+
+function pickerHost(wrap) {
+  return wrap.closest("dialog") || document.body;
+}
+
+function placePickerMenu(wrap) {
+  const btn = wrap.querySelector(".model-picker-btn");
+  const menu = wrap._menu || wrap.querySelector(".model-picker-menu");
+  if (!btn || !menu) return;
+  const host = pickerHost(wrap);
+  const br = btn.getBoundingClientRect();
+  const hr =
+    host === document.body
+      ? { left: 8, width: window.innerWidth - 16, bottom: window.innerHeight - 8 }
+      : host.getBoundingClientRect();
+  const pad = 16;
+  const left = hr.left + pad;
+  const width = Math.max(240, hr.width - pad * 2);
+  const top = br.bottom + 6;
+  const maxH = Math.max(160, (hr.bottom || window.innerHeight) - top - pad);
+  menu.style.position = "fixed";
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.width = `${width}px`;
+  menu.style.maxHeight = `${maxH}px`;
+  menu.style.zIndex = "20";
+}
+
+function syncPickerBtn(select) {
+  const wrap = select?.closest(".model-picker");
+  const btn = wrap?.querySelector(".model-picker-btn");
+  if (!btn) return;
+  const opt = select.selectedOptions[0];
+  const text = opt?.value
+    ? modelShortName(opt.value, opt.textContent)
+    : opt?.textContent || "Select";
+  btn.replaceChildren();
+  if (opt?.value) btn.append(vendorLogo(providerGroup(opt.value)));
+  const lab = document.createElement("span");
+  lab.textContent = text;
+  btn.append(lab);
+  btn.title = opt?.value || text;
+}
+
+function renderPickerList(wrap, query) {
+  const select = wrap.querySelector("select");
+  const menu = wrap._menu || wrap.querySelector(".model-picker-menu");
+  const list = menu?.querySelector(".model-picker-list");
+  const cats = menu?.querySelector(".model-picker-cats");
+  if (!select || !list) return;
+  const q = String(query || "").trim().toLowerCase();
+  const groups = pickerGroups(select);
+  const cat = wrap.dataset.cat || "all";
+  if (cats) {
+    cats.replaceChildren();
+    const makeCat = (id, label) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "model-picker-cat";
+      if (cat === id) b.classList.add("on");
+      b.dataset.cat = id;
+      b.append(vendorLogo(label));
+      const span = document.createElement("span");
+      span.textContent = label;
+      b.append(span);
+      return b;
+    };
+    cats.append(makeCat("all", "All"));
+    for (const g of groups) cats.append(makeCat(catId(g.label), g.label));
+  }
+  list.replaceChildren();
+  const blank = [...select.options].find((o) => o.parentElement === select && !o.value);
+  const hit = (s) => !q || String(s || "").toLowerCase().includes(q);
+  if (blank && cat === "all" && hit(blank.textContent)) {
+    const li = document.createElement("li");
+    li.className = "model-picker-item";
+    if (!select.value) li.classList.add("on");
+    li.dataset.value = "";
+    li.textContent = blank.textContent;
+    list.append(li);
+  }
+  for (const g of groups) {
+    if (cat !== "all" && catId(g.label) !== cat) continue;
+    const items = g.items.filter(
+      (it) => hit(it.value) || hit(it.label) || hit(g.label) || hit(modelShortName(it.value, it.label)),
+    );
+    if (!items.length) continue;
+    if (cat === "all") {
+      const head = document.createElement("li");
+      head.className = "model-picker-group";
+      head.append(vendorLogo(g.label));
+      const t = document.createElement("span");
+      t.textContent = g.label;
+      head.append(t);
+      list.append(head);
+    }
+    for (const it of items) {
+      const li = document.createElement("li");
+      li.className = "model-picker-item";
+      if (it.value === select.value) li.classList.add("on");
+      li.dataset.value = it.value;
+      li.append(vendorLogo(g.label));
+      const col = document.createElement("span");
+      col.className = "model-picker-copy";
+      const name = document.createElement("strong");
+      name.textContent = modelShortName(it.value, it.label);
+      col.append(name);
+      if (!it.value.startsWith("harness:")) {
+        const id = document.createElement("span");
+        id.className = "id";
+        id.textContent = it.value;
+        col.append(id);
+      }
+      li.append(col);
+      list.append(li);
+    }
+  }
+  if (!list.children.length) {
+    const empty = document.createElement("li");
+    empty.className = "model-picker-empty";
+    empty.textContent = "No models match.";
+    list.append(empty);
+  }
+}
+
+function pickModelValue(wrap, value) {
+  const select = wrap.querySelector("select");
+  if (!select) return;
+  select.value = value;
+  syncPickerBtn(select);
+  closeModelPickers();
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function bindModelPicker(select) {
+  if (!select || select.closest(".model-picker")) {
+    const wrap = select?.closest(".model-picker");
+    if (wrap) {
+      syncPickerBtn(select);
+      if (!wrap.querySelector(".model-picker-menu")?.hidden) renderPickerList(wrap, wrap.querySelector(".model-picker-q")?.value);
+    }
+    return wrap;
+  }
+  const wrap = document.createElement("div");
+  wrap.className = "model-picker";
+  select.parentNode.insertBefore(wrap, select);
+  select.classList.add("model-picker-native");
+  select.tabIndex = -1;
+  wrap.append(select);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "model-picker-btn";
+  btn.setAttribute("aria-haspopup", "listbox");
+  const menu = document.createElement("div");
+  menu.className = "model-picker-menu";
+  menu.hidden = true;
+  const q = document.createElement("input");
+  q.type = "search";
+  q.className = "model-picker-q";
+  q.placeholder = "Search models…";
+  q.autocomplete = "off";
+  const body = document.createElement("div");
+  body.className = "model-picker-body";
+  const cats = document.createElement("div");
+  cats.className = "model-picker-cats";
+  const list = document.createElement("ul");
+  list.className = "model-picker-list";
+  body.append(cats, list);
+  menu.append(q, body);
+  wrap.append(btn, menu);
+  wrap._menu = menu;
+  menu._wrap = wrap;
+  wrap.dataset.cat = "all";
+  btn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    const open = menu.hidden;
+    closeModelPickers();
+    if (!open) return;
+    const show = () => {
+      pickerHost(wrap).append(menu);
+      menu.hidden = false;
+      q.value = "";
+      wrap.dataset.cat = "all";
+      renderPickerList(wrap, "");
+      placePickerMenu(wrap);
+      q.focus();
+    };
+    show();
+    if (select.id === "bot-model" || select.id === "app-default-model") {
+      ensureProviderModels().then(() => {
+        if (menu.hidden) return;
+        const impl = readImplPicker(select);
+        fillImplPicker(
+          select,
+          impl.harness ? select.dataset.orModel || "" : impl.model,
+          impl.harness,
+          [...select.options].find((o) => !o.value)?.textContent || "pick a model",
+          impl.harnessModel,
+        );
+        renderPickerList(wrap, q.value);
+        placePickerMenu(wrap);
+      });
+    }
+  });
+  q.addEventListener("input", () => renderPickerList(wrap, q.value));
+  cats.addEventListener("click", (ev) => {
+    const b = ev.target.closest(".model-picker-cat");
+    if (!b) return;
+    wrap.dataset.cat = b.dataset.cat || "all";
+    renderPickerList(wrap, q.value);
+    q.focus();
+  });
+  q.addEventListener("keydown", (ev) => {
+    const items = [...list.querySelectorAll(".model-picker-item")];
+    const i = items.findIndex((el) => el.classList.contains("on"));
+    const go = (n) => {
+      if (!items.length) return;
+      const next = Math.max(0, Math.min(items.length - 1, n));
+      items.forEach((el, j) => el.classList.toggle("on", j === next));
+      items[next]?.scrollIntoView({ block: "nearest" });
+    };
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      go(i < 0 ? 0 : i + 1);
+    } else if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      go(i < 0 ? items.length - 1 : i - 1);
+    } else if (ev.key === "Enter") {
+      ev.preventDefault();
+      const cur = list.querySelector(".model-picker-item.on") || items[0];
+      if (cur) pickModelValue(wrap, cur.dataset.value ?? "");
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      menu.hidden = true;
+      btn.focus();
+    }
+  });
+  list.addEventListener("click", (ev) => {
+    const item = ev.target.closest(".model-picker-item");
+    if (!item) return;
+    pickModelValue(wrap, item.dataset.value ?? "");
+  });
+  syncPickerBtn(select);
+  return wrap;
+}
+
+if (!window.__crewPickerDoc) {
+  window.__crewPickerDoc = true;
+  document.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest(".model-picker") || ev.target.closest(".model-picker-menu")) return;
+    closeModelPickers();
+  });
+}
+
 function fillModelSelect(select, current, blank) {
+  if (!select) return;
   const ids = [...new Set([current, ...allowedModels()].filter(Boolean))];
   select.replaceChildren();
   const empty = document.createElement("option");
@@ -372,6 +861,72 @@ function fillModelSelect(select, current, blank) {
     select.append(opt);
   }
   select.value = current || "";
+  bindModelPicker(select);
+}
+
+function readyHarnesses() {
+  return (state.bootstrap?.providerCards ?? []).filter(
+    (c) => c.id !== "openrouter" && c.enabled && c.installed,
+  );
+}
+
+async function ensureProviderModels() {
+  if (state.providerModels && Date.now() - (state.providerModelsAt || 0) < 60_000) return;
+  try {
+    state.providerModels = await (await api("/api/providers/models")).json();
+    state.providerModelsAt = Date.now();
+  } catch {
+    state.providerModels = state.providerModels || {};
+  }
+}
+
+function fillImplPicker(select, model, harness, blank, harnessModel) {
+  if (!select) return;
+  const hm = harnessModel || "";
+  const current = harness ? (hm ? `harness:${harness}:${hm}` : `harness:${harness}`) : model || "";
+  if (model) select.dataset.orModel = model;
+  fillModelSelect(select, harness ? "" : model, blank);
+  const catalogs = state.providerModels || {};
+  for (const c of readyHarnesses()) {
+    const group = document.createElement("optgroup");
+    group.label = c.label;
+    const def = document.createElement("option");
+    def.value = `harness:${c.id}`;
+    def.textContent = `${c.label} default`;
+    group.append(def);
+    for (const m of catalogs[c.id] || []) {
+      const opt = document.createElement("option");
+      opt.value = `harness:${c.id}:${m.id}`;
+      opt.textContent = m.label || m.id;
+      group.append(opt);
+    }
+    select.append(group);
+  }
+  if (current && ![...select.querySelectorAll("option")].some((o) => o.value === current)) {
+    const opt = document.createElement("option");
+    opt.value = current;
+    opt.textContent = hm || harness || current;
+    select.append(opt);
+  }
+  select.value = current;
+  bindModelPicker(select);
+}
+
+function readImplPicker(select) {
+  const raw = select?.value || "";
+  if (raw.startsWith("harness:")) {
+    const rest = raw.slice("harness:".length);
+    const cut = rest.indexOf(":");
+    if (cut < 0) return { model: "", harness: rest, harnessModel: "" };
+    return { harness: rest.slice(0, cut), harnessModel: rest.slice(cut + 1), model: "" };
+  }
+  return { model: raw, harness: null, harnessModel: "" };
+}
+
+function syncBotFallback() {
+  const impl = readImplPicker(document.getElementById("bot-model"));
+  const row = document.getElementById("bot-fallback")?.closest(".field");
+  if (row) row.hidden = Boolean(impl.harness);
 }
 
 function syncModeChip() {
@@ -441,8 +996,9 @@ function renderRail() {
   const b = state.bootstrap;
   els.channels.replaceChildren();
   for (const ch of b.channels) {
-    const btn = document.createElement("button");
-    btn.type = "button";
+    const btn = document.createElement("div");
+    btn.setAttribute("role", "button");
+    btn.tabIndex = 0;
     const icon = ch.icon && ch.icon !== "#" ? ch.icon : "#";
     const label = document.createElement("span");
     label.className = "label";
@@ -452,9 +1008,11 @@ function renderRail() {
     const badge = badgeEl(unread);
     if (badge) btn.append(badge);
     btn.dataset.id = ch.id;
-    btn.draggable = true;
     btn.className = paneShows("channel", ch.id) ? "on" : "";
-    btn.onclick = () => paneOpen(state.activePane, "channel", ch.id);
+    btn.onclick = () => {
+      if (railPullMoved) return;
+      paneOpen(state.activePane, "channel", ch.id);
+    };
     els.channels.append(btn);
   }
   renderPeople();
@@ -536,103 +1094,90 @@ async function newPersonChat(botId) {
   await paneOpen(state.activePane, "dm", data.id);
 }
 
+function peopleOpenSet() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem("crew.peopleOpen") || "[]");
+    return new Set(Array.isArray(raw) ? raw.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function savePeopleOpen(open) {
+  try {
+    sessionStorage.setItem("crew.peopleOpen", JSON.stringify([...open]));
+  } catch {
+    /* ignore */
+  }
+}
+
+function humanChatsFor(botId) {
+  return (state.bootstrap?.dms ?? [])
+    .filter((d) => d.withHuman && d.b === botId)
+    .slice()
+    .sort((a, b) => String(b.lastTs).localeCompare(String(a.lastTs)));
+}
+
+function dmChatButton(row) {
+  const btn = document.createElement("div");
+  btn.setAttribute("role", "button");
+  btn.tabIndex = 0;
+  btn.className = "dm-row";
+  btn.dataset.id = row.id;
+  if (paneShows("dm", row.id)) btn.classList.add("on");
+  const title = document.createElement("span");
+  title.className = "dm-title";
+  title.textContent = row.title || dmHeadline(row.id);
+  title.title = title.textContent;
+  const sub = document.createElement("span");
+  sub.className = "dm-sub";
+  const when = dmWhen(row.lastTs);
+  const gist = row.lastText ? String(row.lastText).replace(/\s+/g, " ").slice(0, 40) : "New chat";
+  sub.textContent = when ? `${when} · ${gist}` : gist;
+  const col = document.createElement("span");
+  col.className = "dm-col";
+  col.append(title, sub);
+  btn.append(col);
+  const unread = unreadOf("dm", row.id);
+  const badge = badgeEl(unread);
+  if (badge) btn.append(badge);
+  btn.onclick = () => {
+    if (railPullMoved) return;
+    paneOpen(state.activePane, "dm", row.id);
+  };
+  return btn;
+}
+
+async function persistDmPrefs(mutator) {
+  const cur = await (await api("/api/dm-prefs")).json();
+  const next = mutator(cur);
+  await api("/api/dm-prefs", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(next),
+  });
+  state.bootstrap = await (await api("/api/bootstrap")).json();
+  renderRail();
+}
+
 function renderDirect() {
   els.direct.replaceChildren();
-  const rows = state.bootstrap?.dms ?? [];
-  if (!rows.length) {
-    const empty = document.createElement("p");
-    empty.className = "desk-empty";
-    empty.textContent = "No private chats yet. Open a person, or + for a new chat.";
-    els.direct.append(empty);
-    return;
-  }
-  const groups = [];
-  const map = new Map();
-  for (const row of rows) {
-    const key = row.withHuman ? `h:${row.b}` : `b:${row.a}__${row.b}`;
-    let g = map.get(key);
-    if (!g) {
-      g = { key, withHuman: row.withHuman, peer: row.b, a: row.a, b: row.b, chats: [] };
-      map.set(key, g);
-      groups.push(g);
-    }
-    g.chats.push(row);
-  }
-  for (const g of groups) {
-    const box = document.createElement("div");
-    box.className = "dm-group";
-    const top = document.createElement("div");
-    top.className = "dm-group-top";
-    const who = document.createElement("button");
-    who.type = "button";
-    who.className = "dm-group-who";
-    who.textContent = g.withHuman
-      ? displayName(g.peer)
-      : `${displayName(g.a)} · ${displayName(g.b)}`;
-    who.onclick = () => {
-      if (g.withHuman) openPersonDm(g.peer);
-      else paneOpen(state.activePane, "dm", g.chats[0].id);
-    };
-    top.append(who);
-    if (g.withHuman) {
-      const add = document.createElement("button");
-      add.type = "button";
-      add.className = "add";
-      add.title = `New chat with ${displayName(g.peer)}`;
-      add.append(ico("plus"));
-      add.onclick = (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        newPersonChat(g.peer).catch((err) =>
-          addMessage({ who: "error", text: String(err), kind: "error" }),
-        );
-      };
-      top.append(add);
-    }
-    box.append(top);
-    let lastDay = "";
-    for (const row of g.chats) {
-      const day = dmWhen(row.lastTs);
-      if (day && day !== lastDay) {
-        lastDay = day;
-        const stamp = document.createElement("p");
-        stamp.className = "dm-date";
-        stamp.textContent = day;
-        box.append(stamp);
-      }
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "dm-row";
-      btn.dataset.id = row.id;
-      btn.draggable = true;
-      if (paneShows("dm", row.id)) btn.classList.add("on");
-      const title = document.createElement("span");
-      title.className = "dm-title";
-      title.textContent = row.title || dmHeadline(row.id);
-      const sub = document.createElement("span");
-      sub.className = "dm-sub";
-      sub.textContent = row.lastText
-        ? String(row.lastText).replace(/\s+/g, " ").slice(0, 48)
-        : "New chat";
-      const col = document.createElement("span");
-      col.className = "dm-col";
-      col.append(title, sub);
-      btn.append(col);
-      const unread = unreadOf("dm", row.id);
-      const badge = badgeEl(unread);
-      if (badge) btn.append(badge);
-      btn.onclick = () => paneOpen(state.activePane, "dm", row.id);
-      box.append(btn);
-    }
-    els.direct.append(box);
-  }
+  const label = document.getElementById("direct-label");
+  const rows = (state.bootstrap?.dms ?? []).filter((d) => !d.withHuman && !d.archived);
+  if (label) label.hidden = !rows.length;
+  els.direct.hidden = !rows.length;
+  for (const row of rows) els.direct.append(dmChatButton(row));
 }
 
 function renderPeople() {
   els.people.replaceChildren();
+  const open = peopleOpenSet();
   const show = (state.bootstrap?.bots ?? []).map((b) => b.id);
   for (const id of show) {
     const face = faceFor(id);
+    const block = document.createElement("div");
+    block.className = "person-block";
+    if (open.has(id)) block.classList.add("open");
     const wrap = document.createElement("div");
     wrap.className = "person-row";
     const row = document.createElement("button");
@@ -655,14 +1200,33 @@ function renderPeople() {
     av.style.background = face.bg;
     av.style.color = face.fg;
     const label = document.createElement("span");
+    label.className = "person-name";
     label.textContent = displayName(id);
+    label.title = `${displayName(id)} · @${id}`;
     row.append(av, label);
-    const unread = (state.bootstrap?.dms ?? [])
-      .filter((d) => d.withHuman && d.b === id)
-      .reduce((n, d) => n + unreadOf("dm", d.id), 0);
+    const live = humanChatsFor(id).filter((d) => !d.archived);
+    const unread = live.reduce((n, d) => n + unreadOf("dm", d.id), 0);
     const badge = badgeEl(unread);
     if (badge) row.append(badge);
-    row.onclick = () => openPersonDm(id);
+    row.onclick = () => {
+      if (railPullMoved) return;
+      if (open.has(id)) open.delete(id);
+      else open.add(id);
+      savePeopleOpen(open);
+      renderPeople();
+    };
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "add";
+    add.title = `New chat with ${displayName(id)}`;
+    add.append(ico("plus"));
+    add.onclick = (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      open.add(id);
+      savePeopleOpen(open);
+      newPersonChat(id).catch((err) => addMessage({ who: "error", text: String(err), kind: "error" }));
+    };
     const edit = document.createElement("button");
     edit.type = "button";
     edit.className = "edit";
@@ -685,8 +1249,29 @@ function renderPeople() {
       ev.stopPropagation();
       deleteBot(id);
     };
-    wrap.append(row, edit, del);
-    els.people.append(wrap);
+    wrap.append(row, add, edit, del);
+    block.append(wrap);
+    const chats = document.createElement("div");
+    chats.className = "person-chats";
+    for (const rowChat of live) chats.append(dmChatButton(rowChat));
+    const archived = humanChatsFor(id).filter((d) => d.archived);
+    if (archived.length) {
+      const arch = document.createElement("details");
+      arch.className = "person-archived";
+      const sum = document.createElement("summary");
+      sum.textContent = `Archived (${archived.length})`;
+      arch.append(sum);
+      for (const rowChat of archived) arch.append(dmChatButton(rowChat));
+      chats.append(arch);
+    }
+    if (!live.length && !archived.length) {
+      const empty = document.createElement("p");
+      empty.className = "desk-empty";
+      empty.textContent = "No chats yet. + starts one.";
+      chats.append(empty);
+    }
+    block.append(chats);
+    els.people.append(block);
   }
 }
 
@@ -855,6 +1440,7 @@ async function renderContextChip() {
 
 async function maybeAutoCompact(kind, id) {
   if (!kind || !id) return;
+  if (state.bootstrap?.autoCompact === false) return;
   const keep = Number(state.bootstrap?.keep) || 80;
   const posted = postedOf(kind, id);
   if (!(posted > keep * 0.7)) return;
@@ -1548,8 +2134,27 @@ async function openBotSettings(id) {
     document.getElementById("bot-name").value = data.name ?? "";
     document.getElementById("bot-soul").value = data.soul ?? "";
     document.getElementById("bot-orders").value = data.standingOrders ?? "";
-    fillModelSelect(document.getElementById("bot-model"), data.model, "workspace default");
-    fillModelSelect(document.getElementById("bot-fallback"), data.fallbackModel, "workspace fallback");
+    fillImplPicker(
+      document.getElementById("bot-model"),
+      data.model,
+      data.harness,
+      "workspace default",
+      data.harnessModel,
+    );
+    ensureProviderModels().then(() => {
+      if (state.editBotId !== id) return;
+      fillImplPicker(
+        document.getElementById("bot-model"),
+        data.model,
+        data.harness,
+        "workspace default",
+        data.harnessModel,
+      );
+      syncBotFallback();
+    });
+    fillImplPicker(document.getElementById("bot-fallback"), data.fallbackModel, null, "workspace fallback");
+    syncBotFallback();
+    fillImplPicker(document.getElementById("bot-title-model"), data.titleModel, null, "Jobs Title default");
     paintFace(document.getElementById("bot-face"), data.icon, id);
     renderSkills(data.skills ?? []);
     clearSkillForm();
@@ -1630,7 +2235,16 @@ async function renderAlways() {
       name.textContent = r.tool;
       const desc = document.createElement("span");
       desc.textContent = r.key;
-      li.append(name, desc);
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "ghost";
+      del.textContent = "Remove";
+      del.onclick = async () => {
+        const q = new URLSearchParams({ tool: r.tool, key: r.key });
+        await api(`/api/permissions?${q}`, { method: "DELETE" });
+        await renderAlways();
+      };
+      li.append(name, desc, del);
       list.append(li);
     }
   } catch (err) {
@@ -1810,14 +2424,18 @@ document.getElementById("channel-form").addEventListener("submit", async (ev) =>
 document.getElementById("bot-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const id = state.editBotId;
+  const impl = readImplPicker(document.getElementById("bot-model"));
   const patch = {
     icon: document.getElementById("bot-icon").value.trim(),
     name: document.getElementById("bot-name").value.trim() || id,
     soul: document.getElementById("bot-soul").value,
     standingOrders: document.getElementById("bot-orders").value,
-    model: document.getElementById("bot-model").value,
     fallbackModel: document.getElementById("bot-fallback").value,
+    titleModel: document.getElementById("bot-title-model").value,
+    harness: impl.harness,
+    harnessModel: impl.harness ? impl.harnessModel || "" : null,
   };
+  if (!impl.harness) patch.model = impl.model;
   try {
     if (state.creating === "person") {
       await api("/api/bots", {
@@ -1987,12 +2605,30 @@ async function restoreSplit() {
 
 async function boot() {
   state.bootstrap = await (await api("/api/bootstrap")).json();
+  fillAppTop();
+  applyDesk();
   renderRail();
   const first = state.bootstrap.channels[0];
   if (first) await paneOpen(0, "channel", first.id);
   await restoreSplit();
   startWatch();
 }
+
+
+document.getElementById("desk-toggle")?.addEventListener("click", () => {
+  state.deskOpen = !state.deskOpen;
+  applyDesk();
+});
+document.getElementById("app-top")?.addEventListener("dblclick", (ev) => {
+  if (ev.target.closest("button")) return;
+  if (isDesktopShell()) windowCall("toggle");
+});
+document.getElementById("win-min")?.addEventListener("click", () => windowCall("minimize"));
+document.getElementById("win-max")?.addEventListener("click", () => windowCall("toggle"));
+document.getElementById("win-close")?.addEventListener("click", () => windowCall("close"));
+document.getElementById("win-open-project")?.addEventListener("click", () => {
+  windowCall("openProject");
+});
 
 document.getElementById("mode-close").onclick = () => els.modeModal.close();
 document.getElementById("mode-list").addEventListener("click", async (ev) => {
@@ -2030,27 +2666,172 @@ function renderAllowedChips() {
 }
 
 function fillSettingsSelects() {
-  fillModelSelect(
+  fillImplPicker(
     document.getElementById("app-default-model"),
     state.bootstrap.model,
+    state.bootstrap.defaultHarness,
     "pick a model",
+    state.bootstrap.defaultHarnessModel,
   );
-  fillModelSelect(
+  fillImplPicker(
     document.getElementById("app-fallback-model"),
     state.bootstrap.fallbackModel,
+    null,
     "none",
   );
+  fillImplPicker(
+    document.getElementById("app-reviewer-model"),
+    state.bootstrap.reviewerModel ?? "",
+    null,
+    "Off (auto → supervised)",
+  );
+  const mode = document.getElementById("app-default-mode");
+  if (mode) mode.value = state.bootstrap.defaultPermissionMode || "auto-accept";
+  const compact = document.getElementById("app-auto-compact");
+  if (compact) compact.checked = state.bootstrap.autoCompact !== false;
+  const base = document.getElementById("app-base-url");
+  if (base) base.value = state.bootstrap.baseUrl || "";
+  const path = document.getElementById("app-workspace-path");
+  if (path) path.textContent = state.bootstrap.cwd || "";
 }
 
-const JOB_KEYS = ["title", "compact", "vision", "read"];
+function providerFileFromCards() {
+  const body = {
+    openrouter: { enabled: true },
+    claude: { enabled: false, binary: "" },
+    codex: { enabled: false, binary: "" },
+    grok: { enabled: false, binary: "" },
+    opencode: { enabled: false, binary: "" },
+  };
+  for (const card of document.querySelectorAll("[data-harness]")) {
+    const id = card.dataset.harness;
+    if (!body[id]) continue;
+    body[id] = {
+      enabled: Boolean(card.querySelector("[data-prov-on]")?.checked),
+      binary: card.querySelector("[data-prov-bin]")?.value?.trim() || "",
+      customModels: [...card.querySelectorAll("[data-custom-chip]")].map((el) => el.dataset.id).filter(Boolean),
+    };
+  }
+  return body;
+}
 
-function fillBotSelect(select, current) {
+function paintProviderCards() {
+  const cards = state.bootstrap?.providerCards ?? [];
+  const file = state.bootstrap?.providers ?? {};
+  const orPill = document.getElementById("prov-openrouter-pill");
+  const orStatus = document.getElementById("prov-openrouter-status");
+  if (orPill) orPill.textContent = state.bootstrap?.keySet ? "Ready" : "Needs key";
+  if (orStatus) {
+    orStatus.textContent = state.bootstrap?.keySet
+      ? "Crew engine · key saved"
+      : "Crew engine · add an API key";
+  }
+  const orCard = document.getElementById("prov-openrouter");
+  if (orCard) orCard.dataset.status = state.bootstrap?.keySet ? "ready" : "missing";
+  for (const card of document.querySelectorAll("[data-harness]")) {
+    const id = card.dataset.harness;
+    const row = cards.find((c) => c.id === id);
+    const slot = file[id] || {};
+    const on = card.querySelector("[data-prov-on]");
+    const bin = card.querySelector("[data-prov-bin]");
+    const status = card.querySelector("[data-prov-status]");
+    const pill = card.querySelector("[data-prov-pill]");
+    const login = card.querySelector("[data-prov-login]");
+    const enabled = Boolean(row?.enabled ?? slot.enabled);
+    if (on) on.checked = enabled;
+    if (bin && document.activeElement !== bin) bin.value = row?.binary || slot.binary || "";
+    const st = row?.status || (enabled ? "missing" : "off");
+    card.dataset.status = st;
+    if (enabled || card.classList.contains("open")) card.classList.add("open");
+    else card.classList.remove("open");
+    if (enabled) card.classList.add("open");
+    if (status) {
+      if (st === "ready") {
+        status.textContent = [row?.version, row?.which].filter(Boolean).join(" · ") || "Ready";
+      } else if (st === "installed") status.textContent = row?.version ? `Installed · ${row.version}` : "Installed — enable to use";
+      else if (st === "missing") status.textContent = "Not installed";
+      else status.textContent = "Off";
+    }
+    if (pill) {
+      pill.textContent =
+        st === "ready" ? "Ready" : st === "installed" ? "Installed" : st === "missing" ? "Missing" : "Off";
+    }
+    if (login) {
+      login.textContent = row?.login ? `Log in: ${row.login}` : "";
+    }
+    const mark = card.querySelector(".provider-mark");
+    if (mark && !mark.dataset.ink) {
+      mark.dataset.ink = "1";
+      mark.replaceChildren(vendorLogo(id));
+    }
+    const box = card.querySelector("[data-prov-customs]");
+    if (box) {
+      box.replaceChildren();
+      for (const mid of slot.customModels || []) {
+        box.append(customModelChip(mid));
+      }
+    }
+  }
+}
+
+function customModelChip(id) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "custom-chip";
+  b.dataset.customChip = "";
+  b.dataset.id = id;
+  b.textContent = `${id} ×`;
+  b.title = "Remove";
+  return b;
+}
+
+async function refreshProviderHealth() {
+  for (const el of document.querySelectorAll("[data-prov-status]")) {
+    if (el.closest("[data-harness]")?.querySelector("[data-prov-on]")?.checked) {
+      /* keep */
+    }
+    const card = el.closest("[data-harness]");
+    if (card && !card.dataset.status) el.textContent = "Checking…";
+  }
+  try {
+    const data = await (await api("/api/providers/health")).json();
+    if (Array.isArray(data.cards)) state.bootstrap.providerCards = data.cards;
+    paintProviderCards();
+    const botModel = document.getElementById("bot-model");
+    if (document.getElementById("bot-modal")?.open && botModel) {
+      const cur = readImplPicker(botModel);
+      fillImplPicker(botModel, cur.model, cur.harness, "workspace default");
+      syncBotFallback();
+    }
+  } catch (err) {
+    toast(String(err));
+  }
+}
+
+async function persistProviders() {
+  const saved = await (
+    await api("/api/providers", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(providerFileFromCards()),
+    })
+  ).json();
+  state.bootstrap.providers = saved;
+  state.providerModels = null;
+  state.providerModelsAt = 0;
+  await refreshProviderHealth();
+  await ensureProviderModels();
+  fillSettingsSelects();
+  fillJobs();
+}
+
+function fillBotSelect(select, current, blank) {
   if (!select) return;
   const bots = state.bootstrap?.bots ?? [];
   select.replaceChildren();
   const none = document.createElement("option");
   none.value = "";
-  none.textContent = "(none)";
+  none.textContent = blank || "(none)";
   select.append(none);
   for (const b of bots) {
     const opt = document.createElement("option");
@@ -2061,32 +2842,43 @@ function fillBotSelect(select, current) {
   select.value = current || "";
 }
 
+function jobFromPicker(select) {
+  const impl = readImplPicker(select);
+  return {
+    model: impl.harness ? "" : impl.model,
+    botId: null,
+    harness: impl.harness,
+    harnessModel: impl.harness ? impl.harnessModel || "" : null,
+  };
+}
+
 async function fillJobs() {
   let jobs = {
-    title: { model: "", botId: null },
-    compact: { model: "", botId: null },
-    vision: { model: "", botId: null },
-    read: { model: "", botId: null },
+    title: { model: "", botId: null, harness: null, harnessModel: null },
+    compact: { model: "", botId: null, harness: null, harnessModel: null },
+    vision: { model: "", botId: null, harness: null, harnessModel: null },
+    read: { model: "", botId: null, harness: null, harnessModel: null },
   };
   try {
     jobs = await (await api("/api/jobs")).json();
   } catch {
     /* defaults */
   }
-  for (const key of JOB_KEYS) {
-    const blank = key === "vision" || key === "read" ? "Off" : "Default";
-    fillModelSelect(document.getElementById(`job-${key}-model`), jobs[key]?.model ?? "", blank);
-    fillBotSelect(document.getElementById(`job-${key}-bot`), jobs[key]?.botId ?? "");
-  }
+  const row = (el, job, blank) =>
+    fillImplPicker(el, job?.model ?? "", job?.harness, blank, job?.harnessModel);
+  row(document.getElementById("job-title-model"), jobs.title, "Default");
+  row(document.getElementById("job-compact-bot"), jobs.compact, "Default");
+  row(document.getElementById("job-vision-bot"), jobs.vision, "Off");
+  row(document.getElementById("job-read-bot"), jobs.read, "Off");
 }
 
 async function persistJobs() {
-  const body = {};
-  for (const key of JOB_KEYS) {
-    const model = document.getElementById(`job-${key}-model`)?.value ?? "";
-    const botId = document.getElementById(`job-${key}-bot`)?.value || null;
-    body[key] = { model, botId };
-  }
+  const body = {
+    title: jobFromPicker(document.getElementById("job-title-model")),
+    compact: jobFromPicker(document.getElementById("job-compact-bot")),
+    vision: jobFromPicker(document.getElementById("job-vision-bot")),
+    read: jobFromPicker(document.getElementById("job-read-bot")),
+  };
   await api("/api/jobs", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -2134,6 +2926,7 @@ async function persistAllowed(ids) {
   state.bootstrap.models = res.models;
   renderAllowedChips();
   fillSettingsSelects();
+  paintProviderCards();
 }
 
 async function loadCatalog(q) {
@@ -2178,6 +2971,130 @@ async function loadCatalog(q) {
   }
 }
 
+function switchSettingsTab(name) {
+  const tab = name || "general";
+  closeModelPickers();
+  for (const btn of document.querySelectorAll("[data-settings-tab]")) {
+    btn.classList.toggle("on", btn.dataset.settingsTab === tab);
+  }
+  for (const panel of document.querySelectorAll("[data-settings-panel]")) {
+    panel.hidden = panel.dataset.settingsPanel !== tab;
+  }
+}
+
+let mcpDraft = [];
+
+function emptyMcpServer() {
+  return { name: "", enabled: true, command: "", args: [], env: {} };
+}
+
+function renderMcp() {
+  const box = document.getElementById("mcp-list");
+  if (!box) return;
+  box.replaceChildren();
+  if (!mcpDraft.length) {
+    const p = document.createElement("p");
+    p.className = "field-hint";
+    p.textContent = "No servers yet. Add a stdio command (for example npx -y @modelcontextprotocol/server-filesystem .).";
+    box.append(p);
+    return;
+  }
+  mcpDraft.forEach((row, i) => {
+    const card = document.createElement("article");
+    card.className = "mcp-card";
+    const top = document.createElement("div");
+    top.className = "mcp-card-top";
+    const name = document.createElement("input");
+    name.placeholder = "name";
+    name.value = row.name;
+    name.oninput = () => {
+      mcpDraft[i].name = name.value;
+    };
+    const on = document.createElement("label");
+    on.className = "check-row";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = row.enabled !== false;
+    check.onchange = () => {
+      mcpDraft[i].enabled = check.checked;
+    };
+    on.append(check, document.createTextNode(" Enable"));
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "danger";
+    del.textContent = "Remove";
+    del.onclick = () => {
+      mcpDraft.splice(i, 1);
+      renderMcp();
+    };
+    top.append(name, on, del);
+    const cmd = document.createElement("input");
+    cmd.placeholder = "command (npx, bun, python, …)";
+    cmd.value = row.command || "";
+    cmd.spellcheck = false;
+    cmd.oninput = () => {
+      mcpDraft[i].command = cmd.value;
+    };
+    const args = document.createElement("input");
+    args.placeholder = "args, space-separated";
+    args.value = Array.isArray(row.args) ? row.args.join(" ") : "";
+    args.spellcheck = false;
+    args.oninput = () => {
+      mcpDraft[i].args = args.value.trim() ? args.value.trim().split(/\s+/) : [];
+    };
+    const url = document.createElement("input");
+    url.placeholder = "or HTTP URL (JSON-RPC / SSE)";
+    url.value = row.url || "";
+    url.spellcheck = false;
+    url.oninput = () => {
+      mcpDraft[i].url = url.value.trim();
+    };
+    const env = document.createElement("textarea");
+    env.rows = 2;
+    env.placeholder = "env KEY=value, one per line";
+    env.value = row.env
+      ? Object.entries(row.env)
+          .map(([k, v]) => `${k}=${v}`)
+          .join("\n")
+      : "";
+    env.spellcheck = false;
+    env.oninput = () => {
+      const next = {};
+      for (const line of env.value.split("\n")) {
+        const cut = line.indexOf("=");
+        if (cut < 1) continue;
+        next[line.slice(0, cut).trim()] = line.slice(cut + 1).trim();
+      }
+      mcpDraft[i].env = next;
+    };
+    card.append(top, cmd, args, url, env);
+    box.append(card);
+  });
+}
+
+async function loadMcp() {
+  try {
+    const data = await (await api("/api/mcp")).json();
+    mcpDraft = Array.isArray(data.servers) ? data.servers.map((s) => ({ ...s })) : [];
+  } catch {
+    mcpDraft = [];
+  }
+  renderMcp();
+  refreshMcpTools();
+}
+
+async function refreshMcpTools() {
+  const meta = document.getElementById("mcp-tools-meta");
+  if (!meta) return;
+  try {
+    const data = await (await api("/api/mcp/tools")).json();
+    const n = Array.isArray(data.tools) ? data.tools.length : 0;
+    meta.textContent = n ? `${n} tool${n === 1 ? "" : "s"} on Crew-native turns` : "No live tools (enable a server and Save).";
+  } catch {
+    meta.textContent = "Could not list MCP tools.";
+  }
+}
+
 async function openAppSettings() {
   document.getElementById("app-key-meta").textContent = state.bootstrap.keySet
     ? `saved ${state.bootstrap.key}`
@@ -2186,13 +3103,48 @@ async function openAppSettings() {
   fillSettingsSelects();
   renderAllowedChips();
   fillJobs();
+  loadMcp();
   renderAlways();
+  paintProviderCards();
+  refreshProviderHealth();
+  ensureProviderModels().then(() => {
+    fillSettingsSelects();
+    fillJobs();
+  });
+  switchSettingsTab("general");
   els.appModal.showModal();
   document.getElementById("model-search").value = "";
   loadCatalog("");
 }
 
 els.appSettings.addEventListener("click", () => openAppSettings());
+document.getElementById("settings-tabs")?.addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-settings-tab]");
+  if (!btn) return;
+  switchSettingsTab(btn.dataset.settingsTab);
+  if (btn.dataset.settingsTab === "mcp") refreshMcpTools();
+});
+document.getElementById("mcp-add")?.addEventListener("click", () => {
+  mcpDraft.push(emptyMcpServer());
+  renderMcp();
+});
+document.getElementById("mcp-save")?.addEventListener("click", async () => {
+  try {
+    const saved = await (
+      await api("/api/mcp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ servers: mcpDraft }),
+      })
+    ).json();
+    mcpDraft = Array.isArray(saved.servers) ? saved.servers.map((s) => ({ ...s })) : mcpDraft;
+    renderMcp();
+    refreshMcpTools();
+    toast("MCP saved.");
+  } catch (err) {
+    toast(String(err));
+  }
+});
 document.getElementById("app-close").onclick = () => els.appModal.close();
 document.getElementById("app-form").addEventListener("submit", (ev) => ev.preventDefault());
 document.getElementById("app-key-save").addEventListener("click", async () => {
@@ -2216,22 +3168,25 @@ document.getElementById("app-key-save").addEventListener("click", async () => {
   }
 });
 document.getElementById("app-default-model").addEventListener("change", async (ev) => {
-  const model = ev.target.value;
-  if (!model) return;
+  const impl = readImplPicker(ev.target);
+  if (!impl.harness && !impl.model) return;
   const res = await (
     await api("/api/model", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model }),
+      body: JSON.stringify({
+        model: impl.model,
+        harness: impl.harness,
+        harnessModel: impl.harnessModel,
+      }),
     })
   ).json();
   state.bootstrap.model = res.model;
+  state.bootstrap.defaultHarness = res.harness ?? null;
+  state.bootstrap.defaultHarnessModel = res.harnessModel ?? "";
 });
-for (const key of ["title", "compact", "vision", "read"]) {
-  document.getElementById(`job-${key}-model`)?.addEventListener("change", () => {
-    persistJobs().catch((err) => toast(String(err)));
-  });
-  document.getElementById(`job-${key}-bot`)?.addEventListener("change", () => {
+for (const id of ["job-title-model", "job-compact-bot", "job-vision-bot", "job-read-bot"]) {
+  document.getElementById(id)?.addEventListener("change", () => {
     persistJobs().catch((err) => toast(String(err)));
   });
 }
@@ -2697,6 +3652,18 @@ document.addEventListener("keydown", (ev) => {
     openJump();
     return;
   }
+  if ((ev.ctrlKey || ev.metaKey) && ev.code === "Backslash") {
+    if (document.querySelector("dialog[open]")) return;
+    ev.preventDefault();
+    splitCurrent(ev.shiftKey ? "below" : "right");
+    return;
+  }
+  if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && (ev.key === "W" || ev.key === "w")) {
+    if (state.split === "none") return;
+    ev.preventDefault();
+    closeSplit();
+    return;
+  }
   if (ev.key === "Escape" && menuOpen) {
     ev.preventDefault();
     closeMenu();
@@ -2886,6 +3853,40 @@ function railMenuItems(kind, id) {
       label: "Mark unread",
       run: () => markUnread("dm", id),
     });
+    const row = (state.bootstrap?.dms ?? []).find((d) => d.id === id);
+    if (row?.archived) {
+      items.push({
+        id: "unarchive",
+        label: "Unarchive",
+        run: () =>
+          persistDmPrefs((p) => ({
+            archived: (p.archived || []).filter((x) => x !== id),
+            deleted: p.deleted || [],
+          })).catch((err) => addMessage({ who: "error", text: String(err), kind: "error" })),
+      });
+    } else {
+      items.push({
+        id: "archive",
+        label: "Archive",
+        run: () =>
+          persistDmPrefs((p) => ({
+            archived: (p.archived || []).includes(id) ? p.archived : [...(p.archived || []), id],
+            deleted: (p.deleted || []).filter((x) => x !== id),
+          })).catch((err) => addMessage({ who: "error", text: String(err), kind: "error" })),
+      });
+    }
+    items.push({
+      id: "delete-chat",
+      label: "Delete",
+      danger: true,
+      run: () => {
+        if (!confirm("Hide this chat from the list? The log stays on disk.")) return;
+        persistDmPrefs((p) => ({
+          archived: (p.archived || []).filter((x) => x !== id),
+          deleted: (p.deleted || []).includes(id) ? p.deleted : [...(p.deleted || []), id],
+        })).catch((err) => addMessage({ who: "error", text: String(err), kind: "error" }));
+      },
+    });
   }
   return items;
 }
@@ -2897,12 +3898,17 @@ function showRailMenu(ev, kind, id) {
 }
 
 els.channels.addEventListener("contextmenu", (ev) => {
-  const btn = ev.target.closest("#channel-list > button");
+  const btn = ev.target.closest("#channel-list [data-id]");
   if (!btn || !btn.dataset.id) return;
   showRailMenu(ev, "channel", btn.dataset.id);
 });
 
 els.people.addEventListener("contextmenu", (ev) => {
+  const chat = ev.target.closest(".dm-row");
+  if (chat?.dataset.id && els.people.contains(chat)) {
+    showRailMenu(ev, "dm", chat.dataset.id);
+    return;
+  }
   const row = ev.target.closest(".person");
   if (!row || !els.people.contains(row) || !row.dataset.id) return;
   showRailMenu(ev, "person", row.dataset.id);
@@ -2953,9 +3959,12 @@ function onLogContextMenu(ev) {
 
 document.addEventListener("pointerdown", (ev) => {
   const menu = document.getElementById("ctx-menu");
-  if (!menu || menu.hidden) return;
-  if (menu.contains(ev.target)) return;
-  closeMenu();
+  if (menu && !menu.hidden && !menu.contains(ev.target)) closeMenu();
+  if (!ev.target.closest(".attach-menu-wrap")) {
+    document.querySelectorAll(".attach-menu").forEach((el) => {
+      el.hidden = true;
+    });
+  }
 });
 
 document.addEventListener("scroll", closeMenu, true);
@@ -3248,8 +4257,10 @@ function openCreate(kind) {
     document.getElementById("bot-soul").value = "";
     document.getElementById("bot-orders").value = "";
     iconPickers.bot?.set("");
-    fillModelSelect(document.getElementById("bot-model"), "", "workspace default");
+    fillImplPicker(document.getElementById("bot-model"), "", null, "workspace default");
     fillModelSelect(document.getElementById("bot-fallback"), "", "workspace fallback");
+    syncBotFallback();
+    fillModelSelect(document.getElementById("bot-title-model"), "", "Jobs Title default");
     paintFace(document.getElementById("bot-face"), "", id);
     renderSkills([]);
     clearSkillForm();
@@ -3270,7 +4281,8 @@ function openCreate(kind) {
   document.getElementById("ch-title").value = "";
   document.getElementById("ch-context").value = "";
   document.getElementById("ch-rules").value = "";
-  document.getElementById("ch-mode").value = "auto-accept";
+  document.getElementById("ch-mode").value =
+    state.bootstrap?.defaultPermissionMode || "auto-accept";
   iconPickers.ch?.set("");
   paintFace(document.getElementById("ch-face"), "#", id);
   fillRoster(
@@ -3393,6 +4405,7 @@ function decoratePane(r) {
     [".export-btn", "download"],
     [".title-regen", "pencil"],
     [".settings-btn", "hash"],
+    [".attach-plus", "plus"],
     [".attach-file", "file"],
     [".attach-folder", "folder"],
     [".jump-latest", "chevron"],
@@ -3478,12 +4491,27 @@ function wirePane(i) {
   });
   const filePick = r.querySelector(".draft-file-pick");
   const folderPick = r.querySelector(".draft-folder-pick");
+  const plus = r.querySelector(".attach-plus");
+  const menu = r.querySelector(".attach-menu");
+  plus?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    activatePane(i);
+    const open = menu?.hidden !== false;
+    document.querySelectorAll(".attach-menu").forEach((el) => {
+      el.hidden = true;
+    });
+    if (menu) menu.hidden = !open ? true : false;
+    if (open && menu) menu.hidden = false;
+  });
   r.querySelector(".attach-file")?.addEventListener("click", () => {
     activatePane(i);
+    if (menu) menu.hidden = true;
     filePick?.click();
   });
   r.querySelector(".attach-folder")?.addEventListener("click", () => {
     activatePane(i);
+    if (menu) menu.hidden = true;
     folderPick?.click();
   });
   filePick?.addEventListener("change", (ev) => {
@@ -3533,27 +4561,71 @@ function wirePane(i) {
 
 function hideDropGhosts() {
   const right = document.getElementById("drop-right");
-  const below = document.getElementById("drop-below");
-  if (right) right.hidden = true;
-  if (below) below.hidden = true;
+  if (right) {
+    right.hidden = true;
+    right.classList.remove("ready");
+  }
+  const chip = document.getElementById("drag-chip");
+  if (chip) chip.hidden = true;
+  document.querySelectorAll(".is-pulling").forEach((el) => el.classList.remove("is-pulling"));
 }
 
 function dropHow(ev) {
+  const pane1 = document.getElementById("pane-1");
+  if (pane1 && !pane1.hidden) {
+    const r1 = pane1.getBoundingClientRect();
+    if (ev.clientX >= r1.left - 8) return "right";
+  }
   const host = document.getElementById("panes");
   if (!host) return "replace";
   const rect = host.getBoundingClientRect();
   const x = (ev.clientX - rect.left) / Math.max(1, rect.width);
   const y = (ev.clientY - rect.top) / Math.max(1, rect.height);
-  if (x > 0.5) return "right";
-  if (y > 0.5) return "below";
+  if (x > 0.45) return "right";
+  if (y > 0.55) return "below";
   return "replace";
+}
+
+function pullLabel(payload) {
+  if (!payload) return "Chat";
+  if (payload.kind === "dm") {
+    const row = (state.bootstrap?.dms ?? []).find((d) => d.id === payload.id);
+    return row?.title || dmHeadline(payload.id);
+  }
+  if (payload.kind === "channel") {
+    const ch = (state.bootstrap?.channels ?? []).find((c) => c.id === payload.id);
+    return `#${ch?.title || payload.id}`;
+  }
+  if (payload.kind === "person") return displayName(payload.id);
+  return payload.id;
+}
+
+function moveDragChip(label, x, y) {
+  const chip = document.getElementById("drag-chip");
+  if (!chip) return;
+  chip.hidden = false;
+  chip.textContent = label;
+  chip.style.left = `${x + 14}px`;
+  chip.style.top = `${y + 12}px`;
+}
+
+function dropTargetReady(ev) {
+  const zone = document.getElementById("drop-right");
+  if (zone && !zone.hidden) {
+    const r = zone.getBoundingClientRect();
+    if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
+      return true;
+    }
+  }
+  const host = document.getElementById("panes");
+  const rect = host?.getBoundingClientRect();
+  if (!rect) return false;
+  return ev.clientX >= rect.left + rect.width * 0.42 && ev.clientX <= rect.right;
 }
 
 function showDropGhosts(how) {
   const right = document.getElementById("drop-right");
-  const below = document.getElementById("drop-below");
   if (right) right.hidden = how !== "right";
-  if (below) below.hidden = how !== "below";
 }
 
 function parseThreadPayload(raw) {
@@ -3566,19 +4638,92 @@ function parseThreadPayload(raw) {
   return { kind, id };
 }
 
+let railDrag = null;
+let railPull = null;
+let railPullMoved = false;
+
+function pullFromTarget(el) {
+  const chat = el.closest?.(".dm-row");
+  if (chat?.dataset.id) return { kind: "dm", id: chat.dataset.id };
+  if (el.closest?.(".add, .edit, .del, input, textarea, button.add, button.edit")) return null;
+  const person = el.closest?.(".person");
+  if (person?.dataset.id) return { kind: "person", id: person.dataset.id };
+  const ch = el.closest?.("#channel-list [data-id]");
+  if (ch?.dataset.id) return { kind: "channel", id: ch.dataset.id };
+  return null;
+}
+
+function wireRailPull() {
+  const onDown = (ev) => {
+    if (ev.button !== 0) return;
+    const payload = pullFromTarget(ev.target);
+    if (!payload) return;
+    railPullMoved = false;
+    railPull = { ...payload, x: ev.clientX, y: ev.clientY, el: ev.target };
+  };
+  const cancelNativeDrag = (ev) => {
+    if (pullFromTarget(ev.target)) ev.preventDefault();
+  };
+  els.channels?.addEventListener("dragstart", cancelNativeDrag, true);
+  els.people?.addEventListener("dragstart", cancelNativeDrag, true);
+  els.direct?.addEventListener("dragstart", cancelNativeDrag, true);
+  window.addEventListener("pointermove", (ev) => {
+    if (!railPull) return;
+    const dx = ev.clientX - railPull.x;
+    const dy = ev.clientY - railPull.y;
+    if (!railPullMoved && Math.hypot(dx, dy) < 10) return;
+    railPullMoved = true;
+    ev.preventDefault();
+    document.body.classList.add("rail-pulling");
+    const src = pullFromTarget(railPull.el) ? railPull.el.closest(".dm-row, .person, #channel-list [data-id]") : null;
+    src?.classList.add("is-pulling");
+    showDropGhosts("right");
+    const zone = document.getElementById("drop-right");
+    zone?.classList.toggle("ready", dropTargetReady(ev));
+    moveDragChip(pullLabel(railPull), ev.clientX, ev.clientY);
+  });
+  window.addEventListener("pointerup", (ev) => {
+    if (!railPull) return;
+    const pull = railPull;
+    railPull = null;
+    document.body.classList.remove("rail-pulling");
+    hideDropGhosts();
+    if (!railPullMoved) return;
+    if (!dropTargetReady(ev)) return;
+    splitOpen(pull.kind, pull.id, "right");
+    setTimeout(() => {
+      railPullMoved = false;
+    }, 0);
+  });
+  els.channels?.addEventListener("pointerdown", onDown);
+  els.people?.addEventListener("pointerdown", onDown);
+  els.direct?.addEventListener("pointerdown", onDown);
+}
+
 function onRailDragStart(ev, kind, id) {
   const next = resolvePaneTarget(kind, id);
-  ev.dataTransfer.setData(THREAD_MIME, `${next.kind}:${next.id}`);
-  ev.dataTransfer.effectAllowed = "copyMove";
+  railDrag = `${next.kind}:${next.id}`;
+  try {
+    ev.dataTransfer.setData("text/plain", railDrag);
+    ev.dataTransfer.setData(THREAD_MIME, railDrag);
+    ev.dataTransfer.effectAllowed = "copy";
+  } catch {
+    /* WebView2 */
+  }
 }
 
 function wireDrag() {
   els.channels?.addEventListener("dragstart", (ev) => {
-    const btn = ev.target.closest("#channel-list > button");
+    const btn = ev.target.closest("#channel-list [data-id]");
     if (!btn?.dataset.id) return;
     onRailDragStart(ev, "channel", btn.dataset.id);
   });
   els.people?.addEventListener("dragstart", (ev) => {
+    const chat = ev.target.closest(".dm-row");
+    if (chat?.dataset.id) {
+      onRailDragStart(ev, "dm", chat.dataset.id);
+      return;
+    }
     const row = ev.target.closest(".person");
     if (!row?.dataset.id) return;
     onRailDragStart(ev, "person", row.dataset.id);
@@ -3590,22 +4735,33 @@ function wireDrag() {
   });
   const host = document.getElementById("panes");
   if (!host) return;
-  host.addEventListener("dragover", (ev) => {
-    if (![...ev.dataTransfer.types].includes(THREAD_MIME)) return;
+  const allow = (ev) => {
+    if (!railDrag && !railPullMoved) return false;
     ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
     showDropGhosts(dropHow(ev));
-  });
+    return true;
+  };
+  host.addEventListener("dragover", allow);
   host.addEventListener("dragleave", (ev) => {
     if (!host.contains(ev.relatedTarget)) hideDropGhosts();
   });
   host.addEventListener("drop", (ev) => {
     ev.preventDefault();
     hideDropGhosts();
-    const parsed = parseThreadPayload(ev.dataTransfer.getData(THREAD_MIME));
+    const raw =
+      railDrag ||
+      ev.dataTransfer.getData(THREAD_MIME) ||
+      ev.dataTransfer.getData("text/plain");
+    railDrag = null;
+    const parsed = parseThreadPayload(raw);
     if (!parsed?.id) return;
     splitOpen(parsed.kind, parsed.id, dropHow(ev));
   });
-  document.addEventListener("dragend", hideDropGhosts);
+  document.addEventListener("dragend", () => {
+    railDrag = null;
+    hideDropGhosts();
+  });
 }
 
 function wireSplitHandle() {
@@ -3613,29 +4769,52 @@ function wireSplitHandle() {
   const host = document.getElementById("panes");
   if (!handle || !host) return;
   let dragging = false;
+  const min = 220;
+  const applyX = (clientX) => {
+    const rect = host.getBoundingClientRect();
+    let left = clientX - rect.left;
+    const max = rect.width - min - 8;
+    if (state.split === "none") {
+      if (left > rect.width - 40) return;
+      state.split = "right";
+      state.deskOpen = false;
+      applySplitClass("right");
+      setPaneVacant(true);
+      saveSplit();
+    }
+    if (state.split !== "right") return;
+    if (left > max + min / 2) {
+      dragging = false;
+      handle.classList.remove("dragging");
+      closeSplit();
+      return;
+    }
+    left = Math.max(min, Math.min(max, left));
+    host.style.gridTemplateColumns = `${left}px 8px minmax(${min}px, 1fr)`;
+  };
   handle.addEventListener("pointerdown", (ev) => {
     dragging = true;
-    handle.setPointerCapture(ev.pointerId);
+    handle.classList.add("dragging");
+    try {
+      handle.setPointerCapture(ev.pointerId);
+    } catch {
+      /* visual tests */
+    }
     ev.preventDefault();
   });
-  handle.addEventListener("pointermove", (ev) => {
+  const onMove = (ev) => {
     if (!dragging) return;
-    const rect = host.getBoundingClientRect();
-    if (state.split === "right") {
-      const min = 280;
-      let left = ev.clientX - rect.left;
-      left = Math.max(min, Math.min(rect.width - min - 8, left));
-      host.style.gridTemplateColumns = `${left}px 8px minmax(280px, 1fr)`;
-    } else if (state.split === "below") {
-      const min = 160;
-      let top = ev.clientY - rect.top;
-      top = Math.max(min, Math.min(rect.height - min - 8, top));
-      host.style.gridTemplateRows = `${top}px 8px minmax(160px, 1fr)`;
-    }
-  });
-  handle.addEventListener("pointerup", () => {
+    applyX(ev.clientX);
+  };
+  const onUp = () => {
+    if (!dragging) return;
     dragging = false;
-  });
+    handle.classList.remove("dragging");
+  };
+  handle.addEventListener("pointermove", onMove);
+  window.addEventListener("pointermove", onMove);
+  handle.addEventListener("pointerup", onUp);
+  window.addEventListener("pointerup", onUp);
 }
 
 document.getElementById("files-close").onclick = () =>
@@ -3648,11 +4827,110 @@ document.getElementById("always-clear").onclick = async () => {
     addMessage({ who: "error", text: String(err), kind: "error" });
   }
 };
+document.getElementById("always-add")?.addEventListener("click", async () => {
+  const tool = document.getElementById("always-tool")?.value || "apply_patch";
+  const raw = document.getElementById("always-key")?.value?.trim() || "";
+  if (!raw) return;
+  const body = tool === "shell" ? { tool, command: raw } : { tool, path: raw };
+  try {
+    await api("/api/permissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    document.getElementById("always-key").value = "";
+    await renderAlways();
+  } catch (err) {
+    toast(String(err));
+  }
+});
+document.getElementById("app-default-mode")?.addEventListener("change", async (ev) => {
+  const res = await (
+    await api("/api/default-mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: ev.target.value }),
+    })
+  ).json();
+  state.bootstrap.defaultPermissionMode = res.defaultPermissionMode;
+});
+document.getElementById("app-auto-compact")?.addEventListener("change", async (ev) => {
+  const res = await (
+    await api("/api/auto-compact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ on: ev.target.checked }),
+    })
+  ).json();
+  state.bootstrap.autoCompact = res.autoCompact;
+});
+document.getElementById("app-base-url")?.addEventListener("change", async (ev) => {
+  const res = await (
+    await api("/api/base-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ baseUrl: ev.target.value }),
+    })
+  ).json();
+  state.bootstrap.baseUrl = res.baseUrl;
+});
+document.getElementById("app-reviewer-model")?.addEventListener("change", async (ev) => {
+  const res = await (
+    await api("/api/reviewer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: ev.target.value }),
+    })
+  ).json();
+  state.bootstrap.reviewerModel = res.reviewerModel;
+});
+document.querySelector("[data-settings-panel='providers']")?.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Enter" || !ev.target.matches("[data-prov-custom]")) return;
+  ev.preventDefault();
+  ev.target.closest("[data-harness]")?.querySelector("[data-prov-custom-add]")?.click();
+});
+document.querySelector("[data-settings-panel='providers']")?.addEventListener("change", (ev) => {
+  if (!ev.target.closest("[data-harness]")) return;
+  if (ev.target.matches("[data-prov-custom]")) return;
+  const card = ev.target.closest("[data-harness]");
+  if (ev.target.matches("[data-prov-on]") && ev.target.checked) card.classList.add("open");
+  persistProviders().catch((err) => toast(String(err)));
+});
+document.querySelector("[data-settings-panel='providers']")?.addEventListener("click", (ev) => {
+  const card = ev.target.closest("[data-harness]");
+  if (ev.target.closest("[data-prov-custom-add]")) {
+    if (!card) return;
+    const input = card.querySelector("[data-prov-custom]");
+    const box = card.querySelector("[data-prov-customs]");
+    const id = input?.value?.trim();
+    if (!id || !box) return;
+    if (![...box.querySelectorAll("[data-custom-chip]")].some((el) => el.dataset.id === id)) {
+      box.append(customModelChip(id));
+    }
+    input.value = "";
+    persistProviders().catch((err) => toast(String(err)));
+    return;
+  }
+  if (ev.target.closest("[data-custom-chip]")) {
+    ev.target.closest("[data-custom-chip]").remove();
+    persistProviders().catch((err) => toast(String(err)));
+    return;
+  }
+  const head = ev.target.closest(".provider-head");
+  if (!card || !head) return;
+  if (ev.target.closest("input, label, button")) return;
+  card.classList.toggle("open");
+});
+document.getElementById("prov-recheck")?.addEventListener("click", () => {
+  refreshProviderHealth();
+});
+document.getElementById("bot-model")?.addEventListener("change", () => syncBotFallback());
 
 decorateChrome();
 wirePane(0);
 wirePane(1);
 wireDrag();
+wireRailPull();
 wireSplitHandle();
 boot().catch((err) => {
   addMessage({ who: "error", text: String(err), kind: "error" });

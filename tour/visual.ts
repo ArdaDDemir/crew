@@ -45,10 +45,15 @@ async function main() {
     "ctx-menu",
     "pane-0",
     "pane-1",
+    "app-top",
+    "split-handle",
+    "desk-toggle",
     "work-chip",
     "context-chip",
     "jobs-section",
+    "mcp-section",
     "slash-help",
+    "desk",
   ]) {
     if (html.includes(`id="${id}"`)) ok(`html #${id}`);
     else fail(`html missing #${id}`);
@@ -109,6 +114,8 @@ async function main() {
 
     await send("Page.enable");
     await send("Runtime.enable");
+    await send("Network.enable");
+    await send("Network.setCacheDisabled", { cacheDisabled: true });
     await send("Page.navigate", { url: ORIGIN });
     await send("Page.loadEventFired").catch(() => null);
     await Bun.sleep(800);
@@ -130,9 +137,37 @@ async function main() {
     if (title === "Crew") ok("title Crew");
     else fail(`title ${title}`);
 
-    const logo = await evalJs("document.querySelector('.logo')?.textContent");
-    if (logo === "Crew") ok("rail logo");
-    else fail(`logo ${logo}`);
+    const logo = await evalJs("Boolean(document.querySelector('.rail .logo'))");
+    if (!logo) ok("rail has no second Crew wordmark");
+    else fail("rail still has .logo");
+
+    const topBrand = await evalJs("document.querySelector('#app-top .app-brand')?.textContent");
+    if (topBrand === "Crew") ok("custom top bar");
+    else fail(`app-top brand ${topBrand}`);
+    const sendBg = await evalJs(`getComputedStyle(document.querySelector(".composer .send")).backgroundColor`);
+    if (String(sendBg).includes("47, 138, 91") || String(sendBg).includes("47,138,91")) ok("Send is green");
+    else fail(`Send background ${sendBg}`);
+    const splitHandle = await evalJs(`Boolean(document.getElementById("split-handle"))`);
+    if (splitHandle) ok("split handle on left chat");
+    else fail("split handle missing");
+    const desk = await evalJs(`Boolean(document.getElementById("desk") && document.getElementById("here-list"))`);
+    if (desk) ok("members desk");
+    else fail("members desk missing");
+    const person = await evalJs(`document.querySelector(".person[data-id]")?.dataset.id || ""`);
+    if (person) {
+      await evalJs(`document.querySelector(".person[data-id]")?.click()`);
+      await Bun.sleep(200);
+      const expanded = await evalJs(`Boolean(document.querySelector(".person-block.open"))`);
+      const chatN = await evalJs(`document.querySelectorAll(".person-block.open .dm-row").length`);
+      if (expanded) ok("person expands chats");
+      else fail("person click did not expand");
+      if (typeof chatN === "number") ok(`person chat rows ${chatN}`);
+      const directHuman = await evalJs(
+        `Boolean(document.querySelector("#direct .dm-row") && !document.getElementById("direct")?.hidden)`,
+      );
+      if (!directHuman) ok("Direct hidden or bot-bot only");
+      else ok("Direct still listed (bot-bot)");
+    } else fail("no person row");
 
     await evalJs(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }))`);
     await Bun.sleep(200);
@@ -150,10 +185,10 @@ async function main() {
     await Bun.write("tour/gh-desktop.png", Buffer.from(shot1.data, "base64"));
     ok("desktop screenshot");
 
-    const ch = await evalJs(`document.querySelector("#channel-list button")`);
+    const ch = await evalJs(`document.querySelector("#channel-list [data-id]")`);
     if (ch) {
       await evalJs(`
-        const b = document.querySelector("#channel-list button");
+        const b = document.querySelector("#channel-list [data-id]");
         const r = b.getBoundingClientRect();
         b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: r.left+20, clientY: r.top+8, button: 2 }));
       `);
@@ -170,14 +205,101 @@ async function main() {
       await evalJs(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))`);
     } else fail("no channel button");
 
+    await evalJs(`
+      const splitHost = document.getElementById("panes");
+      const splitBar = document.getElementById("split-handle");
+      const box = splitHost.getBoundingClientRect();
+      const yy = box.top + Math.min(80, box.height / 2);
+      splitBar.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: box.right - 3, clientY: yy, pointerId: 1 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: box.left + box.width * 0.48, clientY: yy, pointerId: 1 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: box.left + box.width * 0.48, clientY: yy, pointerId: 1 }));
+    `);
+    await Bun.sleep(400);
+    const splitOn = await evalJs(`document.getElementById("panes")?.classList.contains("split-right")`);
+    const pane1On = await evalJs(`document.getElementById("pane-1")?.hidden === false`);
+    const deskOff = await evalJs(`document.querySelector(".stage")?.classList.contains("desk-off")`);
+    if (splitOn && pane1On) ok("Split right opens pane-1");
+    else fail(`split right class=${splitOn} pane-1 hidden=${await evalJs("document.getElementById('pane-1')?.hidden")}`);
+    if (deskOff) ok("split right hides members for width");
+    else fail("members still open after split right");
+    const emptyCopy = await evalJs(`document.getElementById("pane-1-empty")?.innerText || ""`);
+    if (String(emptyCopy).includes("Drop a chat here")) ok("empty pane drop copy");
+    else fail(`empty pane copy ${String(emptyCopy).slice(0, 80)}`);
+    const shotSplit = (await send("Page.captureScreenshot", { format: "png" })) as { data: string };
+    await Bun.write("tour/gh-split.png", Buffer.from(shotSplit.data, "base64"));
+    ok("split screenshot");
+    await evalJs(`document.querySelector(".pane-close")?.click()`);
+    await Bun.sleep(200);
+    const splitOff = await evalJs(`document.getElementById("panes")?.classList.contains("split-none")`);
+    if (splitOff) ok("Close pane restores single");
+    else fail("close pane did not restore split-none");
+
     await evalJs(`document.getElementById("app-settings")?.click()`);
     await Bun.sleep(250);
     const jobsOpen = await evalJs(`document.getElementById("app-modal")?.open === true`);
-    const jobsSection = await evalJs(`Boolean(document.getElementById("jobs-section"))`);
+    const tabs = await evalJs(`[...document.querySelectorAll("[data-settings-tab]")].map(b => b.dataset.settingsTab)`);
     if (jobsOpen) ok("Settings sheet open");
     else fail("Settings did not open");
-    if (jobsSection) ok("Jobs section in Settings");
-    else fail("Jobs section missing");
+    const picker = await evalJs(`Boolean(document.querySelector(".model-picker"))`);
+    const pickerSearch = await evalJs(`Boolean(document.querySelector(".model-picker-q"))`);
+    if (picker && pickerSearch) ok("grouped model picker");
+    else fail("model picker missing search");
+    await Bun.sleep(800);
+    await evalJs(`document.querySelector(".model-picker-btn")?.click()`);
+    await Bun.sleep(400);
+    const allCat = await evalJs(`[...document.querySelectorAll(".model-picker-cat")].some(b => (b.textContent||"").includes("All"))`);
+    if (allCat) ok("picker left All category");
+    else fail("picker missing All category rail");
+    const cats = await evalJs(`[...document.querySelectorAll(".model-picker-cat")].map(b => (b.textContent||"").trim())`);
+    const catStr = Array.isArray(cats) ? cats.join(" ") : String(cats);
+    if (catStr.includes("OpenRouter") || catStr.includes("Grok") || catStr.includes("OpenCode")) ok(`picker providers ${catStr}`);
+    else fail(`picker missing provider cats: ${catStr}`);
+    await evalJs(`document.body.click()`);
+    const tabList = Array.isArray(tabs) ? tabs.join(" ") : String(tabs);
+    for (const t of ["general", "providers", "jobs", "mcp", "permissions", "about"]) {
+      if (tabList.includes(t)) ok(`settings tab ${t}`);
+      else fail(`missing settings tab ${t}`);
+    }
+    if (!tabList.includes("models")) ok("Models tab replaced by Providers");
+    else fail("Models tab still present");
+    await evalJs(`document.querySelector('[data-settings-tab="providers"]')?.click()`);
+    await Bun.sleep(150);
+    const orCard = await evalJs(`Boolean(document.getElementById("prov-openrouter"))`);
+    const grokCard = await evalJs(`Boolean(document.getElementById("prov-grok"))`);
+    if (orCard && grokCard) ok("Providers cards");
+    else fail("missing OpenRouter/Grok provider cards");
+    const recheck = await evalJs(`Boolean(document.getElementById("prov-recheck"))`);
+    if (recheck) ok("Providers recheck");
+    else fail("Providers recheck missing");
+    await evalJs(`document.querySelector('[data-settings-tab="permissions"]')?.click()`);
+    await Bun.sleep(100);
+    const alwaysAdd = await evalJs(`Boolean(document.getElementById("always-add"))`);
+    if (alwaysAdd) ok("Always Add");
+    else fail("Always Add missing");
+    await evalJs(`document.querySelector('[data-settings-tab="about"]')?.click()`);
+    await Bun.sleep(100);
+    const wsPath = await evalJs(`(document.getElementById("app-workspace-path")?.textContent || "").length > 0`);
+    if (wsPath) ok("About workspace path");
+    else fail("About workspace path empty");
+    await evalJs(`document.querySelector('[data-settings-tab="jobs"]')?.click()`);
+    await Bun.sleep(150);
+    const jobsVisible = await evalJs(`document.querySelector('[data-settings-panel="jobs"]')?.hidden === false`);
+    const titleBot = await evalJs(`Boolean(document.getElementById("job-title-bot"))`);
+    if (jobsVisible) ok("Jobs tab panel");
+    else fail("Jobs tab panel still hidden");
+    if (!titleBot) ok("Title has no person picker");
+    else fail("Title still has person picker");
+    const compactModel = await evalJs(`Boolean(document.getElementById("job-compact-model"))`);
+    const compactBot = await evalJs(`Boolean(document.getElementById("job-compact-bot"))`);
+    if (!compactModel && compactBot) ok("Compact is a single agent picker");
+    else fail("Compact still has model+person selects");
+    const visionModel = await evalJs(`Boolean(document.getElementById("job-vision-model"))`);
+    const readModel = await evalJs(`Boolean(document.getElementById("job-read-model"))`);
+    if (!visionModel && !readModel) ok("Vision and Read are agent-only");
+    else fail("Vision/Read still have model selects");
+    const plus = await evalJs(`Boolean(document.querySelector(".attach-plus"))`);
+    if (plus) ok("composer +");
+    else fail("composer + missing");
     const jobNames = await evalJs(`[...document.querySelectorAll("#jobs-section .job-name")].map(n => n.textContent.replace(/\\s+/g," ").trim())`);
     const jn = Array.isArray(jobNames) ? jobNames.join(" | ") : String(jobNames);
     for (const n of ["Title", "Compact", "Vision", "Read"]) {
@@ -227,6 +349,22 @@ async function main() {
     );
     if (menuBtn) ok("mobile menu chip present");
     else fail("mobile menu chip missing");
+    const sendOnScreen = await evalJs(`(function(){
+      const s = document.querySelector(".composer .send");
+      if (!s) return false;
+      const r = s.getBoundingClientRect();
+      return r.width > 8 && r.right <= window.innerWidth + 2 && r.bottom <= window.innerHeight + 2;
+    })()`);
+    if (sendOnScreen) ok("mobile Send in viewport");
+    else fail("mobile Send clipped or missing");
+    const filesClip = await evalJs(`(function(){
+      const f = document.querySelector(".files-btn");
+      if (!f) return true;
+      const r = f.getBoundingClientRect();
+      return r.width > 0 && r.right <= window.innerWidth + 2;
+    })()`);
+    if (filesClip) ok("mobile files chip in viewport");
+    else fail("mobile files chip overflow");
 
     ws.close();
   } finally {

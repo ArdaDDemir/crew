@@ -7,6 +7,7 @@ import {
   loadAlways,
   matchesAlways,
   rememberAlways,
+  removeAlwaysRule,
   saveAlways,
 } from "./always";
 
@@ -25,4 +26,15 @@ test("saveAlways round-trips", async () => {
   const dir = await mkdtemp(join(tmpdir(), "crew-always-"));
   saveAlways(dir, [{ tool: "shell", key: 'shell:{"command":"npm test"}' }]);
   expect(loadAlways(dir)).toEqual([{ tool: "shell", key: 'shell:{"command":"npm test"}' }]);
+});
+
+test("removeAlwaysRule deletes one fingerprint and leaves the rest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "crew-always-"));
+  rememberAlways(dir, "apply_patch", { path: "src/a.ts" });
+  rememberAlways(dir, "shell", { command: "npm test" });
+  const gone = fingerprint("apply_patch", { path: "src/a.ts" });
+  const left = removeAlwaysRule(dir, "apply_patch", gone);
+  expect(left).toEqual([{ tool: "shell", key: fingerprint("shell", { command: "npm test" }) }]);
+  expect(matchesAlways(left, "apply_patch", { path: "src/a.ts" })).toBe(false);
+  expect(matchesAlways(left, "shell", { command: "npm test" })).toBe(true);
 });

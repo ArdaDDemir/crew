@@ -1,6 +1,7 @@
 import { join, resolve } from "node:path";
 import type { ChatEvent } from "@crew/core";
 import {
+  addAlways,
   botDetail,
   channelDetail,
   compactStatus,
@@ -9,9 +10,18 @@ import {
   createChannel,
   createHost,
   clearAlways,
+  checkProviders,
+  getMcp,
+  getProviders,
+  listMcpTools,
+  listProviderModels,
+  putMcp,
   listAlways,
   listCatalog,
+  parseHarness,
+  putProviders,
   readThread,
+  removeAlways,
   removeBot,
   removeChannel,
   resolveAsk,
@@ -22,9 +32,13 @@ import {
   openDmChat,
   setAllowedModels,
   setApiKey,
+  setAutoCompact,
+  setBaseUrl,
+  setDefaultPermissionMode,
   setFallbackModel,
   setMode,
   setModel,
+  setReviewerModel,
   snapshot,
   stopRun,
   type Host,
@@ -33,7 +47,9 @@ import {
   listPaths,
   regenerateTitle,
 } from "./host";
+import { flagsFromArgv, parseServerArgv, resolvePublicDir } from "./argv";
 import { loadJobs, parseJobsBody, saveJobs } from "./jobs";
+import { loadDmPrefs, parseDmPrefsBody, saveDmPrefs } from "./dm-prefs";
 
 export type ServerOpts = {
   cwd?: string;
@@ -254,6 +270,15 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
               body.standingOrders !== undefined ? String(body.standingOrders) : undefined,
             fallbackModel:
               body.fallbackModel !== undefined ? String(body.fallbackModel) : undefined,
+            titleModel:
+              body.titleModel !== undefined ? String(body.titleModel) : undefined,
+            harness: body.harness !== undefined ? parseHarness(body.harness) : undefined,
+            harnessModel:
+              body.harnessModel !== undefined
+                ? body.harnessModel === null
+                  ? null
+                  : String(body.harnessModel)
+                : undefined,
           }),
         );
       } catch (err) {
@@ -298,7 +323,91 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   if (req.method === "POST" && path === "/api/model") {
     return readBody(req).then((body) => {
       try {
-        return json(setModel(host, String(body.model ?? "")));
+        return json(
+          setModel(host, String(body.model ?? ""), {
+            harness: body.harness === undefined ? undefined : (body.harness as string | null),
+            harnessModel:
+              body.harnessModel === undefined ? undefined : (body.harnessModel as string | null),
+          }),
+        );
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/base-url") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setBaseUrl(host, String(body.baseUrl ?? "")));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/default-mode") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setDefaultPermissionMode(host, String(body.mode ?? "")));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/auto-compact") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setAutoCompact(host, body.on !== false && body.on !== "false"));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/reviewer") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setReviewerModel(host, String(body.model ?? "")));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "GET" && path === "/api/providers") {
+    return json(getProviders(host));
+  }
+  if (req.method === "GET" && path === "/api/providers/health") {
+    return checkProviders(host).then(
+      (body) => json(body),
+      (err) => json({ error: err instanceof Error ? err.message : String(err) }, 400),
+    );
+  }
+  if (req.method === "GET" && path === "/api/providers/models") {
+    return listProviderModels(host).then(
+      (body) => json(body),
+      (err) => json({ error: err instanceof Error ? err.message : String(err) }, 400),
+    );
+  }
+  if (req.method === "PUT" && path === "/api/providers") {
+    return readBody(req).then((body) => {
+      try {
+        return json(putProviders(host, body));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "GET" && path === "/api/mcp") {
+    return json(getMcp(host));
+  }
+  if (req.method === "GET" && path === "/api/mcp/tools") {
+    return listMcpTools(host).then(
+      (body) => json(body),
+      (err) => json({ error: err instanceof Error ? err.message : String(err) }, 400),
+    );
+  }
+  if (req.method === "PUT" && path === "/api/mcp") {
+    return readBody(req).then((body) => {
+      try {
+        return json(putMcp(host, body));
       } catch (err) {
         return json({ error: err instanceof Error ? err.message : String(err) }, 400);
       }
@@ -390,7 +499,30 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   if (req.method === "GET" && path === "/api/permissions") {
     return json(listAlways(host));
   }
+  if (req.method === "POST" && path === "/api/permissions") {
+    return readBody(req).then((body) => {
+      try {
+        return json(
+          addAlways(host, String(body.tool ?? ""), {
+            path: body.path,
+            command: body.command,
+          }),
+        );
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
   if (req.method === "DELETE" && path === "/api/permissions") {
+    const tool = url.searchParams.get("tool") ?? "";
+    const key = url.searchParams.get("key") ?? "";
+    if (tool || key) {
+      try {
+        return json(removeAlways(host, tool, key));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    }
     return json(clearAlways(host));
   }
   if (req.method === "POST" && path === "/api/permission") {
@@ -485,6 +617,12 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
       });
     });
   }
+  if (req.method === "GET" && path === "/api/dm-prefs") {
+    return json(loadDmPrefs(host.cwd));
+  }
+  if (req.method === "PUT" && path === "/api/dm-prefs") {
+    return readBody(req).then((body) => json(saveDmPrefs(host.cwd, parseDmPrefsBody(body))));
+  }
   if (req.method === "POST" && path === "/api/dm/new") {
     return readBody(req).then((body) => {
       try {
@@ -542,6 +680,21 @@ export function startServer(opts: ServerOpts = {}) {
 }
 
 if (import.meta.main) {
-  const { url } = startServer();
-  console.log(`crew ui  ${url}`);
+  const flags = parseServerArgv(flagsFromArgv(process.argv));
+  const publicDir =
+    flags.publicDir ??
+    resolvePublicDir({
+      execPath: process.execPath,
+      importMetaDir: import.meta.dir,
+    });
+  const { url } = startServer({
+    cwd: flags.cwd,
+    port: flags.port,
+    hostname: flags.hostname,
+    publicDir,
+  });
+  const line = `crew ui  ${url}\n`;
+  const writer = Bun.stdout.writer();
+  writer.write(line);
+  writer.flush();
 }

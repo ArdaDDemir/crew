@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted; qualified by 0033
 date: 2026-08-27
 decision-makers: Arda
 ---

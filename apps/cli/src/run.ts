@@ -20,7 +20,18 @@ import {
 import { JsonlEventStore } from "@crew/store-jsonl";
 import { FsWorkspace } from "@crew/workspace-fs";
 import { OpenAICompatProvider } from "@crew/provider-openai";
+import {
+  DEFAULT_HARNESS_MODEL,
+  HarnessCliProvider,
+  shouldSpawnHarness,
+  type CrewPermissionMode,
+  type HarnessKind,
+  type HarnessRunner,
+} from "@crew/provider-harness";
 import { nativeTools } from "@crew/tools-native";
+import { loadMcp, writeHarnessMcpConfig, type McpServer } from "../../web/src/mcp";
+import { collectMcpSessions, type McpRpc } from "../../web/src/mcp-client";
+import { loadProviders, whichBinary } from "../../web/src/providers";
 import {
   defaultHome,
   maskKey,
@@ -51,6 +62,8 @@ export type CliDeps = {
   tools?: Tool[];
   ask?: AskFn;
   model?: string;
+  harnessRun?: HarnessRunner;
+  mcpConnect?: (server: McpServer) => McpRpc;
 };
 
 function crewRoot(cwd: string): string {
@@ -195,6 +208,36 @@ function resolveProvider(
     apiKey: cfg.apiKey,
     baseUrl: cfg.baseUrl,
   });
+}
+
+function bindHarness(
+  cwd: string,
+  workspace: FsWorkspace,
+  botId: string,
+  mode: CrewPermissionMode,
+  deps: CliDeps,
+) {
+  if (!shouldSpawnHarness(mode)) return undefined;
+  const bot = workspace.getBot(botId);
+  const file = loadProviders(cwd);
+  const kind = (bot?.harness || "") as string;
+  if (kind !== "grok" && kind !== "claude" && kind !== "codex" && kind !== "opencode") return undefined;
+  const slot = file[kind];
+  if (!slot.enabled) return undefined;
+  const binary = (slot.binary || "").trim() || whichBinary(kind) || kind;
+  const model = bot?.harnessModel?.trim() || DEFAULT_HARNESS_MODEL[kind as HarnessKind] || kind;
+  return {
+    provider: new HarnessCliProvider({
+      kind: kind as HarnessKind,
+      binary,
+      cwd,
+      run: deps.harnessRun,
+      mode,
+      mcpConfigPath: writeHarnessMcpConfig(cwd, loadMcp(cwd)),
+    }),
+    model,
+    fallbackModel: undefined,
+  };
 }
 
 const USAGE = `crew — local multi-bot CLI
@@ -528,8 +571,17 @@ export async function runCli(
       if (channel?.permissionMode === "auto") {
         io.writeErr("auto has no reviewer model; behaving as supervised\n");
       }
+      const mode = (channel?.permissionMode as CrewPermissionMode) || "auto-accept";
+      const mcp = await collectMcpSessions({
+        servers: loadMcp(io.cwd).servers,
+        cwd: io.cwd,
+        connect: deps.mcpConnect,
+      });
+      try {
       const result = await dispatchChannelPost({
         ...dispatchBase(),
+        tools: [...tools, ...mcp.tools],
+        providerForBot: (botId) => bindHarness(io.cwd, workspace, botId, mode, deps),
         channelId,
         text,
       });
@@ -541,6 +593,9 @@ export async function runCli(
         else if (dm.text.trim()) io.writeOut(`${dm.botId}: ${dm.text}\n`);
       }
       return 0;
+      } finally {
+        await mcp.close();
+      }
     }
 
     if (cmd === "dms") {
@@ -572,8 +627,16 @@ export async function runCli(
       const b = rest[0];
       const text = rest.slice(1).join(" ");
       if (!a || !b || !text) throw new Error("usage: crew dm <from> <to> <text>");
+      const mcp = await collectMcpSessions({
+        servers: loadMcp(io.cwd).servers,
+        cwd: io.cwd,
+        connect: deps.mcpConnect,
+      });
+      try {
       const result = await dispatchDm({
         ...dispatchBase(),
+        tools: [...tools, ...mcp.tools],
+        providerForBot: (botId) => bindHarness(io.cwd, workspace, botId, "auto-accept", deps),
         from: party(a),
         to: party(b),
         text,
@@ -582,6 +645,9 @@ export async function runCli(
       io.writeOut(wokeLine(result.woken));
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
       return 0;
+      } finally {
+        await mcp.close();
+      }
     }
 
     if (cmd === "open") {

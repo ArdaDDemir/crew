@@ -10,6 +10,41 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-28
+
+Crew.exe, Providers picker, harness spawn, MCP, CLI parity, harness permission map, Windows NSIS.
+
+### Added
+
+- **MCP tab** (`ADR-0036`, `ADR-0037`): Settings → MCP lists stdio **or HTTP** servers in `.crew/mcp.json` (env KEY=value, URL). Tools attach to Crew-native turns as `mcp_<server>_<tool>`. Enabled servers are written to `.crew/harness-mcp.json` and passed as `--mcp-config` on Grok/Claude. Dead servers are skipped. Not a plugin marketplace.
+- **Harness spawn** (`ADR-0034`, `ADR-0035`, `ADR-0037`): enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI. **`crew say` / `crew dm` use the same bind.** Supervised does **not** spawn (Crew cards). auto-accept → `acceptEdits` / workspace-write. full-access → bypass/always-approve. `.env` / `.ssh` denied on every CLI. Jobs stay OpenRouter.
+- **Crew.exe** desktop shell (`ADR-0032`, `ADR-0037`): native WebView2 window. Portable `dist/crew-windows/`. `bun run desktop:build` also tries a **NSIS** installer into `dist/crew-windows-nsis/` (needs NSIS on PATH). No auto-update, no macOS/Linux bundle.
+- Office **custom top bar**: Crew + project path, **Members** toggle, desktop window buttons and Open project when running as Crew.exe. Split by dragging the handle on the **right edge of the left chat** (no split buttons). Drop a chat into the empty pane. Ctrl+\\ still splits; Ctrl+Shift+W closes the extra pane.
+- People accordion (`ADR-0033`): click a person to expand their chats (about three visible, rest scroll, newest first). `+` new chat. Right-click a chat to Archive or Delete (log stays). Direct lists only bot↔bot. Drag a chat onto the right half of the stage to open a second pane.
+- Settings → **Providers** (replaces Models): OpenRouter card (key, base URL, whitelist + catalog) plus Claude / Codex / Grok / OpenCode cards. Enable, optional binary path, **custom model** ids. Stored in `.crew/providers.json` so a config PATCH cannot wipe it (`ADR-0030`).
+- `GET` / `PUT /api/providers`. `GET /api/providers/health` (PATH + `--version`, extra dirs for native Claude / npm / WinGet / scoop). `GET /api/providers/models` (OpenRouter whitelist; harness CLI lists + cache + custom; 60s cache).
+- Person `harness` / `harnessModel` on `bot.json`. General default can store `defaultHarness` / `defaultHarnessModel`.
+- Grouped searchable implementation picker (All + provider logos) on Person Model, Settings Default, and Jobs Title / Compact / Vision / Read (`ADR-0031`).
+- Settings Permissions: Always **Add** (`POST /api/permissions` tool + path/command) and per-row Remove (`DELETE /api/permissions?tool=&key=`). Clear all stays.
+- General: new-room permission mode (`defaultPermissionMode`), auto-compact on/off.
+- Permissions: reviewer model (empty = `auto` still falls back to supervised).
+- About: workspace path (`cwd`).
+- Jobs slots persist `harness` / `harnessModel` next to `model` / `botId`.
+
+### Changed
+
+- Docs match the Unreleased office: README / `docs/README.md` / specs no longer say “MCP later” or “spawn later”. Snapshot + gaps: `docs/todos/now.md`.
+- Office chrome polish: one Crew wordmark (top bar only), People edit/delete on hover, chat header grid, green Send, stronger empty split pane, icon-only header chips when split or on a phone.
+- Settings tabs: General, Providers, Jobs, **MCP**, Permissions, About (`ADR-0030`, `ADR-0036`).
+- Jobs Title, Compact, Vision, and Read use the **same** implementation picker as Default model. Empty Title/Compact = Default. Empty Vision/Read = Off. Compact/Vision/Read no longer pick a rail person (`ADR-0031`). Person **Chat titles** is still that person's title model (empty = Jobs Title).
+- Composer: `+` bottom-left (file/folder menu), Send bottom-right. Empty dock stays empty besides those.
+
+### Fixed
+
+- Implementation picker painted behind the Settings `<dialog>` top layer or clipped by sheet overflow; the menu now lives inside the open dialog. Switching tabs closes it. Native `<select>` no longer shows a second “Default”.
+- Claude “Not installed” when the binary is `%USERPROFILE%\.local\bin\claude.exe` and that folder is not on PATH.
+- Codex / Claude picker lists were `--help` leftovers; Codex reads `~/.codex/models_cache.json`, Claude lists current aliases (4.6 / Fable 5).
+
 ## [0.3.0] - 2026-08-28
 
 Office chrome: jump, menus, split panes, `@path`, slash, compact layers, Settings Jobs.

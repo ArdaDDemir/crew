@@ -28,13 +28,25 @@
   </svg>
   <div id="nav-scrim" hidden></div>
   <div class="app">
+    <header class="app-top" id="app-top" data-tauri-drag-region="deep">
+      <p class="app-brand">Crew</p>
+      <p class="app-cwd" id="app-cwd" title="Project folder"></p>
+      <div class="app-top-actions">
+        <button type="button" class="chip" id="desk-toggle" title="Show or hide the members list" aria-pressed="true">Members</button>
+        <button type="button" class="chip" id="win-open-project" hidden>Open project</button>
+        <div class="win-btns" id="win-btns" hidden>
+          <button type="button" id="win-min" title="Minimize">−</button>
+          <button type="button" id="win-max" title="Maximize">□</button>
+          <button type="button" id="win-close" class="win-close" title="Close">×</button>
+        </div>
+      </div>
+    </header>
     <aside class="rail">
-      <p class="logo">Crew</p>
       <p class="rail-label">Channels <button type="button" class="add" id="add-channel" title="New channel">+</button></p>
       <nav id="channel-list" class="nav"></nav>
       <p class="rail-label">People <button type="button" class="add" id="add-person" title="New person">+</button></p>
       <nav id="people" class="people"></nav>
-      <p class="rail-label">Direct</p>
+      <p class="rail-label" id="direct-label">Direct</p>
       <nav id="direct" class="direct"></nav>
       <button type="button" class="rail-settings" id="app-settings">Settings</button>
     </aside>
@@ -42,21 +54,23 @@
       <div id="panes" class="panes split-none">
         <section class="chat pane" id="pane-0" data-pane="0">
           <header class="chat-top">
-            <div>
+            <div class="chat-id">
               <span class="kicker room-kicker">channel</span>
               <h1 class="room-title">#landing</h1>
             </div>
-            <div class="pin-strip" hidden></div>
-            <div class="work-chip" id="work-chip" hidden></div>
-            <div class="context-chip" id="context-chip">0/80</div>
+            <div class="chat-meta">
+              <div class="work-chip" id="work-chip" hidden></div>
+              <div class="context-chip" id="context-chip">0/80</div>
+            </div>
             <div class="chat-actions">
               <button type="button" class="chip menu-btn" id="menu-btn">Menu</button>
               <input class="search" id="search" type="search" placeholder="Search" />
-              <button type="button" class="chip files-btn" id="files-btn">files</button>
-              <button type="button" class="chip export-btn" id="export-btn">export</button>
+              <button type="button" class="chip files-btn" id="files-btn" aria-label="Files in this thread">files</button>
+              <button type="button" class="chip export-btn" id="export-btn" aria-label="Export thread">export</button>
               <button type="button" class="chip title-regen" id="title-regen" hidden>Regenerate title</button>
-              <button type="button" class="chip settings-btn">room</button>
+              <button type="button" class="chip settings-btn" aria-label="Room settings">room</button>
             </div>
+            <div class="pin-strip" hidden></div>
           </header>
           <div class="thread">
             <ol class="log"></ol>
@@ -67,37 +81,51 @@
               <ul class="attach-chips" hidden></ul>
               <textarea class="draft" rows="1" placeholder="Message #landing — @ to ping, / for commands"></textarea>
               <div class="dock-row">
-                <button type="button" class="chip attach-file" id="attach-file" title="Add a file from disk. Saved under inbox/.">+ File</button>
-                <button type="button" class="chip attach-folder" id="attach-folder" title="Add a folder from disk. Saved under inbox/.">+ Folder</button>
+                <div class="attach-menu-wrap">
+                  <button type="button" class="chip attach-plus" title="Add a file or folder">+</button>
+                  <div class="attach-menu" hidden>
+                    <button type="button" class="attach-file" id="attach-file">File</button>
+                    <button type="button" class="attach-folder" id="attach-folder">Folder</button>
+                  </div>
+                </div>
                 <button type="button" class="chip mode-btn" id="mode-btn">auto-accept</button>
                 <button type="button" class="chip jump-latest" id="jump-latest" hidden>↓ new</button>
                 <button type="button" class="danger stop" id="stop" hidden>Stop</button>
-                <button type="submit" class="send">Send</button>
+                <button type="submit" class="send primary">Send</button>
               </div>
               <input type="file" class="draft-file-pick" hidden multiple />
               <input type="file" class="draft-folder-pick" hidden webkitdirectory />
             </form>
           </div>
         </section>
-        <div id="split-handle" class="split-handle" hidden></div>
+        <div id="split-handle" class="split-handle" title="Drag to open a second pane">
+          <span class="split-grip" aria-hidden="true"></span>
+        </div>
         <section class="chat pane" id="pane-1" data-pane="1" hidden>
+          <p class="pane-empty" id="pane-1-empty" hidden>
+            <span class="drop-kicker">Second pane</span>
+            <span class="drop-title">Drop a chat here</span>
+            <span class="drop-hint">Drag from People, or pull the grip on the left</span>
+          </p>
           <header class="chat-top">
-            <div>
+            <div class="chat-id">
               <span class="kicker room-kicker">channel</span>
               <h1 class="room-title">#landing</h1>
             </div>
-            <div class="pin-strip" hidden></div>
-            <div class="work-chip" hidden></div>
-            <div class="context-chip">0/80</div>
+            <div class="chat-meta">
+              <div class="work-chip" hidden></div>
+              <div class="context-chip">0/80</div>
+            </div>
             <div class="chat-actions">
               <button type="button" class="chip menu-btn">Menu</button>
               <input class="search" type="search" placeholder="Search" />
-              <button type="button" class="chip files-btn">files</button>
-              <button type="button" class="chip export-btn">export</button>
+              <button type="button" class="chip files-btn" aria-label="Files in this thread">files</button>
+              <button type="button" class="chip export-btn" aria-label="Export thread">export</button>
               <button type="button" class="chip title-regen" hidden>Regenerate title</button>
-              <button type="button" class="chip settings-btn">room</button>
+              <button type="button" class="chip settings-btn" aria-label="Room settings">room</button>
               <button type="button" class="chip pane-close" title="Close pane">Close</button>
             </div>
+            <div class="pin-strip" hidden></div>
           </header>
           <div class="thread">
             <ol class="log"></ol>
@@ -108,20 +136,28 @@
               <ul class="attach-chips" hidden></ul>
               <textarea class="draft" rows="1" placeholder="Message #landing — @ to ping, / for commands"></textarea>
               <div class="dock-row">
-                <button type="button" class="chip attach-file" title="Add a file from disk. Saved under inbox/.">+ File</button>
-                <button type="button" class="chip attach-folder" title="Add a folder from disk. Saved under inbox/.">+ Folder</button>
+                <div class="attach-menu-wrap">
+                  <button type="button" class="chip attach-plus" title="Add a file or folder">+</button>
+                  <div class="attach-menu" hidden>
+                    <button type="button" class="attach-file">File</button>
+                    <button type="button" class="attach-folder">Folder</button>
+                  </div>
+                </div>
                 <button type="button" class="chip mode-btn">auto-accept</button>
                 <button type="button" class="chip jump-latest" hidden>↓ new</button>
                 <button type="button" class="danger stop" hidden>Stop</button>
-                <button type="submit" class="send">Send</button>
+                <button type="submit" class="send primary">Send</button>
               </div>
               <input type="file" class="draft-file-pick" hidden multiple />
               <input type="file" class="draft-folder-pick" hidden webkitdirectory />
             </form>
           </div>
         </section>
-        <div id="drop-right" class="drop-ghost" hidden>Open to the right</div>
-        <div id="drop-below" class="drop-ghost" hidden>Open below</div>
+        <div id="drop-right" class="drop-ghost" hidden>
+          <span class="drop-kicker">Second pane</span>
+          <span class="drop-title">Drop beside</span>
+        </div>
+        <div id="drag-chip" class="drag-chip" hidden></div>
       </div>
       <aside class="desk" id="desk">
         <p class="rail-label" id="desk-label">Members</p>
@@ -233,7 +269,7 @@
       </section>
       <div class="field-row">
         <section class="field">
-          <p class="field-label">Model <button type="button" class="help" data-tip="This person's model. Empty = workspace default from Settings.">?</button></p>
+          <p class="field-label">Model <button type="button" class="help" data-tip="This person's implementation. Empty = workspace default. OpenRouter and enabled harnesses from Settings → Providers. Grok / Claude / Codex / OpenCode turns spawn that CLI. Jobs stay OpenRouter.">?</button></p>
           <select id="bot-model"></select>
         </section>
         <section class="field">
@@ -241,6 +277,10 @@
           <select id="bot-fallback"></select>
         </section>
       </div>
+      <section class="field">
+        <p class="field-label">Chat titles <button type="button" class="help" data-tip="Model that names Direct chats with this person after the first message. Empty = Settings → Jobs → Title default.">?</button></p>
+        <select id="bot-title-model"></select>
+      </section>
       <section class="field">
         <p class="field-label">Soul <button type="button" class="help" data-tip="Personality: voice, taste, how they show up. Loaded every turn. Not a how-to — that is a skill.">?</button></p>
         <textarea id="bot-soul" rows="6" placeholder="Who they are when they speak"></textarea>
@@ -306,63 +346,220 @@
   <dialog id="app-modal" class="modal sheet">
     <form id="app-form" autocomplete="off">
       <header class="sheet-top">
-        <p class="modal-title">Settings <button type="button" class="help" data-tip="Workspace models and key. People only pick from Allowed. Always allow is per-project, not per person.">?</button></p>
+        <p class="modal-title">Settings <button type="button" class="help" data-tip="General defaults, Providers, Jobs, MCP stdio servers (Crew-native turns), Always allow, About. Harness CLIs keep their own MCP.">?</button></p>
       </header>
-      <section class="field">
-        <p class="field-label">OpenRouter key <button type="button" class="help" data-tip="API key for models. Saved on this machine. The UI never talks to OpenRouter directly — the engine does.">?</button></p>
-        <div class="key-row">
-          <input id="app-key" type="password" placeholder="sk-or-…" />
-          <button type="button" class="primary" id="app-key-save">Save key</button>
+      <nav class="settings-tabs" id="settings-tabs">
+        <button type="button" class="on" data-settings-tab="general">General</button>
+        <button type="button" data-settings-tab="providers">Providers</button>
+        <button type="button" data-settings-tab="jobs">Jobs</button>
+        <button type="button" data-settings-tab="mcp">MCP</button>
+        <button type="button" data-settings-tab="permissions">Permissions</button>
+        <button type="button" data-settings-tab="about">About</button>
+      </nav>
+      <div class="settings-panel" data-settings-panel="general">
+        <div class="field-row">
+          <section class="field">
+            <p class="field-label">Default model <button type="button" class="help" data-tip="Used when a person has no model of their own. Same picker as Person: OpenRouter whitelist plus enabled harnesses.">?</button></p>
+            <select id="app-default-model"></select>
+          </section>
+          <section class="field">
+            <p class="field-label">Default fallback <button type="button" class="help" data-tip="Workspace backup if the default model errors. People can override with their own fallback.">?</button></p>
+            <select id="app-fallback-model"></select>
+          </section>
         </div>
-        <p class="field-hint" id="app-key-meta"></p>
-      </section>
-      <div class="field-row">
-        <section class="field">
-          <p class="field-label">Default model <button type="button" class="help" data-tip="Used when a person has no model of their own.">?</button></p>
-          <select id="app-default-model"></select>
-        </section>
-        <section class="field">
-          <p class="field-label">Default fallback <button type="button" class="help" data-tip="Workspace backup if the default model errors. People can override with their own fallback.">?</button></p>
-          <select id="app-fallback-model"></select>
+        <div class="field-row">
+          <section class="field">
+            <p class="field-label">New room mode <button type="button" class="help" data-tip="Permission mode for newly created channels and DMs. Existing rooms stay as they are.">?</button></p>
+            <select id="app-default-mode">
+              <option value="supervised">supervised</option>
+              <option value="auto-accept">auto-accept</option>
+              <option value="auto">auto</option>
+              <option value="full-access">full-access</option>
+            </select>
+          </section>
+          <section class="field">
+            <p class="field-label">Auto-compact <button type="button" class="help" data-tip="When on, a long thread is compacted once after 56 messages. Off means only /compact.">?</button></p>
+            <label class="check-row"><input type="checkbox" id="app-auto-compact" /> Compact long threads</label>
+          </section>
+        </div>
+      </div>
+      <div class="settings-panel" data-settings-panel="providers" hidden>
+        <article class="provider-card" id="prov-openrouter">
+          <header class="provider-head">
+            <span class="provider-mark or">OR</span>
+            <div>
+              <p class="provider-name">OpenRouter</p>
+              <p class="provider-status" id="prov-openrouter-status">Crew engine</p>
+            </div>
+            <span class="provider-pill" id="prov-openrouter-pill">Ready</span>
+          </header>
+          <section class="field">
+            <p class="field-label">API key <button type="button" class="help" data-tip="API key for models. Saved on this machine. The UI never talks to OpenRouter directly — the engine does.">?</button></p>
+            <div class="key-row">
+              <input id="app-key" type="password" placeholder="sk-or-…" />
+              <button type="button" class="primary" id="app-key-save">Save key</button>
+            </div>
+            <p class="field-hint" id="app-key-meta"></p>
+          </section>
+          <section class="field">
+            <p class="field-label">Base URL <button type="button" class="help" data-tip="OpenAI-compatible endpoint. Empty is https://openrouter.ai/api/v1.">?</button></p>
+            <input id="app-base-url" placeholder="https://openrouter.ai/api/v1" spellcheck="false" />
+          </section>
+          <section class="field">
+            <p class="field-label">Allowed for people <button type="button" class="help" data-tip="Whitelist. OpenRouter rows in the implementation picker only offer these. Approve from the catalog below.">?</button></p>
+            <div id="allowed-chips" class="allowed-chips"></div>
+          </section>
+          <section class="field">
+            <p class="field-label">Add from OpenRouter <button type="button" class="help" data-tip="Type at least two characters to search. Click a row to whitelist it. Needs a saved key.">?</button></p>
+            <input id="model-search" placeholder="Search models…" />
+            <div id="catalog" class="catalog"></div>
+          </section>
+        </article>
+        <article class="provider-card" id="prov-claude" data-harness="claude">
+          <header class="provider-head">
+            <span class="provider-mark claude">C</span>
+            <div>
+              <p class="provider-name">Claude</p>
+              <p class="provider-status" data-prov-status>Checking…</p>
+            </div>
+            <span class="provider-pill" data-prov-pill>Off</span>
+            <label class="check-row"><input type="checkbox" data-prov-on /> Enable</label>
+          </header>
+          <div class="provider-body">
+            <input data-prov-bin placeholder="Binary path (optional)" spellcheck="false" />
+            <p class="field-label">Custom models</p>
+            <div class="custom-chips" data-prov-customs></div>
+            <div class="custom-add">
+              <input data-prov-custom placeholder="e.g. claude-opus-4-7" spellcheck="false" />
+              <button type="button" class="ghost" data-prov-custom-add>Add</button>
+            </div>
+            <p class="field-hint" data-prov-login></p>
+          </div>
+        </article>
+        <article class="provider-card" id="prov-codex" data-harness="codex">
+          <header class="provider-head">
+            <span class="provider-mark codex">X</span>
+            <div>
+              <p class="provider-name">Codex</p>
+              <p class="provider-status" data-prov-status>Checking…</p>
+            </div>
+            <span class="provider-pill" data-prov-pill>Off</span>
+            <label class="check-row"><input type="checkbox" data-prov-on /> Enable</label>
+          </header>
+          <div class="provider-body">
+            <input data-prov-bin placeholder="Binary path (optional)" spellcheck="false" />
+            <p class="field-label">Custom models</p>
+            <div class="custom-chips" data-prov-customs></div>
+            <div class="custom-add">
+              <input data-prov-custom placeholder="e.g. gpt-5.6-sol" spellcheck="false" />
+              <button type="button" class="ghost" data-prov-custom-add>Add</button>
+            </div>
+            <p class="field-hint" data-prov-login></p>
+          </div>
+        </article>
+        <article class="provider-card" id="prov-grok" data-harness="grok">
+          <header class="provider-head">
+            <span class="provider-mark grok">G</span>
+            <div>
+              <p class="provider-name">Grok</p>
+              <p class="provider-status" data-prov-status>Checking…</p>
+            </div>
+            <span class="provider-pill" data-prov-pill>Off</span>
+            <label class="check-row"><input type="checkbox" data-prov-on /> Enable</label>
+          </header>
+          <div class="provider-body">
+            <input data-prov-bin placeholder="Binary path (optional)" spellcheck="false" />
+            <p class="field-label">Custom models</p>
+            <div class="custom-chips" data-prov-customs></div>
+            <div class="custom-add">
+              <input data-prov-custom placeholder="Model id" spellcheck="false" />
+              <button type="button" class="ghost" data-prov-custom-add>Add</button>
+            </div>
+            <p class="field-hint" data-prov-login></p>
+          </div>
+        </article>
+        <article class="provider-card" id="prov-opencode" data-harness="opencode">
+          <header class="provider-head">
+            <span class="provider-mark opencode">O</span>
+            <div>
+              <p class="provider-name">OpenCode</p>
+              <p class="provider-status" data-prov-status>Checking…</p>
+            </div>
+            <span class="provider-pill" data-prov-pill>Off</span>
+            <label class="check-row"><input type="checkbox" data-prov-on /> Enable</label>
+          </header>
+          <div class="provider-body">
+            <input data-prov-bin placeholder="Binary path (optional)" spellcheck="false" />
+            <p class="field-label">Custom models</p>
+            <div class="custom-chips" data-prov-customs></div>
+            <div class="custom-add">
+              <input data-prov-custom placeholder="Model id" spellcheck="false" />
+              <button type="button" class="ghost" data-prov-custom-add>Add</button>
+            </div>
+            <p class="field-hint" data-prov-login></p>
+          </div>
+        </article>
+        <button type="button" class="ghost" id="prov-recheck">Recheck health</button>
+      </div>
+      <div class="settings-panel" data-settings-panel="jobs" hidden>
+        <section class="field" id="jobs-section">
+          <p class="field-label">Jobs <button type="button" class="help" data-tip="Hidden workers, not People. Each slot uses the same implementation picker as Default model. Chat titles can still be overridden on the Person sheet. Empty vision or read skips that job.">?</button></p>
+          <div class="job-row">
+            <span class="job-name">Title <button type="button" class="help" data-tip="Default model for chat titles when a person has no title model of their own. Override on the Person sheet. Empty = workspace default.">?</button></span>
+            <select id="job-title-model" aria-label="Title model"></select>
+          </div>
+          <div class="job-row">
+            <span class="job-name">Compact <button type="button" class="help" data-tip="Summarizes a long thread. Same picker as Default model. Empty = workspace default. JSONL stays; the next prompt gets the summary.">?</button></span>
+            <select id="job-compact-bot" aria-label="Compact model"></select>
+          </div>
+          <div class="job-row">
+            <span class="job-name">Vision <button type="button" class="help" data-tip="Captions attached images in English. Same picker as Default model. Off skips the job. Path-only if the caption fails.">?</button></span>
+            <select id="job-vision-bot" aria-label="Vision model"></select>
+          </div>
+          <div class="job-row">
+            <span class="job-name">Read <button type="button" class="help" data-tip="Optional gist of a text file. Same picker as Default model. Off skips the job in this version.">?</button></span>
+            <select id="job-read-bot" aria-label="Read model"></select>
+          </div>
         </section>
       </div>
-      <section class="field">
-        <p class="field-label">Allowed for people <button type="button" class="help" data-tip="Whitelist. Person Model/Fallback dropdowns only offer these. Approve from the catalog below.">?</button></p>
-        <div id="allowed-chips" class="allowed-chips"></div>
-      </section>
-      <section class="field" id="jobs-section">
-        <p class="field-label">Jobs <button type="button" class="help" data-tip="Hidden workers, not People. They title chats, compact threads, and caption images. Empty vision or read skips that job. Empty title or compact uses the workspace default.">?</button></p>
-        <div class="job-row">
-          <span class="job-name">Title <button type="button" class="help" data-tip="Names a Direct chat after the first human message. Not a channel wake. Appends thread.titled.">?</button></span>
-          <select id="job-title-model" aria-label="Title model"></select>
-          <select id="job-title-bot" aria-label="Title person"></select>
-        </div>
-        <div class="job-row">
-          <span class="job-name">Compact <button type="button" class="help" data-tip="Summarizes a long thread. JSONL stays; the next prompt gets the summary.">?</button></span>
-          <select id="job-compact-model" aria-label="Compact model"></select>
-          <select id="job-compact-bot" aria-label="Compact person"></select>
-        </div>
-        <div class="job-row">
-          <span class="job-name">Vision <button type="button" class="help" data-tip="Captions attached images in English. Off skips the job. Path-only if the caption fails.">?</button></span>
-          <select id="job-vision-model" aria-label="Vision model"></select>
-          <select id="job-vision-bot" aria-label="Vision person"></select>
-        </div>
-        <div class="job-row">
-          <span class="job-name">Read <button type="button" class="help" data-tip="Optional gist of a text file. Off skips the job in this version.">?</button></span>
-          <select id="job-read-model" aria-label="Read model"></select>
-          <select id="job-read-bot" aria-label="Read person"></select>
-        </div>
-      </section>
-      <section class="field">
-        <p class="field-label">Always allow <button type="button" class="help" data-tip="Tool fingerprints you accepted with Always (same path/command). Stored in .crew/permissions.json. Clear all here.">?</button></p>
-        <ul id="always-list" class="skill-list"></ul>
-        <button type="button" class="danger" id="always-clear">Clear always rules</button>
-      </section>
-      <section class="field">
-        <p class="field-label">Add from OpenRouter <button type="button" class="help" data-tip="Type at least two characters to search. Click a row to whitelist it. Needs a saved key.">?</button></p>
-        <input id="model-search" placeholder="Search models…" />
-        <div id="catalog" class="catalog"></div>
-      </section>
+      <div class="settings-panel" data-settings-panel="mcp" hidden>
+        <section class="field" id="mcp-section">
+          <p class="field-label">MCP servers <button type="button" class="help" data-tip="stdio JSON-RPC servers in .crew/mcp.json. Tools attach to Crew-native (OpenRouter) turns as mcp_server_tool. Harness people use that CLI's own MCP. Dead servers are skipped.">?</button></p>
+          <p class="field-hint" id="mcp-tools-meta"></p>
+          <div id="mcp-list"></div>
+          <div class="mcp-actions">
+            <button type="button" class="ghost" id="mcp-add">+ Add server</button>
+            <button type="button" class="primary" id="mcp-save">Save MCP</button>
+          </div>
+        </section>
+      </div>
+      <div class="settings-panel" data-settings-panel="permissions" hidden>
+        <section class="field">
+          <p class="field-label">Always allow <button type="button" class="help" data-tip="Tool fingerprints you accepted with Always, or added here. Same path/command. Stored in .crew/permissions.json.">?</button></p>
+          <div class="always-add">
+            <select id="always-tool" aria-label="Always tool">
+              <option value="apply_patch">apply_patch</option>
+              <option value="shell">shell</option>
+            </select>
+            <input id="always-key" placeholder="path or command" spellcheck="false" />
+            <button type="button" class="primary" id="always-add">Add</button>
+          </div>
+          <ul id="always-list" class="skill-list"></ul>
+          <button type="button" class="danger" id="always-clear">Clear always rules</button>
+        </section>
+        <section class="field">
+          <p class="field-label">Reviewer model <button type="button" class="help" data-tip="Used when a room is in auto. Empty keeps auto as supervised.">?</button></p>
+          <select id="app-reviewer-model"></select>
+        </section>
+      </div>
+      <div class="settings-panel" data-settings-panel="about" hidden>
+        <section class="field">
+          <p class="field-label">Crew</p>
+          <p class="field-hint" id="app-about-ver">0.4.0</p>
+          <p class="field-hint" id="app-workspace-path"></p>
+          <p class="field-hint">Local office. Crew.exe is this same UI in a WebView2 window — not a website, not Electron.</p>
+        </section>
+      </div>
       <div class="modal-actions">
         <button type="button" class="ghost" id="app-close" data-close>Close</button>
       </div>

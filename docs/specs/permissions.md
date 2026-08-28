@@ -11,7 +11,7 @@ Mode is stored on the channel or DM. The CLI composer can change it for the curr
 | `auto` | Auto (reviewer) | reviewer model; risky → ask | reviewer; risky → ask |
 | `full-access` | Full access | allow | allow |
 
-Default for a new channel or DM: `auto-accept`.
+Default for a new channel or DM: the workspace `defaultPermissionMode` (Settings → General **New room mode**), else `auto-accept`. Existing rooms keep the mode on their channel/DM sheet.
 
 ## Hard denials (all modes)
 
@@ -29,8 +29,18 @@ Tool executor does not read stdin.
 3. `permission.resolved`
 4. Continue or skip with a tool error result to the model
 
-Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). Fingerprint subset: `path`, `command`, `name`, `id`. A matching later ask is allowed with no prompt and no `type:"ask"` stream row. Settings → Always allow lists and clears them. It does not switch the channel to `full-access`.
+Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). Fingerprint subset: `path`, `command`, `name`, `id`. A matching later ask is allowed with no prompt and no `type:"ask"` stream row. It does not switch the channel to `full-access`.
+
+MCP tools (`mcp_<server>_<tool>`, `ADR-0036`) are not a fifth mode. Unknown tools map to `shell` for `decidePermission`: supervised asks; auto-accept allows. Harness CLI turns do not use this card (the CLI auto-approves).
+
+Settings → Permissions:
+
+- List Always rules from disk.
+- **Add:** tool `apply_patch` \| `shell` + path or command. `POST /api/permissions` writes the same `{ tool, key }` shape `rememberAlways` uses.
+- Per-row Remove: `DELETE /api/permissions?tool=&key=`.
+- Clear all: `DELETE /api/permissions` with no query.
+- **Reviewer model** stored as `reviewerModel` in project `config.json`.
 
 ## Auto reviewer
 
-v1: if no reviewer model is configured, `auto` **falls back to `supervised`** and the CLI warns once. It must not fall back to `full-access`.
+v1: if no reviewer model is configured, `auto` **falls back to `supervised`** and the CLI warns once. It must not fall back to `full-access`. Settings → Permissions can set `reviewerModel`; empty keeps this fallback.

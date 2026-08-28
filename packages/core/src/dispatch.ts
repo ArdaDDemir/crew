@@ -7,10 +7,17 @@ import type { ChatEvent } from "./provider";
 import type { Participant } from "./router";
 import { parseMentions } from "./mentions";
 
+export type BotProviderBind = {
+  provider?: Provider;
+  model?: string;
+  fallbackModel?: string;
+};
+
 export type DispatchBase = Clock & {
   store: EventStore;
   workspace: Workspace;
   provider: Provider;
+  providerForBot?: (botId: string) => BotProviderBind | undefined;
   tools: Tool[];
   model: string;
   fallbackModel?: string;
@@ -24,6 +31,22 @@ export type DispatchBase = Clock & {
   onEvent?: (botId: string, event: ChatEvent) => void;
   shouldStop?: () => boolean;
 };
+
+function bindTurn(input: DispatchBase, botId: string) {
+  const bind = input.providerForBot?.(botId);
+  if (!bind) {
+    return {
+      provider: input.provider,
+      bindModel: undefined,
+      fallbackModel: input.fallbackModel,
+    };
+  }
+  return {
+    provider: bind.provider ?? input.provider,
+    bindModel: bind.model,
+    fallbackModel: bind.fallbackModel,
+  };
+}
 
 function isRateLimit(error?: string): boolean {
   if (!error) return false;
@@ -81,6 +104,7 @@ export async function dispatchChannelPost(
       wave.map(async (botId) => {
         const turn = await runBotTurn({
           ...input,
+          ...bindTurn(input, botId),
           thread: { kind: "channel", id: input.channelId },
           botId,
           onStatus: input.onStatus,
@@ -150,6 +174,7 @@ export async function dispatchChannelPost(
     dmSeen.add(key);
     const turn = await runBotTurn({
       ...input,
+      ...bindTurn(input, item.botId),
       thread: { kind: "dm", id: item.threadId },
       botId: item.botId,
       onStatus: input.onStatus,
@@ -204,6 +229,7 @@ export async function dispatchDm(
   for (const botId of posted.woken) {
     const turn = await runBotTurn({
       ...input,
+      ...bindTurn(input, botId),
       thread: { kind: "dm", id: posted.threadId },
       botId,
       onStatus: input.onStatus,

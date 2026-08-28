@@ -55,3 +55,9 @@ export function rememberAlways(
   }
   return rules;
 }
+
+export function removeAlwaysRule(crewRoot: string, tool: string, key: string): AlwaysRule[] {
+  const rules = loadAlways(crewRoot).filter((r) => !(r.tool === tool && r.key === key));
+  saveAlways(crewRoot, rules);
+  return rules;
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@crew/provider-grok",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/grok-provider.ts"
+  },
+  "dependencies": {
+    "@crew/core": "workspace:*"
+  }
+}

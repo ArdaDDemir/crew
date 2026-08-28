@@ -512,6 +512,42 @@ test("inference processing failed retries once without tools", async () => {
   expect(result.text).toContain("bak dosyaya bakamadım");
 });
 
+test("bindModel wins over bot.model for harness turns", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder", model: "z-ai/glm-5.3-flash", harness: "grok" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const seen: string[] = [];
+  const provider: Provider = {
+    async *complete(req) {
+      seen.push(req.model);
+      yield { type: "text-delta" as const, text: "from grok" };
+      yield { type: "done" as const };
+    },
+  };
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "workspace-default",
+    bindModel: "grok-4.6",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(seen).toEqual(["grok-4.6"]);
+  expect(result.text).toBe("from grok");
+});
+
 test("provider error is returned on the turn, not swallowed", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

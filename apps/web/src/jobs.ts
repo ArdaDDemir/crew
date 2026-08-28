@@ -14,6 +14,8 @@ export type JobKey = (typeof JOB_KEYS)[number];
 export type JobSlot = {
   model: string;
   botId: string | null;
+  harness: string | null;
+  harnessModel: string | null;
 };
 
 export type Jobs = Record<JobKey, JobSlot>;
@@ -23,7 +25,7 @@ export type JobsHost = {
   model: string;
   provider: Provider;
   workspace: {
-    getBot(id: string): { soul?: string } | undefined;
+    getBot(id: string): { soul?: string; titleModel?: string; model?: string } | undefined;
   };
   store: {
     read(thread: ThreadRef): CrewEvent[];
@@ -39,7 +41,7 @@ export const TITLE_PROMPT =
 export const VISION_PROMPT = "Caption this image in English, one or two sentences.";
 
 export function defaultJobs(): Jobs {
-  const slot = (): JobSlot => ({ model: "", botId: null });
+  const slot = (): JobSlot => ({ model: "", botId: null, harness: null, harnessModel: null });
   return {
     title: slot(),
     compact: slot(),
@@ -53,12 +55,17 @@ export function jobsPath(host: JobsHost): string {
 }
 
 function asSlot(raw: unknown): JobSlot {
-  const slot: JobSlot = { model: "", botId: null };
+  const slot: JobSlot = { model: "", botId: null, harness: null, harnessModel: null };
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return slot;
-  const row = raw as { model?: unknown; botId?: unknown };
+  const row = raw as { model?: unknown; botId?: unknown; harness?: unknown; harnessModel?: unknown };
   if (typeof row.model === "string") slot.model = row.model.trim();
   if (typeof row.botId === "string" && row.botId.trim()) slot.botId = row.botId.trim();
   else slot.botId = null;
+  if (typeof row.harness === "string" && row.harness.trim()) slot.harness = row.harness.trim();
+  else slot.harness = null;
+  if (typeof row.harnessModel === "string" && row.harnessModel.trim()) {
+    slot.harnessModel = row.harnessModel.trim();
+  } else slot.harnessModel = null;
   return slot;
 }
 
@@ -85,8 +92,13 @@ export function saveJobs(host: JobsHost, jobs: Jobs): Jobs {
 }
 
 export function resolveJobModel(host: JobsHost, key: JobKey, slot: JobSlot): string | null {
+  if (key !== "title" && slot.botId) {
+    const own = host.workspace.getBot(slot.botId)?.model?.trim();
+    return own || host.model;
+  }
   const model = slot.model.trim();
   if (model) return model;
+  if (slot.harness) return slot.harnessModel?.trim() || host.model;
   if (SKIP_KEYS.has(key)) return null;
   return host.model;
 }
@@ -200,7 +212,7 @@ function fallbackTitle(text: string): string {
 export async function titleThread(
   host: JobsHost,
   thread: ThreadRef,
-  opts?: { force?: boolean },
+  opts?: { force?: boolean; botId?: string },
 ): Promise<CrewEvent> {
   const events = host.store.read(thread);
   if (!opts?.force && lastTitled(events)) {
@@ -209,7 +221,11 @@ export async function titleThread(
   const text = firstHumanText(events);
   if (!text) throw new Error("no human message");
   const jobs = loadJobs(host);
-  const job = jobs.title;
+  const person = opts?.botId ? host.workspace.getBot(opts.botId) : undefined;
+  const job: JobSlot = {
+    model: (person?.titleModel || jobs.title.model || "").trim(),
+    botId: opts?.botId ?? null,
+  };
   const model = resolveJobModel(host, "title", job) ?? host.model;
   let title = fallbackTitle(text);
   let description = "";

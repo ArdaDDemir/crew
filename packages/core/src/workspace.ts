@@ -22,7 +22,10 @@ export type BotRecord = {
   skills?: SkillCatalogItem[];
   model?: string;
   fallbackModel?: string;
+  titleModel?: string;
   icon?: string;
+  harness?: string | null;
+  harnessModel?: string | null;
 };
 
 export type ChannelRecord = Channel & {
@@ -35,7 +38,18 @@ export type ChannelRecord = Channel & {
 };
 
 export type BotPatch = Partial<
-  Pick<BotRecord, "name" | "soul" | "standingOrders" | "model" | "fallbackModel" | "icon">
+  Pick<
+    BotRecord,
+    | "name"
+    | "soul"
+    | "standingOrders"
+    | "model"
+    | "fallbackModel"
+    | "titleModel"
+    | "icon"
+    | "harness"
+    | "harnessModel"
+  >
 >;
 
 export type ChannelPatch = Partial<

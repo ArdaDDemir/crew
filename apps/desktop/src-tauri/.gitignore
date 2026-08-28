@@ -1,0 +1,5 @@
+target/
+gen/
+binaries/
+resources/crew-server.exe
+resources/public/

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@crew/core": "workspace:*",
+    "@crew/provider-harness": "workspace:*",
     "@crew/provider-openai": "workspace:*",
     "@crew/store-jsonl": "workspace:*",
     "@crew/tools-native": "workspace:*",

@@ -4,8 +4,12 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadAlways, matchesAlways, ScriptedProvider } from "@crew/core";
-import { createHost, readThread, resolveAsk, threadDiff } from "./host";
-import { loadJobs, saveJobs } from "./jobs";
+import { createChannel, createHost, readThread, resolveAsk, sayChannel, threadDiff } from "./host";
+import { fakeMcpRpc } from "./mcp-client";
+import { saveMcp } from "./mcp";
+import { writeConfigFile, projectConfigPath } from "./config";
+import { loadJobs, resolveJobModel, saveJobs } from "./jobs";
+import { defaultProviders, loadProviders, saveProviders } from "./providers";
 
 test("resolveAsk always persists the fingerprint", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
@@ -155,10 +159,10 @@ test("loadJobs missing file returns empty-model defaults", async () => {
   const host = createHost({ cwd, provider: new ScriptedProvider([]) });
   expect(existsSync(join(cwd, ".crew", "jobs.json"))).toBe(false);
   expect(loadJobs(host)).toEqual({
-    title: { model: "", botId: null },
-    compact: { model: "", botId: null },
-    vision: { model: "", botId: null },
-    read: { model: "", botId: null },
+    title: { model: "", botId: null, harness: null, harnessModel: null },
+    compact: { model: "", botId: null, harness: null, harnessModel: null },
+    vision: { model: "", botId: null, harness: null, harnessModel: null },
+    read: { model: "", botId: null, harness: null, harnessModel: null },
   });
 });
 
@@ -179,4 +183,206 @@ test("saveJobs roundtrips pretty JSON and does not write config.json", async () 
   expect(JSON.parse(raw)).toEqual(saved);
   expect(loadJobs(host)).toEqual(saved);
   expect(existsSync(join(cwd, ".crew", "config.json"))).toBe(false);
+});
+
+test("Grok harness person turn spawns grok, not OpenRouter", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const argvLog: string[][] = [];
+  const host = createHost({
+    cwd,
+    provider: new ScriptedProvider([
+      [{ type: "error", message: "openrouter should not run" }, { type: "done" }],
+    ]),
+    grokRun: async function* (argv) {
+      argvLog.push(argv);
+      yield '{"type":"text","data":"I listed the files."}';
+      return 0;
+    },
+  });
+  saveProviders(cwd, { ...defaultProviders(), grok: { enabled: true, binary: "grok" } });
+  host.workspace.addBot({
+    id: "coder",
+    name: "Coder",
+    harness: "grok",
+    harnessModel: "grok-4.6",
+    model: "z-ai/glm-5.3-flash",
+  });
+  createChannel(host, { id: "landing", memberBotIds: ["coder"], leadBotId: "coder" });
+  const result = await sayChannel(host, "landing", "@coder list files");
+  expect(result.replies.map((r) => `${r.botId}:${r.text}`)).toEqual(["coder:I listed the files."]);
+  expect(result.replies[0]?.error).toBeUndefined();
+  expect(argvLog[0]?.includes("--prompt-file")).toBe(true);
+  expect(argvLog[0]?.includes("grok-4.6")).toBe(true);
+  expect(argvLog[0]?.includes("acceptEdits") || argvLog[0]?.includes("--always-approve")).toBe(true);
+});
+
+test("Claude Codex OpenCode harness turns spawn those CLIs", async () => {
+  const cases = [
+    {
+      kind: "claude" as const,
+      line: '{"type":"assistant","message":{"content":[{"type":"text","text":"claude account"}]}}',
+      flag: "-p",
+      model: "sonnet",
+    },
+    {
+      kind: "codex" as const,
+      line: '{"type":"item.completed","item":{"type":"agentMessage","text":"codex account"}}',
+      flag: "exec",
+      model: "gpt-5.6-sol",
+    },
+    {
+      kind: "opencode" as const,
+      line: '{"type":"text","part":{"text":"opencode account"}}',
+      flag: "run",
+      model: "",
+    },
+  ];
+  for (const row of cases) {
+    const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+    const argvLog: string[][] = [];
+    const host = createHost({
+      cwd,
+      provider: new ScriptedProvider([
+        [{ type: "error", message: "openrouter should not run" }, { type: "done" }],
+      ]),
+      harnessRun: async function* (argv) {
+        argvLog.push(argv);
+        yield row.line;
+        return 0;
+      },
+    });
+    saveProviders(cwd, {
+      ...defaultProviders(),
+      [row.kind]: { enabled: true, binary: row.kind },
+    });
+    host.workspace.addBot({
+      id: "coder",
+      name: "Coder",
+      harness: row.kind,
+      harnessModel: row.model || null,
+      model: "z-ai/glm-5.3-flash",
+    });
+    createChannel(host, { id: "landing", memberBotIds: ["coder"], leadBotId: "coder" });
+    const result = await sayChannel(host, "landing", "@coder go");
+    expect(result.replies[0]?.text).toBe(`${row.kind} account`);
+    expect(result.replies[0]?.error).toBeUndefined();
+    expect(argvLog[0]?.includes(row.flag)).toBe(true);
+  }
+});
+
+test("Crew-native turn can call an MCP echo tool", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({
+    cwd,
+    provider: new ScriptedProvider([
+      [
+        { type: "tool-call", id: "c1", name: "mcp_echo_echo", arguments: "{\"text\":\"hi\"}" },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "I used echo." }, { type: "done" }],
+    ]),
+    mcpConnect: () =>
+      fakeMcpRpc({
+        tools: [
+          {
+            name: "echo",
+            description: "Echo",
+            inputSchema: { type: "object", properties: { text: { type: "string" } } },
+          },
+        ],
+        call: async (_name, args) => ({ content: [{ type: "text", text: String(args.text ?? "") }] }),
+      }),
+  });
+  saveMcp(cwd, {
+    servers: [{ name: "echo", enabled: true, command: "fake", args: [], env: {} }],
+  });
+  host.workspace.addBot({ id: "coder", name: "Coder" });
+  createChannel(host, { id: "landing", memberBotIds: ["coder"], leadBotId: "coder" });
+  const result = await sayChannel(host, "landing", "@coder ping");
+  expect(result.replies[0]?.text).toBe("I used echo.");
+  expect(result.replies[0]?.error).toBeUndefined();
+  const events = host.store.read({ kind: "channel", id: "landing" });
+  const done = events.find((e) => e.type === "tool.completed");
+  expect(String(done?.payload.output ?? "")).toBe("hi");
+});
+
+test("supervised channel does not spawn Grok", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  let grokCalls = 0;
+  const host = createHost({
+    cwd,
+    provider: new ScriptedProvider([[{ type: "text-delta", text: "crew asked" }, { type: "done" }]]),
+    grokRun: async function* () {
+      grokCalls += 1;
+      yield '{"type":"text","data":"grok should not run"}';
+      return 0;
+    },
+  });
+  saveProviders(cwd, { ...defaultProviders(), grok: { enabled: true, binary: "grok" } });
+  host.workspace.addBot({ id: "coder", name: "Coder", harness: "grok", harnessModel: "grok-4.6" });
+  createChannel(host, {
+    id: "landing",
+    memberBotIds: ["coder"],
+    leadBotId: "coder",
+    permissionMode: "supervised",
+  });
+  const result = await sayChannel(host, "landing", "@coder hi");
+  expect(grokCalls).toBe(0);
+  expect(result.replies[0]?.text).toBe("crew asked");
+});
+
+test("Grok harness off stays on OpenRouter", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  let grokCalls = 0;
+  const host = createHost({
+    cwd,
+    provider: new ScriptedProvider([[{ type: "text-delta", text: "openrouter account" }, { type: "done" }]]),
+    grokRun: async function* () {
+      grokCalls += 1;
+      yield '{"type":"text","data":"grok should not run"}';
+      return 0;
+    },
+  });
+  host.workspace.addBot({ id: "coder", name: "Coder", harness: "grok", harnessModel: "grok-4.6" });
+  createChannel(host, { id: "landing", memberBotIds: ["coder"], leadBotId: "coder" });
+  const result = await sayChannel(host, "landing", "@coder hi");
+  expect(grokCalls).toBe(0);
+  expect(result.replies[0]?.text).toBe("openrouter account");
+});
+
+test("createChannel uses workspace defaultPermissionMode when mode is omitted", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  writeConfigFile(projectConfigPath(cwd), { apiKey: "sk-test", defaultPermissionMode: "supervised" });
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  host.workspace.addBot({ id: "lead", name: "Lead" });
+  createChannel(host, { id: "lab" });
+  expect(host.workspace.getChannel("lab")?.permissionMode).toBe("supervised");
+});
+
+test("saveProviders roundtrips and is not config.json", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  expect(loadProviders(host.cwd)).toEqual(defaultProviders());
+  const saved = saveProviders(host.cwd, {
+    ...defaultProviders(),
+    grok: { enabled: true, binary: "C:\\\\bin\\\\grok.exe" },
+  });
+  expect(saved.grok.enabled).toBe(true);
+  expect(existsSync(join(cwd, ".crew", "providers.json"))).toBe(true);
+  expect(existsSync(join(cwd, ".crew", "config.json"))).toBe(false);
+  expect(loadProviders(host.cwd).grok.binary).toBe("C:\\\\bin\\\\grok.exe");
+});
+
+test("resolveJobModel compact/vision/read pick the agent's person model", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  host.workspace.addBot({ id: "lead", name: "Lead", model: "person/compact" });
+  host.workspace.addBot({ id: "seer", name: "Seer", model: "person/vision" });
+  expect(resolveJobModel(host, "compact", { model: "", botId: null })).toBe(host.model);
+  expect(resolveJobModel(host, "compact", { model: "", botId: "lead" })).toBe("person/compact");
+  expect(resolveJobModel(host, "vision", { model: "", botId: null })).toBe(null);
+  expect(resolveJobModel(host, "vision", { model: "", botId: "seer" })).toBe("person/vision");
+  expect(resolveJobModel(host, "read", { model: "", botId: "lead" })).toBe("person/compact");
+  expect(resolveJobModel(host, "title", { model: "title/cheap", botId: "lead" })).toBe("title/cheap");
+  expect(resolveJobModel(host, "title", { model: "", botId: "lead" })).toBe(host.model);
 });

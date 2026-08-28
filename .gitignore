@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.log
+apps/desktop/src-tauri/target/
 .crew/
 .env
 .env.*

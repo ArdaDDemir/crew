@@ -1,0 +1,12 @@
+{
+  "name": "@crew/provider-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/harness-provider.ts"
+  },
+  "dependencies": {
+    "@crew/core": "workspace:*"
+  }
+}

@@ -78,6 +78,8 @@ test("updateChannel and updateBot persist icon name soul and folders", async () 
     soul: "Write HTML.",
     model: "anthropic/claude-sonnet-4",
     fallbackModel: "z-ai/glm-5.3-flash",
+    titleModel: "z-ai/glm-5.3-flash",
+    harness: "claude",
   });
   expect(ws.getBot("coder")).toMatchObject({
     name: "Frontend",
@@ -85,7 +87,11 @@ test("updateChannel and updateBot persist icon name soul and folders", async () 
     soul: "Write HTML.",
     model: "anthropic/claude-sonnet-4",
     fallbackModel: "z-ai/glm-5.3-flash",
+    titleModel: "z-ai/glm-5.3-flash",
+    harness: "claude",
   });
+  ws.updateBot("coder", { harness: null });
+  expect(ws.getBot("coder")?.harness ?? null).toBe(null);
   ws.addSkill("coder", { name: "html", description: "Semantic HTML", body: "Use sections." });
   expect(ws.getBot("coder")?.skills?.some((s) => s.name === "html")).toBe(true);
   expect(ws.getSkill("coder", "html")?.body).toContain("Use sections.");

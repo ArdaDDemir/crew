@@ -1,7 +1,7 @@
 # Crew runtime — design
 
 Date: 2026-08-27  
-Status: accepted. Shipped: local office UI (`bun run ui`, `ADR-0017`–`0029`); CLI is tests/scripts. Electron / Discord API / `crew serve` still out. Current law: `AGENTS.md` + `docs/adr/`.  
+Status: accepted. Shipped: local office UI (`bun run ui` or Crew.exe, `ADR-0017`–`0034`); CLI is tests/scripts. Grok spawn is `ADR-0034`. Electron / Discord API / `crew serve` / remaining harness spawn still out. Current law: `AGENTS.md` + `docs/adr/`.  
 CLI working name: `crew` (repo: `aibuildingapp`)
 
 ## What this is

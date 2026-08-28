@@ -46,6 +46,7 @@ export {
   loadAlways,
   matchesAlways,
   rememberAlways,
+  removeAlwaysRule,
   saveAlways,
   type AlwaysRule,
 } from "./always";
@@ -59,6 +60,6 @@ export {
   windowPosted,
 } from "./compact";
 export { buildCrossThreadNote, collectHumanOrders } from "./orders";
-export { dispatchChannelPost, dispatchDm } from "./dispatch";
+export { dispatchChannelPost, dispatchDm, type BotProviderBind } from "./dispatch";
 export { shortenChatError } from "./chat-error";
 export { asSkillDoc, formatSkillMd, parseSkillMd, skillSlug } from "./skill-md";

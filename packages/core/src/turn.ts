@@ -42,6 +42,7 @@ export type RunBotTurnInput = Clock & {
   thread: ThreadRef;
   botId: string;
   model: string;
+  bindModel?: string;
   fallbackModel?: string;
   workspaceRoot: string;
   ask: AskFn;
@@ -136,7 +137,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
 }> {
   const bot = input.workspace.getBot(input.botId);
   if (!bot) throw new Error(`unknown bot: ${input.botId}`);
-  let model = bot.model ?? input.model;
+  let model = input.bindModel || bot.model || input.model;
   const fallback = bot.fallbackModel || input.fallbackModel;
 
   append(input, input.thread, "bot.turn.started", { botId: input.botId, model });

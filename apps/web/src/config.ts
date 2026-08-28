@@ -8,6 +8,11 @@ export type CrewConfig = {
   fallbackModel?: string;
   allowedModels?: string[];
   baseUrl?: string;
+  defaultPermissionMode?: "supervised" | "auto-accept" | "auto" | "full-access";
+  autoCompact?: boolean;
+  reviewerModel?: string;
+  defaultHarness?: string | null;
+  defaultHarnessModel?: string | null;
 };
 
 export function userConfigPath(home: string): string {
@@ -46,7 +51,24 @@ export function mergeConfig(input: {
     fallbackModel: project.fallbackModel || user.fallbackModel,
     allowedModels: project.allowedModels ?? user.allowedModels,
     baseUrl: input.env.CREW_BASE_URL || project.baseUrl || user.baseUrl,
+    defaultPermissionMode:
+      asMode(project.defaultPermissionMode) ||
+      asMode(user.defaultPermissionMode) ||
+      "auto-accept",
+    autoCompact: project.autoCompact ?? user.autoCompact ?? true,
+    reviewerModel: (project.reviewerModel || user.reviewerModel || "").trim(),
+    defaultHarness: (project.defaultHarness || user.defaultHarness || "") || null,
+    defaultHarnessModel: (project.defaultHarnessModel || user.defaultHarnessModel || "") || null,
   };
+}
+
+function asMode(
+  raw: unknown,
+): "supervised" | "auto-accept" | "auto" | "full-access" | undefined {
+  if (raw === "supervised" || raw === "auto-accept" || raw === "auto" || raw === "full-access") {
+    return raw;
+  }
+  return undefined;
 }
 
 export function maskKey(key: string | undefined): string {

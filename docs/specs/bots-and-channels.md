@@ -11,7 +11,9 @@ A bot is a persistent named teammate.
 | `id` | stable slug (`designer`, `coder`). Never renamed after create. Reserved: `human`, `you`, `everyone`, `engine` (`ADR-0022`) |
 | `name` | display name |
 | `icon` | optional glyph |
-| `model` / `fallbackModel` | optional; else workspace default |
+| `model` / `fallbackModel` | optional; else workspace default. OpenRouter ids for Crew talk |
+| `titleModel` | optional; names Direct chats. Empty = Jobs Title |
+| `harness` / `harnessModel` | optional; `null` or `claude` \| `codex` \| `grok` \| `opencode` plus that CLI's model id (`ADR-0030`, `ADR-0031`, `ADR-0034`, `ADR-0035`). When the Providers card is enabled, that Person's turn spawns the CLI. Otherwise talk uses `model` |
 | `soul` | `SOUL.md` — voice |
 | `standingOrders` | `AGENTS.md` — always on |
 | `skills` | `skills/<slug>/SKILL.md` (`ADR-0021`) |
@@ -54,9 +56,11 @@ A bot opens a DM by emitting `dm_send` (`to`, `text`) targeting another **channe
 
 ```
 .crew/
-  config.json                  # project model, allowed, fallback
+  config.json                  # project model, allowed, fallback, defaultPermissionMode, autoCompact, reviewerModel
   permissions.json             # Always rules (ADR-0018)
-  bots/<id>/bot.json
+  jobs.json                    # title / compact / vision / read slots (ADR-0029, ADR-0031)
+  providers.json               # OpenRouter + harness cards (ADR-0030, ADR-0031)
+  bots/<id>/bot.json           # includes harness / harnessModel / titleModel
   bots/<id>/SOUL.md
   bots/<id>/AGENTS.md
   bots/<id>/skills/<slug>/SKILL.md

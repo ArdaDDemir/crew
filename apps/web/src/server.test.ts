@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -232,12 +232,26 @@ test("PATCH channel and bot persist customization", async () => {
     const bot = await fetch(`${url}/api/bot/coder`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Frontend", icon: "λ", soul: "Write HTML." }),
+      body: JSON.stringify({
+        name: "Frontend",
+        icon: "λ",
+        soul: "Write HTML.",
+        titleModel: "z-ai/glm-5.3-flash",
+      }),
     });
     expect(bot.ok).toBe(true);
     const coder = await (await fetch(`${url}/api/bot/coder`)).json();
     expect(coder.name).toBe("Frontend");
     expect(coder.soul).toContain("Write HTML");
+    expect(coder.titleModel).toBe("z-ai/glm-5.3-flash");
+    const harness = await fetch(`${url}/api/bot/coder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ harness: "claude" }),
+    });
+    expect(harness.ok).toBe(true);
+    const withHarness = await (await fetch(`${url}/api/bot/coder`)).json();
+    expect(withHarness.harness).toBe("claude");
   } finally {
     server.stop(true);
   }
@@ -785,10 +799,10 @@ test("GET /api/jobs returns defaults and PUT roundtrips", async () => {
   try {
     const missing = await (await fetch(`${url}/api/jobs`)).json();
     expect(missing).toEqual({
-      title: { model: "", botId: null },
-      compact: { model: "", botId: null },
-      vision: { model: "", botId: null },
-      read: { model: "", botId: null },
+      title: { model: "", botId: null, harness: null, harnessModel: null },
+      compact: { model: "", botId: null, harness: null, harnessModel: null },
+      vision: { model: "", botId: null, harness: null, harnessModel: null },
+      read: { model: "", botId: null, harness: null, harnessModel: null },
     });
     const put = await fetch(`${url}/api/jobs`, {
       method: "PUT",
@@ -931,22 +945,209 @@ test("POST /api/attach captions images when vision model is set", async () => {
   }
 });
 
+test("POST /api/attach captions when vision job is an agent with empty model slot", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-ui-"));
+  const ws = new FsWorkspace(join(cwd, ".crew"));
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addBot({ id: "seer", name: "Seer", model: "person/vision" });
+  writeFileSync(join(cwd, ".crew", "config.json"), `${JSON.stringify({ apiKey: "sk-test" })}\n`);
+  writeFileSync(
+    join(cwd, ".crew", "jobs.json"),
+    `${JSON.stringify({ vision: { model: "", botId: "seer" } }, null, 2)}\n`,
+  );
+  const seen: string[] = [];
+  const inner = new ScriptedProvider([
+    [{ type: "text-delta", text: "A red square on a desk." }, { type: "done" }],
+  ]);
+  const provider = {
+    async *complete(req: { model: string }) {
+      seen.push(req.model);
+      yield* inner.complete(req);
+    },
+  };
+  const publicDir = join(import.meta.dir, "..", "public");
+  const { server, url } = startServer({ cwd, provider, publicDir, port: 0 });
+  try {
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).toString("base64");
+    const res = await fetch(`${url}/api/attach`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files: [{ path: "pic.png", content: png }] }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.captions["inbox/pic.png"]).toContain("red square");
+    expect(seen).toEqual(["person/vision"]);
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("office settings has Jobs section", async () => {
   const { server, url } = await setup();
   try {
     const page = await (await fetch(`${url}/`)).text();
     expect(page).toContain("id=\"jobs-section\"");
+    expect(page).toContain("data-settings-tab=\"providers\"");
+    expect(page).not.toContain("data-settings-tab=\"models\"");
+    expect(page).toContain("id=\"prov-openrouter\"");
+    expect(page).toContain("id=\"prov-claude\"");
+    expect(page).toContain("id=\"prov-codex\"");
+    expect(page).toContain("id=\"prov-grok\"");
+    expect(page).toContain("id=\"prov-opencode\"");
+    expect(page).toContain("id=\"always-add\"");
+    expect(page).toContain("id=\"app-default-mode\"");
+    expect(page).toContain("id=\"app-auto-compact\"");
+    expect(page).toContain("id=\"app-reviewer-model\"");
+    expect(page).toContain("id=\"app-base-url\"");
+    expect(page).toContain("id=\"app-workspace-path\"");
     expect(page).toContain("id=\"job-title-model\"");
-    expect(page).toContain("id=\"job-compact-model\"");
-    expect(page).toContain("id=\"job-vision-model\"");
-    expect(page).toContain("id=\"job-read-model\"");
+    expect(page).toContain("id=\"job-compact-bot\"");
+    expect(page).toContain("id=\"job-vision-bot\"");
+    expect(page).toContain("id=\"job-read-bot\"");
+    expect(page).not.toContain("id=\"job-compact-model\"");
+    expect(page).not.toContain("id=\"job-vision-model\"");
+    expect(page).not.toContain("id=\"job-read-model\"");
     expect(page).toContain("id=\"title-regen\"");
+    expect(page).toContain("data-settings-tab=\"general\"");
+    expect(page).toContain("data-settings-tab=\"jobs\"");
+    expect(page).toContain("data-settings-tab=\"mcp\"");
+    expect(page).toContain("id=\"mcp-section\"");
+    expect(page).toContain("data-settings-tab=\"about\"");
+    expect(page).toContain("id=\"bot-title-model\"");
+    expect(page).toContain("attach-plus");
+    expect(page).not.toContain("id=\"job-title-bot\"");
     const js = await (await fetch(`${url}/app.js`)).text();
     expect(js).toContain("/api/jobs");
     expect(js).toContain("/api/thread-title");
     expect(js).toContain("[image ");
+    expect(js).toContain("switchSettingsTab");
     const css = await (await fetch(`${url}/app.css`)).text();
     expect(css).toContain(".job-row");
+    expect(css).toContain(".settings-tabs");
+    expect(css).toContain(".attach-plus");
+    expect(css).toContain(".provider-card");
+    expect(css).toContain(".model-picker");
+    expect(css).toContain(".model-picker-group");
+    expect(css).toContain(".model-picker-cats");
+    expect(css).toContain("overflow: visibl");
+    expect(js).toContain("model-picker-cat");
+    expect(page).toContain("id=\"prov-recheck\"");
+    expect(page).toContain("data-prov-custom");
+    expect(js).toContain("fillImplPicker");
+    expect(js).toContain("harness:");
+    expect(js).toContain("model-picker");
+    expect(js).toContain("pickerGroups");
+    expect(js).toContain("placePickerMenu");
+    expect(js).toContain("/api/mcp");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("GET/PUT /api/mcp roundtrips servers without writing config.json", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const empty = await (await fetch(`${url}/api/mcp`)).json();
+    expect(empty.servers).toEqual([]);
+    const put = await fetch(`${url}/api/mcp`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        servers: [{ name: "echo", enabled: true, command: "bun", args: ["x"], env: { A: "1" } }],
+      }),
+    });
+    expect(put.ok).toBe(true);
+    const saved = await put.json();
+    expect(saved.servers[0]?.name).toBe("echo");
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.mcp.servers[0]?.command).toBe("bun");
+    const { existsSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    expect(existsSync(join(cwd, ".crew", "mcp.json"))).toBe(true);
+    expect(readFileSync(join(cwd, ".crew", "config.json"), "utf8")).not.toContain("echo");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("always rules add and delete one via /api/permissions", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const add = await fetch(`${url}/api/permissions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: "apply_patch", path: "src/a.ts" }),
+    });
+    expect(add.status).toBe(200);
+    const listed = await add.json();
+    expect(listed.rules).toHaveLength(1);
+    expect(listed.rules[0].tool).toBe("apply_patch");
+    expect(listed.rules[0].key).toContain("src/a.ts");
+    await fetch(`${url}/api/permissions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: "shell", command: "npm test" }),
+    });
+    const key = listed.rules[0].key;
+    const del = await fetch(
+      `${url}/api/permissions?tool=apply_patch&key=${encodeURIComponent(key)}`,
+      { method: "DELETE" },
+    );
+    expect(del.status).toBe(200);
+    const after = await del.json();
+    expect(after.rules).toHaveLength(1);
+    expect(after.rules[0].tool).toBe("shell");
+    const disk = JSON.parse(await Bun.file(join(cwd, ".crew", "permissions.json")).text());
+    expect(disk.rules).toHaveLength(1);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("GET/PUT /api/providers roundtrips without writing config.json", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const missing = await (await fetch(`${url}/api/providers`)).json();
+    expect(missing.openrouter.enabled).toBe(true);
+    expect(missing.claude.enabled).toBe(false);
+    const put = await fetch(`${url}/api/providers`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        openrouter: { enabled: true },
+        claude: { enabled: true },
+        codex: { enabled: false },
+        grok: { enabled: true, binary: "" },
+        opencode: { enabled: false },
+      }),
+    });
+    expect(put.status).toBe(200);
+    const saved = await put.json();
+    expect(saved.claude.enabled).toBe(true);
+    expect(saved.grok.enabled).toBe(true);
+    const got = await (await fetch(`${url}/api/providers`)).json();
+    expect(got.claude.enabled).toBe(true);
+    expect(existsSync(join(cwd, ".crew", "providers.json"))).toBe(true);
+    await fetch(`${url}/api/allowed-models`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: ["z-ai/glm-5.3-flash"] }),
+    });
+    const still = JSON.parse(await Bun.file(join(cwd, ".crew", "providers.json")).text());
+    expect(still.claude.enabled).toBe(true);
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.defaultPermissionMode).toBe("auto-accept");
+    expect(boot.autoCompact).toBe(true);
+    expect(typeof boot.cwd).toBe("string");
+    expect(boot.providers.claude.enabled).toBe(true);
+    const health = await (await fetch(`${url}/api/providers/health`)).json();
+    expect(Array.isArray(health.cards)).toBe(true);
+    expect(health.cards.some((c: { id: string }) => c.id === "codex")).toBe(true);
+    const models = await (await fetch(`${url}/api/providers/models`)).json();
+    expect(Array.isArray(models.openrouter)).toBe(true);
+    expect(Array.isArray(models.claude)).toBe(true);
+    expect(Array.isArray(models.grok)).toBe(true);
   } finally {
     server.stop(true);
   }
