@@ -893,27 +893,33 @@ async function ensureProviderModels() {
   }
 }
 
-function fillImplPicker(select, model, harness, blank, harnessModel) {
+function fillImplPicker(select, model, harness, blank, harnessModel, openRouterOnly) {
   if (!select) return;
+  if (openRouterOnly) {
+    harness = null;
+    harnessModel = "";
+  }
   const hm = harnessModel || "";
   const current = harness ? (hm ? `harness:${harness}:${hm}` : `harness:${harness}`) : model || "";
   if (model) select.dataset.orModel = model;
   fillModelSelect(select, harness ? "" : model, blank);
   const catalogs = state.providerModels || {};
-  for (const c of readyHarnesses()) {
-    const group = document.createElement("optgroup");
-    group.label = c.label;
-    const def = document.createElement("option");
-    def.value = `harness:${c.id}`;
-    def.textContent = `${c.label} default`;
-    group.append(def);
-    for (const m of catalogs[c.id] || []) {
-      const opt = document.createElement("option");
-      opt.value = `harness:${c.id}:${m.id}`;
-      opt.textContent = m.label || m.id;
-      group.append(opt);
+  if (!openRouterOnly) {
+    for (const c of readyHarnesses()) {
+      const group = document.createElement("optgroup");
+      group.label = c.label;
+      const def = document.createElement("option");
+      def.value = `harness:${c.id}`;
+      def.textContent = `${c.label} default`;
+      group.append(def);
+      for (const m of catalogs[c.id] || []) {
+        const opt = document.createElement("option");
+        opt.value = `harness:${c.id}:${m.id}`;
+        opt.textContent = m.label || m.id;
+        group.append(opt);
+      }
+      select.append(group);
     }
-    select.append(group);
   }
   if (current && ![...select.querySelectorAll("option")].some((o) => o.value === current)) {
     const opt = document.createElement("option");
@@ -2883,7 +2889,7 @@ async function fillJobs() {
     /* defaults */
   }
   const row = (el, job, blank) =>
-    fillImplPicker(el, job?.model ?? "", job?.harness, blank, job?.harnessModel);
+    fillImplPicker(el, job?.model ?? "", job?.harness, blank, job?.harnessModel, true);
   row(document.getElementById("job-title-model"), jobs.title, "Default");
   row(document.getElementById("job-compact-bot"), jobs.compact, "Default");
   row(document.getElementById("job-vision-bot"), jobs.vision, "Off");

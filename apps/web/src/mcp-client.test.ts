@@ -10,6 +10,7 @@ import {
   spawnMcpStdio,
   type McpRpc,
 } from "./mcp-client";
+import { CREW_VERSION } from "./version";
 
 function scriptedRpc(handlers: Record<string, (params?: unknown) => unknown>): McpRpc {
   return {
@@ -49,6 +50,24 @@ test("fake MCP session lists and calls echo", async () => {
   const out = await session.tools[0]!.execute({ text: "hi" }, { workspaceRoot: "/proj" });
   expect(out).toBe("echo:hi");
   await session.close();
+});
+
+test("initialize clientInfo version matches CREW_VERSION", async () => {
+  let seen: { name?: string; version?: string } | undefined;
+  const rpc = scriptedRpc({
+    initialize: (params) => {
+      const row = params as { clientInfo?: { name?: string; version?: string } };
+      seen = row.clientInfo;
+      return {
+        protocolVersion: "2024-11-05",
+        capabilities: { tools: {} },
+        serverInfo: { name: "s" },
+      };
+    },
+  });
+  await openMcpSession("s", rpc);
+  expect(seen?.name).toBe("crew");
+  expect(seen?.version).toBe(CREW_VERSION);
 });
 
 test("crewToolsFromMcp prefixes server and slugs dots", () => {

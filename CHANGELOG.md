@@ -10,6 +10,28 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-28
+
+Honesty pack Wave A (`ADR-0043`) and Wave B/C (`ADR-0044`). MCP initialize reports the package version. CLI `woke:` prints before live accounts.
+
+### Changed
+
+- Settings **Jobs** pickers are OpenRouter-only. Leftover `harness` / `harnessModel` in `.crew/jobs.json` is ignored; resolve uses the OpenRouter model or the workspace default.
+- `auto` reviewer accepts only `ALLOW` / `DENY` / `ASK`. `YES` and empty replies ask the human. Prompt: ALLOW only if in-workspace, reversible, on-task.
+- Channel turns get an unread-DM count + newest gist, not every DM id. A DM is unread only if its last human post is after this bot's last channel account.
+
+### Fixed
+
+- `@` inside fenced or inline code is not a wake. URL `/@user` skip stays.
+- `list_dir` hides `.crew`, `.git`, `.ssh`, `.env`, and `.env.*`.
+- If a model ran tools and posted no account, the engine writes `I stopped after N tool call(s) without a channel account.`
+- Stop on a harness spawn kills the process, then Windows `taskkill /PID /T /F` so grandchildren do not stay alive.
+- `mcp_*` tools are not auto-accept shell; they ask (`ADR-0044`).
+- Shell `type .env`, `.ssh`, `rm -rf /`, `irm`, and `curl | iex` are denied in every mode, reviewer skipped.
+- Shell `>` / `>>` and `git` share the `apply_patch` in-process lock. `old_text not found` tells the model to re-read.
+- `crew say` prints `woke:` before streamed accounts (was after).
+- MCP `initialize` `clientInfo.version` follows `package.json` instead of a stale `0.6.0`.
+
 ## [0.6.0] - 2026-08-28
 
 `latest.json`, DM permission mode, auto reviewer, `crew mode` on DMs.

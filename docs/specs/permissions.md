@@ -31,7 +31,9 @@ Tool executor does not read stdin.
 
 Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). Fingerprint subset: `path`, `command`, `name`, `id`. A matching later ask is allowed with no prompt and no `type:"ask"` stream row. It does not switch the channel to `full-access`.
 
-MCP tools (`mcp_<server>_<tool>`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised, `ADR-0036` / `ADR-0038`) are not a fifth mode. Unknown tools map to `shell` for `decidePermission`: supervised asks; auto-accept allows. Harness CLI turns do not use this card (the CLI auto-approves).
+MCP tools (`mcp_<server>_<tool>`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised, `ADR-0036` / `ADR-0038`) are `ToolKind` `mcp` (`ADR-0044`): supervised and auto-accept **ask**; full-access allows. Unknown other tools still map to `shell`. Harness CLI turns do not use this card (the CLI auto-approves).
+
+Hard-denied shell (every mode, reviewer skipped): command mentions `.env` or `.ssh`, `rm -rf /`, `irm`, or `curl | iex`.
 
 Settings → Permissions:
 
@@ -43,4 +45,4 @@ Settings → Permissions:
 
 ## Auto reviewer
 
-If `reviewerModel` is empty, `auto` **falls back to `supervised`**. It must not fall back to `full-access`. When set, `auto` one-shots that model (`ALLOW` / `DENY` / else the human card). `permission.resolved` includes `reviewer: true` when the model settled it (`ADR-0042`).
+If `reviewerModel` is empty, `auto` **falls back to `supervised`**. It must not fall back to `full-access`. When set, `auto` one-shots that model. First token must be `ALLOW` / `DENY` / `ASK` (`YES` and empty → human card, `ADR-0044`). `permission.resolved` includes `reviewer: true` when the model settled it (`ADR-0042`).

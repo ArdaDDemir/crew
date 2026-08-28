@@ -6,6 +6,8 @@ import type { PermissionMode, Workspace } from "./workspace";
 import {
   decidePermission,
   effectiveMode,
+  hardDenyCommand,
+  toolKind,
   type ToolKind,
 } from "./permissions";
 import type {
@@ -128,10 +130,7 @@ function dmParticipants(store: EventStore, thread: ThreadRef): Participant[] | u
 }
 
 function asKind(name: string): ToolKind {
-  if (name === "apply_patch" || name === "read" || name === "shell" || name === "list_dir") {
-    return name;
-  }
-  return "shell";
+  return toolKind(name);
 }
 
 function parseArgs(raw: string): Record<string, unknown> {
@@ -391,12 +390,16 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
       } else {
         const rel = typeof args.path === "string" ? args.path : undefined;
         const absPath = rel ? resolve(input.workspaceRoot, rel) : undefined;
-        const verdict = decidePermission({
-          mode,
-          tool: asKind(call.name),
-          absPath,
-          workspaceRoot: input.workspaceRoot,
-        });
+        const deniedShell =
+          call.name === "shell" && hardDenyCommand(String(args.command ?? ""));
+        const verdict = deniedShell
+          ? "deny"
+          : decidePermission({
+              mode,
+              tool: asKind(call.name),
+              absPath,
+              workspaceRoot: input.workspaceRoot,
+            });
         let allowed = verdict === "allow";
         if (verdict === "ask") {
           allowed = await settleAsk(input, mode, { name: call.name, args });
@@ -438,6 +441,15 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
       messages.push({ role: "user", content: ACCOUNT_NUDGE });
       accountNudged = true;
     }
+  }
+
+  if (!finalText && toolNames.length > 0 && !error) {
+    finalText = `I stopped after ${toolNames.length} tool call(s) without a channel account.`;
+    append(input, input.thread, "assistant.delta", {
+      botId: input.botId,
+      text: finalText,
+    });
+    input.onEvent?.({ type: "text-delta", text: finalText });
   }
 
   append(input, input.thread, "bot.turn.completed", {

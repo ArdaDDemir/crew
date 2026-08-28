@@ -1,6 +1,6 @@
 # Versioning (0.x)
 
-Current release: **0.6.0** (`package.json`, tag `v0.6.0`). Newer work after that lives in `CHANGELOG.md` `[Unreleased]`. Version lives in the root `package.json` only. No `VERSION` file. Started at 0.1.0.
+Current release: **0.7.0** (`package.json`, tag `v0.7.0`). Newer work after that lives in `CHANGELOG.md` `[Unreleased]`. Version lives in the root `package.json` only. No `VERSION` file. Started at 0.1.0.
 
 Until 1.0, the public surface may change. We still announce breaks.
 

@@ -30,6 +30,7 @@ export type DispatchBase = Clock & {
   turnGapMs?: number;
   rateLimitGapMs?: number;
   onStatus?: (message: string) => void;
+  onWoken?: (woken: string[]) => void;
   onEvent?: (botId: string, event: ChatEvent) => void;
   shouldStop?: () => boolean;
   permissionModeFor?: (thread: { kind: "channel" | "dm"; id: string }) => PermissionMode | undefined;
@@ -72,6 +73,7 @@ export async function dispatchChannelPost(
     post: { author: { kind: "human" }, text: input.text },
   });
 
+  input.onWoken?.(posted.woken);
   const replies: { botId: string; text: string; error?: string }[] = [];
   const pendingDms: { threadId: string; botId: string }[] = [];
   const queue = [...posted.woken];
@@ -230,6 +232,7 @@ export async function dispatchDm(
     text: input.text,
     threadId: input.threadId,
   });
+  input.onWoken?.(posted.woken);
   const replies: { botId: string; text: string; error?: string }[] = [];
   for (const botId of posted.woken) {
     const turn = await runBotTurn({

@@ -98,7 +98,6 @@ export function resolveJobModel(host: JobsHost, key: JobKey, slot: JobSlot): str
   }
   const model = slot.model.trim();
   if (model) return model;
-  if (slot.harness) return slot.harnessModel?.trim() || host.model;
   if (SKIP_KEYS.has(key)) return null;
   return host.model;
 }

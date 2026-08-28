@@ -20,6 +20,26 @@ async function withFileLock<T>(path: string, fn: () => T | Promise<T>): Promise<
   }
 }
 
+export function shellLockPath(command: string, root: string): string | undefined {
+  const cmd = String(command ?? "").trim();
+  if (/(^|[;&|]\s*)git\b/i.test(cmd)) return resolve(root, ".git");
+  const m = cmd.match(/>>?\s*(?:"([^"]+)"|'([^']+)'|(\S+))/);
+  if (!m) return undefined;
+  const rel = (m[1] || m[2] || m[3] || "").trim();
+  if (!rel || rel.startsWith("&")) return undefined;
+  return resolve(root, rel);
+}
+
+function skipListName(name: string): boolean {
+  return (
+    name === ".crew" ||
+    name === ".git" ||
+    name === ".ssh" ||
+    name === ".env" ||
+    name.startsWith(".env.")
+  );
+}
+
 function abs(root: string, rel: unknown): string {
   if (typeof rel !== "string" || rel.length === 0) {
     throw new Error("path is required");
@@ -74,7 +94,7 @@ export function nativeTools(): Tool[] {
             );
           }
           const first = body.indexOf(oldText);
-          if (first === -1) throw new Error("old_text not found");
+          if (first === -1) throw new Error("old_text not found — re-read the file");
           if (body.indexOf(oldText, first + 1) !== -1) {
             throw new Error("old_text matched more than once");
           }
@@ -93,7 +113,7 @@ export function nativeTools(): Tool[] {
       async execute(args, ctx) {
         const rel = typeof args.path === "string" && args.path.length ? args.path : ".";
         const dir = abs(ctx.workspaceRoot, rel);
-        const names = readdirSync(dir);
+        const names = readdirSync(dir).filter((name) => !skipListName(name));
         return names.join("\n") || "(empty)";
       },
     },
@@ -109,17 +129,21 @@ export function nativeTools(): Tool[] {
       async execute(args, ctx) {
         const command = String(args.command ?? "").trim();
         if (!command) throw new Error("command is required");
-        const result = spawnSync(command, {
-          cwd: ctx.workspaceRoot,
-          shell: true,
-          encoding: "utf8",
-          timeout: 30_000,
-          maxBuffer: 1024 * 1024,
-        });
-        const stdout = result.stdout ?? "";
-        const stderr = result.stderr ?? "";
-        const code = result.status ?? (result.error ? 1 : 0);
-        return [`exit ${code}`, stdout, stderr].filter(Boolean).join("\n").slice(0, 8000);
+        const run = () => {
+          const result = spawnSync(command, {
+            cwd: ctx.workspaceRoot,
+            shell: true,
+            encoding: "utf8",
+            timeout: 30_000,
+            maxBuffer: 1024 * 1024,
+          });
+          const stdout = result.stdout ?? "";
+          const stderr = result.stderr ?? "";
+          const code = result.status ?? (result.error ? 1 : 0);
+          return [`exit ${code}`, stdout, stderr].filter(Boolean).join("\n").slice(0, 8000);
+        };
+        const lock = shellLockPath(command, ctx.workspaceRoot);
+        return lock ? withFileLock(lock, run) : run();
       },
     },
   ];

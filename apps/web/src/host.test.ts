@@ -385,6 +385,28 @@ test("saveProviders roundtrips and is not config.json", async () => {
   expect(loadProviders(host.cwd).grok.binary).toBe("C:\\\\bin\\\\grok.exe");
 });
 
+test("resolveJobModel ignores harness and uses OpenRouter", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  const harnessSlot = {
+    model: "",
+    botId: null,
+    harness: "grok",
+    harnessModel: "grok-4.6",
+  };
+  expect(resolveJobModel(host, "title", harnessSlot)).toBe(host.model);
+  expect(
+    resolveJobModel(host, "title", {
+      model: "openrouter/foo",
+      botId: null,
+      harness: "grok",
+      harnessModel: "grok-4.6",
+    }),
+  ).toBe("openrouter/foo");
+  expect(resolveJobModel(host, "vision", harnessSlot)).toBe(null);
+  expect(resolveJobModel(host, "compact", harnessSlot)).toBe(host.model);
+});
+
 test("resolveJobModel compact/vision/read pick the agent's person model", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
   const host = createHost({ cwd, provider: new ScriptedProvider([]) });

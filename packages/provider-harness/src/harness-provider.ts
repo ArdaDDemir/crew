@@ -101,7 +101,7 @@ async function unlinkPromptFile(path: string): Promise<void> {
 }
 
 export type { HarnessKind } from "./argv";
-export type { HarnessRunner } from "./spawn";
+export { spawnHarness, onHarnessAbort, type HarnessRunner } from "./spawn";
 export {
   DEFAULT_HARNESS_MODEL,
   HARNESS_KINDS,

@@ -4,7 +4,7 @@ Local multi-bot **office**. You own channels and people. `@id` wakes that bot; e
 
 **Surface:** `bun run ui` → [http://127.0.0.1:7734](http://127.0.0.1:7734) · or `bun run desktop` (**Crew.exe**, Tauri + WebView2)
 
-**0.6.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
+**0.7.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
 
 ## Requirements
 

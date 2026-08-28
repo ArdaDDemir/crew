@@ -1,5 +1,6 @@
 import type { Tool } from "@crew/core";
 import type { McpServer } from "./mcp";
+import { CREW_VERSION } from "./version";
 
 export type McpRpc = {
   request(method: string, params?: unknown): Promise<unknown>;
@@ -230,7 +231,7 @@ export async function openMcpSession(
   const init = (await rpc.request("initialize", {
     protocolVersion: "2024-11-05",
     capabilities: {},
-    clientInfo: { name: "crew", version: "0.6.0" },
+    clientInfo: { name: "crew", version: CREW_VERSION },
   })) as { capabilities?: unknown };
   rpc.notify("notifications/initialized");
   let defs: McpToolDef[] = [];

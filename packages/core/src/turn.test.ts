@@ -86,6 +86,61 @@ test("streams text then a tool then a final reply", async () => {
   expect(types).toContain("bot.turn.completed");
 });
 
+test("hard-denied shell is denied without asking", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  let ran = false;
+  let asked = 0;
+  const shellTool: Tool = {
+    name: "shell",
+    description: "Run a program",
+    parameters: { type: "object", properties: { command: { type: "string" } }, required: ["command"] },
+    async execute() {
+      ran = true;
+      return "ok";
+    },
+  };
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "call_1",
+          name: "shell",
+          arguments: JSON.stringify({ command: "type .env" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "I could not read secrets." }, { type: "done" }],
+    ]),
+    tools: [shellTool],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => {
+      asked += 1;
+      return "allow";
+    },
+    hasReviewer: false,
+  });
+  expect(ran).toBe(false);
+  expect(asked).toBe(0);
+  expect(result.toolNames).toContain("shell");
+  const done = store.read({ kind: "channel", id: "landing" }).find((e) => e.type === "tool.completed");
+  expect(String(done?.payload.output ?? "")).toContain("permission denied");
+});
+
 test("hard-denied .env does not call the tool", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();
@@ -336,6 +391,51 @@ test("desk-round text is not forwarded as channel text-delta", async () => {
   expect(result.text).toBe("bak package.json okudum");
   expect(seen.join("")).toBe("bak package.json okudum");
   expect(seen.join("")).not.toContain("checking files");
+});
+
+test("empty account after tools gets an English stop line", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const thread = { kind: "channel" as const, id: "landing" };
+  const seen: string[] = [];
+  const result = await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "call_1",
+          name: "read",
+          arguments: JSON.stringify({ path: "package.json" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "done" }],
+    ]),
+    tools: [readTool],
+    nextId: seq(),
+    now: () => "t",
+    thread,
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+    onEvent: (e) => {
+      if (e.type === "text-delta") seen.push(e.text);
+    },
+  });
+  expect(result.text).toBe("I stopped after 1 tool call(s) without a channel account.");
+  expect(seen.join("")).toContain("I stopped after 1 tool call(s)");
+  const completed = store.read(thread).find((e) => e.type === "bot.turn.completed");
+  expect(completed?.payload.text).toBe(result.text);
 });
 
 test("after tools, next model call is nudged to give an account", async () => {

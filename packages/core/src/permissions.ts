@@ -3,7 +3,25 @@ import type { PermissionMode } from "./workspace";
 
 export type PermissionVerdict = "allow" | "ask" | "deny";
 
-export type ToolKind = "read" | "apply_patch" | "shell" | "list_dir";
+export type ToolKind = "read" | "apply_patch" | "shell" | "list_dir" | "mcp";
+
+export function toolKind(name: string): ToolKind {
+  if (name === "apply_patch" || name === "read" || name === "shell" || name === "list_dir") {
+    return name;
+  }
+  if (name.startsWith("mcp_")) return "mcp";
+  return "shell";
+}
+
+export function hardDenyCommand(command: string): boolean {
+  const c = String(command ?? "");
+  if (/\.env\b/i.test(c)) return true;
+  if (/\.ssh\b/i.test(c)) return true;
+  if (/\brm\s+-rf\s+\//i.test(c)) return true;
+  if (/\birm\b/i.test(c)) return true;
+  if (/\bcurl\b[\s\S]*\|\s*iex\b/i.test(c)) return true;
+  return false;
+}
 
 const DENY_NAMES = new Set([
   ".env",
@@ -82,7 +100,7 @@ export function parseReviewerVerdict(text: string): "allow" | "deny" | "ask" {
     .trim()
     .split(/\s+/)[0]
     ?.toUpperCase() ?? "";
-  if (first === "ALLOW" || first === "ALLOWED" || first === "YES") return "allow";
-  if (first === "DENY" || first === "DENIED" || first === "NO") return "deny";
+  if (first === "ALLOW") return "allow";
+  if (first === "DENY") return "deny";
   return "ask";
 }

@@ -864,7 +864,7 @@ async function collectReviewText(
       {
         role: "system",
         content:
-          "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW = routine and safe. DENY = secrets or destructive. ASK = the human must decide.",
+          "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW only if the tool is in-workspace, reversible, and on-task. DENY secrets or destructive. ASK if unsure. Never reply YES.",
       },
       { role: "user", content: `tool=${tool}\n${JSON.stringify(args)}` },
     ],

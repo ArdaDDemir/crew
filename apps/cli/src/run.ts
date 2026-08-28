@@ -371,7 +371,7 @@ export async function runCli(
                 {
                   role: "system",
                   content:
-                    "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW = routine and safe. DENY = secrets or destructive. ASK = the human must decide.",
+                    "You are Crew's permission reviewer. Reply with one word: ALLOW, DENY, or ASK. ALLOW only if the tool is in-workspace, reversible, and on-task. DENY secrets or destructive. ASK if unsure. Never reply YES.",
                 },
                 { role: "user", content: `tool=${tool}\n${JSON.stringify(args)}` },
               ],
@@ -387,6 +387,7 @@ export async function runCli(
     shouldStop: () => halt.stopped,
     turnGapMs: deps.provider ? 0 : Number(process.env.CREW_TURN_GAP_MS ?? 0),
     rateLimitGapMs: deps.provider ? 0 : Number(process.env.CREW_RATE_LIMIT_GAP_MS ?? 8000),
+    onWoken: (woken: string[]) => io.writeOut(wokeLine(woken)),
     ...liveIo(io, liveFlags),
     ...clock(),
   });
@@ -630,7 +631,6 @@ export async function runCli(
         channelId,
         text,
       });
-      io.writeOut(wokeLine(result.woken));
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
       for (const dm of result.dms) {
         io.writeOut(`dm: ${dm.threadId}\n`);
@@ -702,7 +702,6 @@ export async function runCli(
         text,
       });
       io.writeOut(`dm: ${result.threadId}\n`);
-      io.writeOut(wokeLine(result.woken));
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
       return 0;
       } finally {
@@ -741,7 +740,6 @@ export async function runCli(
             text,
           });
           io.writeOut(`dm: ${dm.threadId}\n`);
-          io.writeOut(wokeLine(dm.woken));
           printReplies(io, dm.replies.filter((r) => !r.text && !r.error));
           continue;
         }
@@ -789,7 +787,6 @@ export async function runCli(
           channelId,
           text: trimmed,
         });
-        io.writeOut(wokeLine(result.woken));
         printReplies(io, result.replies.filter((r) => !r.text && !r.error));
       }
       return 0;

@@ -46,7 +46,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 16. Bot `@`s itself. Filtered as author. Fine.
 17. Human `@lead do not @ anyone` and lead still `@coder` in the account. Engine will not wake coder (human already tagged lead only… wait: human tagged lead, so `humanPicked` true, no handoff). Coder stays asleep. Lead’s @ is decoration.
 18. Human message “coder should wait” **without** `@coder`, but `@designer` — coder is not woken (good) unless they were already in the wave.
-19. `@tester` inside a fenced code block or URL. Parser may still wake tester.
+19. `@tester` inside a fenced code block or URL. **Fixed (`ADR-0043`):** fences, inline code, and URL `/@user` are not wakes.
 20. Empty `say landing` / whitespace — usage error. Fine.
 21. Very long mention list: 8 waves cap still, but one-turn-per-bot caps at membership size.
 
@@ -55,9 +55,9 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 22. Designer and coder `apply_patch` the same `index.html` in one wave. Lock serializes; second patch can fail `old_text not found` or overwrite the first.
 23. `old_text` matches twice → tool error. Model may invent a second patch or claim success.
 24. Empty `old_text` on existing file. **Fixed:** does not overwrite an existing file.
-25. Coder writes via `shell` (`echo > file`) instead of `apply_patch`. Lock does not cover that path the same way (different command, same file).
+25. Coder writes via `shell` (`echo > file`) instead of `apply_patch`. **Fixed (`ADR-0044`):** `>` / `>>` and `git` share the `apply_patch` lock.
 26. `shell` timeout 30s; hung `npm`. Turn looks stuck; other parallel bot continues.
-27. `list_dir` without path lists workspace root including `.crew`? Path is cwd. `.crew` is in cwd. Secrets not in `.crew/config` project file by default (key is `~/.crew`) but project config could be.
+27. `list_dir` without path lists workspace root including `.crew`? **Fixed (`ADR-0043`):** `list_dir` skips `.crew`, `.git`, `.ssh`, `.env`, `.env.*`. `read` of `.env` is still denied.
 28. `read` `.env` denied. Model retries once then account-nudge. Fine if it stops.
 29. Path `..\..\Windows\...` outside workspace: auto-accept asks; `say` has no TTY → deny. Model may loop until two denials.
 30. Two bots `shell` `git commit` at once. Race on `.git`.
@@ -78,13 +78,13 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 39. 45s fetch timeout. User sees hang, then timeout error. Parallel peer may still finish.
 40. Context: `buildHistory` used to send **all** `message.posted`. **Fixed (`ADR-0019`, `ADR-0028`):** last 80 + `thread.compacted`; trim posted-only; optional `thread.summary`.
 41. Reasoning stored every turn. `--thinking` dump is huge; default `say` hides it. Fine.
-42. `maxRounds` 4. Tool, tool, tool, then forced stop with empty account if they never speak.
+42. `maxRounds` 4. Tool, tool, tool, then forced stop with empty account if they never speak. **Fixed (`ADR-0043`):** engine writes `I stopped after N tool call(s) without a channel account.`
 43. Empty model text → CLI `ERROR: empty reply`. Fine.
 
 ## 6. CLI / UX
 
 44. Parallel stdout: `coder:` may print before `designer:` even if woken list is designer, coder. **HIT.** UI bubbles later.
-45. `woke:` line prints **after** the accounts. Looks backwards.
+45. `woke:` line prints **after** the accounts. Looks backwards. **Fixed (0.7.0):** `onWoken` prints before live accounts.
 46. `crew dms` is empty until the first DM. **HIT** earlier; not a bug.
 47. `say` unknown channel → throw. `dms show` missing thread → `(empty)`. Inconsistent.
 48. `open` REPL `/dm` vs `crew dm` — two paths, same engine. Fine if both use `dispatchDm`.
@@ -107,6 +107,6 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 Do now if we touch memory: **1, 2, 6, 7, 11** (conflict + unread DM pointer + half-done handoff).
 
-`ADR-0016` covers 1, 2, 7. Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11 still open (half-done handoff is the stop rule).
+`ADR-0016` covers 1, 2, 7. **`ADR-0044`:** unread DM pointer is count + newest gist after last channel account (not every id). Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11 still open (half-done handoff is the stop rule). MCP tools ask on auto-accept (`ADR-0044`).
 
-`ADR-0019` covers 40 and 54 (prompt window + `thread.compacted`). `ADR-0028` adds trim + `thread.summary`. Later: file-ownership lock beyond `apply_patch` (22–25). Cancel is `/stop` in `crew open` and the UI Stop button.
+`ADR-0019` covers 40 and 54 (prompt window + `thread.compacted`). `ADR-0028` adds trim + `thread.summary`. `ADR-0044`: `>` / `>>` and `git` share the `apply_patch` lock (22–25 still race other commands). Cancel is `/stop` in `crew open` and the UI Stop button.

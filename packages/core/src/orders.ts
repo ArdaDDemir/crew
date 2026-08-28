@@ -78,9 +78,23 @@ export function lastOwnChannelAccount(
   return best;
 }
 
-function gist(text: string): string {
+function gist(text: string, max = 180): string {
   const one = text.replace(/\s+/g, " ").trim();
-  return one.length > 180 ? `${one.slice(0, 177)}...` : one;
+  if (one.length <= max) return one;
+  return `${one.slice(0, Math.max(0, max - 3))}...`;
+}
+
+function lastHumanOn(
+  store: EventStore,
+  thread: ThreadRef,
+): { ts: string; text: string } | undefined {
+  let best: { ts: string; text: string } | undefined;
+  for (const event of store.read(thread)) {
+    if (!isHumanPost(event)) continue;
+    const row = { ts: event.ts, text: String(event.payload.text ?? "") };
+    if (!best || row.ts >= best.ts) best = row;
+  }
+  return best;
 }
 
 function label(thread: ThreadRef): string {
@@ -115,12 +129,21 @@ export function buildCrossThreadNote(input: {
   }
 
   if (input.thread.kind === "channel") {
-    const dms = input.store
-      .listThreads()
-      .filter((t) => t.kind === "dm" && dmInvolvesBot(input.store, t, input.botId));
-    if (dms.length) {
+    const lastAccount = lastOwnChannelAccount(input.store, input.botId);
+    const unread: { ts: string; text: string }[] = [];
+    for (const thread of input.store.listThreads()) {
+      if (thread.kind !== "dm" || !dmInvolvesBot(input.store, thread, input.botId)) continue;
+      const lastHuman = lastHumanOn(input.store, thread);
+      if (!lastHuman) continue;
+      if (lastAccount && lastHuman.ts <= lastAccount.ts) continue;
+      unread.push(lastHuman);
+    }
+    unread.sort((a, b) => a.ts.localeCompare(b.ts));
+    if (unread.length) {
+      const newest = unread.at(-1)!;
+      const label = unread.length === 1 ? "1 unread DM" : `${unread.length} unread DMs`;
       lines.push(
-        `Unread/other DMs exist (${dms.map((t) => t.id).join(", ")}). Pointer only — do not dump them in the channel.`,
+        `${label}. Newest gist: ${gist(newest.text, 120)}. Pointer only — do not dump them in the channel.`,
       );
     }
   } else {

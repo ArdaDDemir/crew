@@ -14,6 +14,8 @@ Unknown `@foo` is ignored for routing (it may still appear as text). It does not
 
 Mentions are case-insensitive. Slugs are `[a-z][a-z0-9-]*`.
 
+`@` inside a fenced code block (`` ``` `` or `~~~`) or inline `` `code` `` is **not** a wake (`ADR-0043`). An unclosed fence masks through end of text. A URL path `/@user` is not a wake.
+
 ## Channel post from the human
 
 1. Append `message.posted` to the channel log.

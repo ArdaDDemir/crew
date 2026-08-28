@@ -95,6 +95,7 @@ test("bot create, channel create, say wakes mentioned bots and prints replies", 
   expect(said.stdout).toContain("woke: designer, coder");
   expect(said.stdout).toContain("designer: ack");
   expect(said.stdout).toContain("coder: ack");
+  expect(said.stdout.indexOf("woke:")).toBeLessThan(said.stdout.indexOf("designer:"));
 });
 
 test("say without mention wakes the lead", async () => {

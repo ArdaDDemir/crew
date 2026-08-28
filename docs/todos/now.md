@@ -3,9 +3,15 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.6.0**.
+Current release: **0.7.0**. Honesty pack (`ADR-0043`, `ADR-0044`) is in this release. `[Unreleased]` is empty.
 
 ---
+
+## In (0.7.0)
+
+Honesty pack: fence `@`, `list_dir` skip, Jobs OpenRouter-only, forced empty account, harness tree-kill, MCP ask, conservative reviewer, shell lock, unread DM pointer, CLI `woke:` first, MCP `clientInfo.version` from `package.json`.
+
+See `CHANGELOG.md` `[0.7.0]`.
 
 ## In (0.4.0)
 
@@ -37,4 +43,4 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS installer: `dist/crew-windows-nsis/` (`Crew_0.6.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.6.0_x64_en-US.msi`). Tauri can download NSIS/WiX into the build cache. Portable folder `dist/crew-windows/` always.
+Last built installers on disk are still **0.6.0** until `bun run desktop:build`. NSIS: `dist/crew-windows-nsis/`. MSI: `dist/crew-windows-msi/`. Portable: `dist/crew-windows/`.

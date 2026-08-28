@@ -1059,6 +1059,7 @@ test("office settings has Jobs section", async () => {
     expect(page).toContain("id=\"prov-recheck\"");
     expect(page).toContain("data-prov-custom");
     expect(js).toContain("fillImplPicker");
+    expect(js).toContain("openRouterOnly");
     expect(js).toContain("harness:");
     expect(js).toContain("model-picker");
     expect(js).toContain("pickerGroups");

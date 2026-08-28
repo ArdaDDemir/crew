@@ -38,7 +38,13 @@ export {
   type ToolCall,
   type ToolSpec,
 } from "./provider";
-export { decidePermission, effectiveMode, parseReviewerVerdict } from "./permissions";
+export {
+  decidePermission,
+  effectiveMode,
+  hardDenyCommand,
+  parseReviewerVerdict,
+  toolKind,
+} from "./permissions";
 export { runBotTurn, type AskFn, type ReviewFn, type Tool } from "./turn";
 export { runOrgTool, MAX_BOTS, MAX_CHANNELS } from "./org";
 export {

@@ -38,3 +38,19 @@ test("does not treat a URL path @ as a wake", () => {
     ["coder"],
   );
 });
+
+test("does not wake @ inside a fenced code block", () => {
+  expect(parseMentions("see\n```\n@tester\n```\nthen @coder")).toEqual(["coder"]);
+});
+
+test("does not wake @ inside inline code", () => {
+  expect(parseMentions("use `@tester` then @coder")).toEqual(["coder"]);
+});
+
+test("does not wake @ inside a tilde fence", () => {
+  expect(parseMentions("see\n~~~\n@tester\n~~~\nthen @coder")).toEqual(["coder"]);
+});
+
+test("unclosed fence masks through end of text", () => {
+  expect(parseMentions("start @coder\n```\n@tester")).toEqual(["coder"]);
+});

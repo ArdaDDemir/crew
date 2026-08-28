@@ -103,6 +103,52 @@ test("DM turn sees last channel account and a newer channel human order", () => 
   expect(note).toContain("I set the title to FlowHub");
 });
 
+test("channel pointer is unread DMs only", () => {
+  const { store, workspace } = setup();
+  const channel = { kind: "channel" as const, id: "landing" };
+  const dm = { kind: "dm" as const, id: "human__coder" };
+  store.append(
+    evt("1", "2026-08-27T15:00:00.000Z", dm, "dm.opened", {
+      participants: [{ kind: "human" }, { kind: "bot", botId: "coder" }],
+    }),
+  );
+  store.append(
+    evt("2", "2026-08-27T15:01:00.000Z", dm, "message.posted", {
+      author: { kind: "human" },
+      text: "Old private note about the hero copy",
+    }),
+  );
+  store.append(
+    evt("3", "2026-08-27T15:02:00.000Z", channel, "message.posted", {
+      author: { kind: "bot", botId: "coder" },
+      text: "I wrote the hero",
+    }),
+  );
+  const stale = buildCrossThreadNote({
+    store,
+    workspace,
+    botId: "coder",
+    thread: channel,
+  });
+  expect(stale ?? "").not.toMatch(/unread/i);
+
+  store.append(
+    evt("4", "2026-08-27T15:03:00.000Z", dm, "message.posted", {
+      author: { kind: "human" },
+      text: "Stop. Do not touch index.html anymore.",
+    }),
+  );
+  const note = buildCrossThreadNote({
+    store,
+    workspace,
+    botId: "coder",
+    thread: channel,
+  });
+  expect(note).toMatch(/1 unread/i);
+  expect(note).toContain("Do not touch index.html");
+  expect(note).not.toMatch(/Unread\/other DMs exist/i);
+});
+
 test("no note when the bot has only this thread", () => {
   const { store, workspace } = setup();
   const channel = { kind: "channel" as const, id: "landing" };
