@@ -64,6 +64,8 @@ import {
   saveProviders,
   whichBinary,
 } from "./providers";
+import { asUpdateUrl, checkCrewUpdate } from "./update";
+import { CREW_VERSION } from "./version";
 
 const MODES = new Set<PermissionMode>([
   "supervised",
@@ -281,6 +283,8 @@ export function compactStatus(host: Host, kind: "channel" | "dm", id: string) {
 
 export function snapshot(host: Host) {
   return {
+    version: CREW_VERSION,
+    updateUrl: host.cfg.updateUrl ?? "",
     model: host.model,
     keep: HISTORY_KEEP,
     fallbackModel: host.fallbackModel ?? "",
@@ -990,6 +994,23 @@ export function setReviewerModel(host: Host, model: string) {
   host.cfg.reviewerModel = id;
   writeConfigFile(projectConfigPath(host.cwd), { reviewerModel: id || undefined });
   return { reviewerModel: id };
+}
+
+export function setUpdateUrl(host: Host, raw: string) {
+  const trimmed = String(raw ?? "").trim();
+  const url = asUpdateUrl(trimmed);
+  if (trimmed && !url) throw new Error("update url must be https (http only on localhost)");
+  host.cfg.updateUrl = url || undefined;
+  writeConfigFile(userConfigPath(host.home), { updateUrl: url });
+  return { updateUrl: url };
+}
+
+export function checkHostUpdate(host: Host, fetchImpl: typeof fetch = fetch) {
+  return checkCrewUpdate({
+    current: CREW_VERSION,
+    updateUrl: host.cfg.updateUrl ?? "",
+    fetchImpl,
+  });
 }
 
 export function getProviders(host: Host) {

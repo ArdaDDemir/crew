@@ -2013,6 +2013,7 @@ pre.diff {
   background: transparent;
   color: var(--muted);
   font-weight: 500;
+  text-decoration: none;
 }
 .ghost:hover { color: var(--text); background: #1c1c20; }
 .primary,

@@ -8,11 +8,11 @@ If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update t
 
 ## What this is
 
-Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.4.0**.
+Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.5.0**.
 
 Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
 
-Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`–`0036`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings → Providers feeds the Person / Default / Jobs implementation picker (`ADR-0030`, `ADR-0031`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio tools attach to OpenRouter turns (`ADR-0036`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
+Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`–`0039`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings → Providers feeds the Person / Default / Jobs implementation picker (`ADR-0030`, `ADR-0031`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio/HTTP tools, resources, and prompts attach to OpenRouter turns (`ADR-0036`, `ADR-0038`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
 
 ## What this is NOT
 
@@ -52,7 +52,7 @@ Bun is required. On this Windows machine the npm shim may live at `%APPDATA%\npm
 | `bun run crew -- …` | CLI (cwd gets `.crew/`) |
 | `bun run ui` | Local office `http://127.0.0.1:7734` |
 | `bun run desktop` | Crew.exe window (Tauri dev; same office) |
-| `bun run desktop:build` | Compile sidecar + Tauri `Crew.exe` |
+| `bun run desktop:build` | Compile sidecar + Tauri `Crew.exe`; try NSIS + MSI |
 
 No Docker.
 
@@ -69,7 +69,7 @@ packages/provider-harness Claude / Codex / OpenCode / Grok spawn (`ADR-0035`)
 apps/cli               `crew` argv adapter
 apps/web               local UI adapter (Bun.serve); providers, jobs, mcp json
 apps/desktop           Crew.exe (Tauri + WebView2); sidecar is compiled `apps/web`
-docs/adr               decisions (immutable once accepted; next is 0038)
+docs/adr               decisions (immutable once accepted; next is 0040)
 docs/specs             wire contracts
 ```
 
@@ -85,8 +85,8 @@ docs/specs             wire contracts
 6. **Sessions are append-only JSONL** `"v": 1`. Never rewrite a line. Compact is three layers: 80-message **window** (`thread.compacted`, `ADR-0019`), **trim** (posted-only prompt), **LLM summary** (`thread.summary`, `ADR-0028`). Titles append `thread.titled` (`ADR-0029`).
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. Core does not import `@openrouter/*` or spawn CLIs. Enabled Grok/Claude/Codex/OpenCode Person turns spawn that CLI in adapter packages (`ADR-0034`, `ADR-0035`). Jobs stay OpenRouter.
 8. **Skills = Agent Skills `SKILL.md`.** Slug name, YAML frontmatter, body in the prompt (`ADR-0021`). Channel `RULES.md` + `CONTEXT.md` every turn. `SOUL.md` is voice.
-9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.4.0**.
-10. **Scope.** Do not add Electron, real Discord, git-PR, `crew serve`, or a plugin marketplace unless asked this session. MCP stdio is Settings → MCP (`ADR-0036`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
+9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.5.0**.
+10. **Scope.** Do not add Electron, real Discord, git-PR, `crew serve`, or a plugin marketplace unless asked this session. MCP is Settings → MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
 11. **Reserved bot ids:** `human`, `you`, `everyone`, `engine` (`ADR-0022`). Max 16 bots, 16 channels.
 12. **UI copy is English.** The human may write Turkish; bots account in English.
 

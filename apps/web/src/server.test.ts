@@ -41,6 +41,10 @@ test("bootstrap lists channels and health is ok", async () => {
     const health = await (await fetch(`${url}/api/health`)).json();
     expect(health.ok).toBe(true);
     const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(boot.updateUrl).toBe("");
+    const upd = await (await fetch(`${url}/api/update-check`, { method: "POST" })).json();
+    expect(upd.status).toBe("disabled");
     expect(boot.channels[0].id).toBe("landing");
     expect(boot.bots.map((b: { id: string }) => b.id)).toContain("coder");
     expect(Array.isArray(boot.models)).toBe(true);
@@ -1013,7 +1017,11 @@ test("office settings has Jobs section", async () => {
     expect(page).toContain("data-settings-tab=\"jobs\"");
     expect(page).toContain("data-settings-tab=\"mcp\"");
     expect(page).toContain("id=\"mcp-section\"");
+    expect(page).toContain("resources list/read");
+    expect(page).toContain("prompts list/get");
     expect(page).toContain("data-settings-tab=\"about\"");
+    expect(page).toContain("id=\"app-update-check\"");
+    expect(page).toContain("id=\"app-update-url\"");
     expect(page).toContain("id=\"bot-title-model\"");
     expect(page).toContain("attach-plus");
     expect(page).not.toContain("id=\"job-title-bot\"");

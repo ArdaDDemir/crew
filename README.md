@@ -4,7 +4,7 @@ Local multi-bot **office**. You own channels and people. `@id` wakes that bot; e
 
 **Surface:** `bun run ui` → [http://127.0.0.1:7734](http://127.0.0.1:7734) · or `bun run desktop` (**Crew.exe**, Tauri + WebView2)
 
-**0.4.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
+**0.5.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ bun run crew -- config set key $env:OPENROUTER_API_KEY
 bun run ui
 ```
 
-Then open `http://127.0.0.1:7734`, or `bun run desktop` for the Crew.exe window. After `bun run desktop:build`, double-click `dist/crew-windows/Crew.exe`. Hard-refresh (**Ctrl+F5**) after UI pulls in the browser.
+Then open `http://127.0.0.1:7734`, or `bun run desktop` for the Crew.exe window. After `bun run desktop:build`, double-click `dist/crew-windows/Crew.exe`. NSIS/MSI land in `dist/crew-windows-nsis/` and `dist/crew-windows-msi/` when those tools are installed. Hard-refresh (**Ctrl+F5**) after UI pulls in the browser.
 
 Optional: seed people/rooms from the CLI (same `.crew` as the UI):
 
@@ -52,7 +52,7 @@ bun run crew -- channel create landing --bots lead,coder --lead lead
 | Composer | Enter sends; `@path` from disk; `/help` `/compact` `/status` … |
 | Jobs | Settings → Title / Compact / Vision / Read (implementation picker, not extra People) |
 | Providers | Settings → OpenRouter + Claude / Codex / Grok / OpenCode. Enable a card → that Person’s turn **spawns the CLI** |
-| MCP | Settings → MCP stdio servers; tools on OpenRouter turns (`mcp_<server>_<tool>`) |
+| MCP | Settings → MCP stdio/HTTP servers; tools, resources, and prompts on OpenRouter turns (`mcp_<server>_…`) |
 | Compact | Last 80 messages + trim + LLM `thread.summary`; JSONL is never rewritten |
 
 Default permission is **auto-accept** (workspace file writes + workspace shell). `.env` and `~/.ssh` are always denied.
@@ -74,4 +74,4 @@ Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs:
 
 ## Not this
 
-Electron, Discord API, T3 plugin marketplace, git auto-PR, `crew serve`, computer-use, in-app browser. Desktop window is Tauri + WebView2. MCP **stdio** is in (`ADR-0036`). Parked notes: `docs/todos/` (status: `docs/todos/now.md`).
+Electron, Discord API, T3 plugin marketplace, git auto-PR, `crew serve`, computer-use, in-app browser. Desktop window is Tauri + WebView2. MCP is in (`ADR-0036`–`0038`). Parked notes: `docs/todos/` (status: `docs/todos/now.md`).

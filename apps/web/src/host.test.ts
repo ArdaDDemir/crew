@@ -4,7 +4,17 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadAlways, matchesAlways, ScriptedProvider } from "@crew/core";
-import { createChannel, createHost, readThread, resolveAsk, sayChannel, threadDiff } from "./host";
+import {
+  checkHostUpdate,
+  createChannel,
+  createHost,
+  readThread,
+  resolveAsk,
+  sayChannel,
+  setUpdateUrl,
+  snapshot,
+  threadDiff,
+} from "./host";
 import { fakeMcpRpc } from "./mcp-client";
 import { saveMcp } from "./mcp";
 import { writeConfigFile, projectConfigPath } from "./config";
@@ -385,4 +395,39 @@ test("resolveJobModel compact/vision/read pick the agent's person model", async 
   expect(resolveJobModel(host, "read", { model: "", botId: "lead" })).toBe("person/compact");
   expect(resolveJobModel(host, "title", { model: "title/cheap", botId: "lead" })).toBe("title/cheap");
   expect(resolveJobModel(host, "title", { model: "", botId: "lead" })).toBe(host.model);
+});
+
+test("updateUrl lives in user config and snapshot has version", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const home = await mkdtemp(join(tmpdir(), "crew-home-"));
+  const host = createHost({ cwd, home, provider: new ScriptedProvider([]) });
+  const snap = snapshot(host);
+  expect(snap.version).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(snap.updateUrl).toBe("");
+  expect(setUpdateUrl(host, "https://example.com/latest.json")).toEqual({
+    updateUrl: "https://example.com/latest.json",
+  });
+  expect(JSON.parse(readFileSync(join(home, ".crew", "config.json"), "utf8")).updateUrl).toBe(
+    "https://example.com/latest.json",
+  );
+  expect(existsSync(join(cwd, ".crew", "config.json"))).toBe(false);
+  expect(() => setUpdateUrl(host, "http://evil.example/x")).toThrow();
+});
+
+test("checkHostUpdate uses injected fetch and does not hit the network", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const home = await mkdtemp(join(tmpdir(), "crew-home-"));
+  const host = createHost({ cwd, home, provider: new ScriptedProvider([]) });
+  setUpdateUrl(host, "https://example.com/latest.json");
+  const fetchImpl: typeof fetch = async () =>
+    new Response(JSON.stringify({ version: "9.0.0", notes: "n", url: "https://example.com/Crew.msi" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  const got = await checkHostUpdate(host, fetchImpl);
+  expect(got).toEqual({
+    status: "available",
+    version: "9.0.0",
+    notes: "n",
+    url: "https://example.com/Crew.msi",
+  });
 });

@@ -15,7 +15,7 @@ function handle(msg: { id?: unknown; method?: string; params?: { name?: string; 
       id: msg.id,
       result: {
         protocolVersion: "2024-11-05",
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {}, prompts: {} },
         serverInfo: { name: "echo" },
       },
     });
@@ -43,6 +43,45 @@ function handle(msg: { id?: unknown; method?: string; params?: { name?: string; 
       jsonrpc: "2.0",
       id: msg.id,
       result: { content: [{ type: "text", text: "pong" }] },
+    });
+    return;
+  }
+  if (msg.method === "resources/list") {
+    send({
+      jsonrpc: "2.0",
+      id: msg.id,
+      result: {
+        resources: [{ uri: "echo://pong", name: "pong", mimeType: "text/plain" }],
+      },
+    });
+    return;
+  }
+  if (msg.method === "resources/read") {
+    send({
+      jsonrpc: "2.0",
+      id: msg.id,
+      result: {
+        contents: [{ uri: "echo://pong", mimeType: "text/plain", text: "pong" }],
+      },
+    });
+    return;
+  }
+  if (msg.method === "prompts/list") {
+    send({
+      jsonrpc: "2.0",
+      id: msg.id,
+      result: { prompts: [{ name: "ping", description: "pong prompt" }] },
+    });
+    return;
+  }
+  if (msg.method === "prompts/get") {
+    send({
+      jsonrpc: "2.0",
+      id: msg.id,
+      result: {
+        description: "pong prompt",
+        messages: [{ role: "user", content: { type: "text", text: "pong" } }],
+      },
     });
     return;
   }

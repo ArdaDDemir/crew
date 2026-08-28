@@ -14,7 +14,7 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 | [specs/web-ui.md](specs/web-ui.md) | `bun run ui` / Crew.exe, HTTP, office chrome, Providers, picker, MCP |
 | [specs/provider.md](specs/provider.md) | `complete()` port + harness spawn |
 | [specs/edge-cases.md](specs/edge-cases.md) | Catalog; fixed items point at ADRs |
-| [versioning.md](versioning.md) | 0.x semver. Current **0.4.0**; newer work is `[Unreleased]` |
+| [versioning.md](versioning.md) | 0.x semver. Current **0.5.0**; newer work is `[Unreleased]` |
 | [todos/now.md](todos/now.md) | **Current snapshot + gaps** |
 | [todos/multi-human-remote.md](todos/multi-human-remote.md) | Parked: `crew serve` |
 | [todos/computer-use-and-browser.md](todos/computer-use-and-browser.md) | Parked: computer-use + in-app browser |

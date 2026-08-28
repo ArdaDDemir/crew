@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { asUpdateUrl } from "./update";
 
 export type CrewConfig = {
   apiKey?: string;
@@ -13,6 +14,7 @@ export type CrewConfig = {
   reviewerModel?: string;
   defaultHarness?: string | null;
   defaultHarnessModel?: string | null;
+  updateUrl?: string;
 };
 
 export function userConfigPath(home: string): string {
@@ -59,6 +61,7 @@ export function mergeConfig(input: {
     reviewerModel: (project.reviewerModel || user.reviewerModel || "").trim(),
     defaultHarness: (project.defaultHarness || user.defaultHarness || "") || null,
     defaultHarnessModel: (project.defaultHarnessModel || user.defaultHarnessModel || "") || null,
+    updateUrl: asUpdateUrl(input.env.CREW_UPDATE_URL) || asUpdateUrl(user.updateUrl),
   };
 }
 

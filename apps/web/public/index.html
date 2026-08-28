@@ -37,7 +37,7 @@
         <div class="win-btns" id="win-btns" hidden>
           <button type="button" id="win-min" title="Minimize">−</button>
           <button type="button" id="win-max" title="Maximize">□</button>
-          <button type="button" id="win-close" class="win-close" title="Close">×</button>
+          <button type="button" id="win-close" class="win-close" title="Hide to tray">×</button>
         </div>
       </div>
     </header>
@@ -524,7 +524,7 @@
       </div>
       <div class="settings-panel" data-settings-panel="mcp" hidden>
         <section class="field" id="mcp-section">
-          <p class="field-label">MCP servers <button type="button" class="help" data-tip="stdio JSON-RPC servers in .crew/mcp.json. Tools attach to Crew-native (OpenRouter) turns as mcp_server_tool. Harness people use that CLI's own MCP. Dead servers are skipped.">?</button></p>
+          <p class="field-label">MCP servers <button type="button" class="help" data-tip="stdio or HTTP JSON-RPC in .crew/mcp.json. Crew-native turns get mcp_server_tool, plus resources list/read and prompts list/get when the server advertises them. Harness people use that CLI's own MCP. Dead servers are skipped.">?</button></p>
           <p class="field-hint" id="mcp-tools-meta"></p>
           <div id="mcp-list"></div>
           <div class="mcp-actions">
@@ -555,9 +555,18 @@
       <div class="settings-panel" data-settings-panel="about" hidden>
         <section class="field">
           <p class="field-label">Crew</p>
-          <p class="field-hint" id="app-about-ver">0.4.0</p>
+          <p class="field-hint" id="app-about-ver"></p>
           <p class="field-hint" id="app-workspace-path"></p>
-          <p class="field-hint">Local office. Crew.exe is this same UI in a WebView2 window — not a website, not Electron.</p>
+          <p class="field-hint">Local office. Crew.exe is this same UI in a WebView2 window — not a website, not Electron. Close hides to the tray; Quit from the tray icon exits.</p>
+        </section>
+        <section class="field">
+          <p class="field-label">Updates <button type="button" class="help" data-tip="JSON { version, notes, url } or a Tauri latest.json. Empty disables the check. https only (http on localhost). Crew does not install the file — you download it.">?</button></p>
+          <input id="app-update-url" placeholder="https://example.com/latest.json" spellcheck="false" />
+          <div class="mcp-actions">
+            <button type="button" class="ghost" id="app-update-check">Check for updates</button>
+            <a id="app-update-open" class="ghost" hidden href="#" rel="noopener noreferrer" target="_blank">Download</a>
+          </div>
+          <p class="field-hint" id="app-update-meta"></p>
         </section>
       </div>
       <div class="modal-actions">

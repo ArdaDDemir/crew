@@ -18,7 +18,7 @@ A real **Crew.exe** window, not a website tab. Must not be RAM-hungry (no Electr
 
 ```
 bun run desktop          # Tauri dev (Bun sidecar source)
-bun run desktop:build    # compile sidecar + Crew.exe → dist/crew-windows/
+bun run desktop:build    # compile sidecar + Crew.exe → dist/crew-windows/; NSIS/MSI if those tools exist
 ```
 
 Portable folder (double-click): `dist/crew-windows/Crew.exe` next to `crew-server.exe` and `public/`. Last project: `%APPDATA%\Crew\last-project.json`.
@@ -27,4 +27,4 @@ Not Electron. Not `crew serve`.
 
 ## Still later
 
-Installer polish, auto-update, tray, macOS/Linux.
+macOS/Linux. NSIS/MSI on `desktop:build`. Tray + opt-in update check are in (`ADR-0039`). Signed auto-install still needs a public CDN.

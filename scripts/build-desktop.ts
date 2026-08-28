@@ -26,17 +26,29 @@ cpSync(publicSrc, join(releaseDir, "public"), { recursive: true });
 console.log("tauri build");
 const tauriExe = join(root, "apps", "desktop", "node_modules", ".bin", "tauri.exe");
 const tauriJs = join(root, "apps", "desktop", "node_modules", "@tauri-apps", "cli", "tauri.js");
-function tauriCmd(bundle: boolean) {
-  const flag = bundle ? [] : ["--no-bundle"];
+function tauriCmd(mode: "all" | "none" | "nsis" | "msi") {
+  const flag =
+    mode === "all" ? [] : mode === "none" ? ["--no-bundle"] : ["--bundles", mode];
   if (existsSync(tauriExe)) return [tauriExe, "build", ...flag];
   if (existsSync(tauriJs)) return [bun, tauriJs, "build", ...flag];
   return [bun, "x", "@tauri-apps/cli", "build", ...flag];
 }
-try {
-  run(tauriCmd(true), join(root, "apps", "desktop"));
-} catch {
-  console.log("NSIS bundle failed (install NSIS for the installer); building portable exe");
-  run(tauriCmd(false), join(root, "apps", "desktop"));
+const desktopDir = join(root, "apps", "desktop");
+function tryTauri(mode: "all" | "none" | "nsis" | "msi"): boolean {
+  try {
+    run(tauriCmd(mode), desktopDir);
+    return true;
+  } catch {
+    return false;
+  }
+}
+if (!tryTauri("all")) {
+  console.log("combined NSIS+MSI bundle failed; trying each installer, then portable");
+  const nsisOk = tryTauri("nsis");
+  if (!nsisOk) console.log("NSIS bundle failed (install NSIS for the .exe installer)");
+  const msiOk = tryTauri("msi");
+  if (!msiOk) console.log("MSI bundle failed (install WiX for the .msi)");
+  if (!nsisOk && !msiOk && !tryTauri("none")) throw new Error("tauri portable build failed");
 }
 
 const built = ["Crew.exe", "crew-desktop.exe"]
@@ -56,4 +68,11 @@ if (existsSync(nsisDir)) {
   mkdirSync(out, { recursive: true });
   cpSync(nsisDir, out, { recursive: true });
   console.log(`NSIS installer  ${out}`);
+}
+const msiDir = join(tauriDir, "target", "release", "bundle", "msi");
+if (existsSync(msiDir)) {
+  const out = join(root, "dist", "crew-windows-msi");
+  mkdirSync(out, { recursive: true });
+  cpSync(msiDir, out, { recursive: true });
+  console.log(`MSI installer   ${out}`);
 }

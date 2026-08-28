@@ -63,6 +63,6 @@ Env: `OPENROUTER_API_KEY`, optional `CREW_BASE_URL` / `CREW_MODEL`. Files: `~/.c
 
 The same engine is `bun run ui` (`docs/specs/web-ui.md`).
 
-## Out of 0.2
+## Out of 0.4
 
-Fullscreen TUI, Electron, real Discord API, git PR buttons, `crew serve`. Harness spawn and MCP stdio are the **office** (`bun run ui` / Crew.exe), not `crew say` yet (`docs/todos/now.md`).
+Fullscreen TUI, Electron, real Discord API, git PR buttons, `crew serve`. Harness spawn and MCP (including resources/prompts) bind on `crew say` / `crew dm` the same as the office (`ADR-0037`, `ADR-0038`).

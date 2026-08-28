@@ -11,7 +11,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | Method | Path | What |
 |---|---|---|
 | GET | `/api/health` | `{ ok: true }` |
-| GET | `/api/bootstrap` | channels, bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
+| GET | `/api/bootstrap` | `version`, `updateUrl`, channels, bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
 | GET | `/api/thread?kind&id` | messages / thinking / tools / shortened errors |
 | POST | `/api/say` | NDJSON stream (`text`, `thinking`, `tool`, `ask`, `done`) |
 | POST | `/api/dm` | human or watch replay (`threadId` optional) |
@@ -28,7 +28,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | DELETE | `/api/permissions` | no query = clear all; `?tool=&key=` deletes one row |
 | POST | `/api/permission` | `allow` \| `deny` \| `always` |
 | GET | `/api/models?q=` | OpenRouter catalog search |
-| POST | `/api/key` `/api/model` `/api/fallback` `/api/allowed-models` `/api/mode` `/api/base-url` `/api/default-mode` `/api/auto-compact` `/api/reviewer` | config |
+| POST | `/api/key` `/api/model` `/api/fallback` `/api/allowed-models` `/api/mode` `/api/base-url` `/api/default-mode` `/api/auto-compact` `/api/reviewer` `/api/update-url` `/api/update-check` | config. `update-url` writes `~/.crew/config.json` `updateUrl` (https; http on localhost). `update-check` `{ status: disabled\|current\|available\|error }` — no self-install (`ADR-0039`) |
 | GET/PUT | `/api/providers` | `.crew/providers.json` `{ openrouter, claude, codex, grok, opencode }` each harness `{ enabled, binary, customModels: string[] }` |
 | GET | `/api/providers/health` | `{ cards }` with `installed`, `version`, `status` (`ready`\|`installed`\|`missing`\|`off`), `login`. PATH + `--version` (3s). Also looks in `%USERPROFILE%\.local\bin` (native Claude), npm, WinGet Links, scoop shims. Does not block bootstrap. |
 | GET | `/api/providers/models` | `{ openrouter, claude, codex, grok, opencode }` each `{ id, label }[]`. OpenRouter = whitelist. Harness lists: `customModels` first, then CLI (`grok models`, `opencode models`, Claude `--help` aliases, Codex `~/.codex/models_cache.json`) plus current fallbacks. Cached 60s; cleared on `PUT /api/providers`. |
@@ -36,8 +36,8 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | POST | `/api/compact` | `{ kind, id }` → `{ ok, summary, keptFrom, model }`. 400 if missing id or empty summary. Uses Jobs Compact implementation (`compact.model`, else workspace default). Optional `compact.botId` still wraps that person's Soul if present. Empty model = default. Appends `thread.summary`; JSONL not rewritten. Auto-compact honors `autoCompact` (off = only `/compact`) |
 | GET | `/api/compact-status` | `?kind&id` → `{ posted, keep: 80, hasSummary, lastCompactAt }` |
 | GET | `/api/jobs` | `{ title, compact, vision, read }` each `{ model, botId, harness, harnessModel }`. Missing file → empty models, nulls |
-| GET/PUT | `/api/mcp` | `.crew/mcp.json` `{ servers: [{ name, enabled, command, args, env }] }`. Max 8. Missing file → `[]` |
-| GET | `/api/mcp/tools` | `{ tools: [{ name, description }] }` from live stdio initialize + tools/list. Dead servers skipped |
+| GET/PUT | `/api/mcp` | `.crew/mcp.json` `{ servers: [{ name, enabled, command, args, env, url, headers }] }`. Stdio or HTTP. Max 8. Missing file → `[]` |
+| GET | `/api/mcp/tools` | `{ tools: [{ name, description }] }` from live initialize + `tools/list`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised (`ADR-0038`). Dead servers skipped |
 | PUT | `/api/jobs` | same shape. `botId` null or an existing bot (not reserved). `harness` null or `claude\|codex\|grok\|opencode`. 400 on bad id. Writes `.crew/jobs.json` (not `config.json`) |
 | GET/PUT | `/api/dm-prefs` | `.crew/dm-prefs.json` `{ archived, deleted }`. Deleted omitted from bootstrap `dms`; archived flagged. JSONL stays |
 | POST | `/api/thread-title` | `{ kind, id }` appends `thread.titled` (last wins). Title job is not a channel wake |
@@ -55,7 +55,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 - Chat header `#work-chip` shows the same live activity (`Coder · Reading index.html`); hidden when idle. Plan-approve is a later JSONL event — no extra LLM call.
 - Chat header `#context-chip` (pane-1 uses the class): `{posted}/{keep}` or `{posted}/{keep} · compacted` when a `thread.summary` exists. Updates on thread open and after compact. Auto-compact when posted > keep * 0.7, once per thread (`sessionStorage` `crew.autoCompact:{kind}:{id}`).
 - New channel/person: full sheet, random locked slug, + File / + Folder.
-- Settings tabs (T3-shaped): **General** (default/fallback, new-room mode, auto-compact), **Providers** (OpenRouter key/base URL/whitelist + Claude/Codex/Grok/OpenCode cards with custom models; replaces Models), **Jobs**, **MCP** (stdio servers in `.crew/mcp.json`; tools on Crew-native turns), **Permissions** (Always add/remove + reviewer), **About** (version + workspace path).
+- Settings tabs (T3-shaped): **General** (default/fallback, new-room mode, auto-compact), **Providers** (OpenRouter key/base URL/whitelist + Claude/Codex/Grok/OpenCode cards with custom models; replaces Models), **Jobs**, **MCP** (stdio or HTTP servers in `.crew/mcp.json`; tools, resources, and prompts on Crew-native turns), **Permissions** (Always add/remove + reviewer), **About** (version + workspace path + opt-in update URL and Check). Crew.exe × hides to tray (`ADR-0039`).
 - **Implementation picker** (`ADR-0031`): search, left All + provider logos, right model list. Used for Person Model, General Default, and Jobs Title / Compact / Vision / Read. Groups are Crew providers, not OpenRouter vendors. OpenRouter = whitelist; a harness = that CLI's models + `customModels` when the card is enabled and installed. Picking a harness stores `harness` + `harnessModel`. Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). The menu is portaled into the open `<dialog>`; Settings tab switch closes it.
 - Jobs: Title, Compact, Vision, and Read use that picker (not a person `<select>`). Empty Title/Compact = Default. Empty Vision/Read = Off. `botId` on disk still wraps Soul if set. Job runtime is OpenRouter `complete()` even if the slot stores a harness.
 - Person sheet **Chat titles** picks that person's title model (empty = Jobs Title default). Title job wraps that person's Soul.
@@ -93,4 +93,4 @@ Palette in the composer (`/` + Enter). Same ids as the table. Not a CLI TUI.
 
 ## Out of this adapter
 
-`crew serve` / multi-human remote: `docs/todos/multi-human-remote.md`. Electron, Discord API, plugin marketplace: later. Harness spawn is `ADR-0034` / `ADR-0035`. MCP stdio is `ADR-0036`. Desktop window is Tauri + WebView2 (`ADR-0032`), not Electron.
+`crew serve` / multi-human remote: `docs/todos/multi-human-remote.md`. Electron, Discord API, plugin marketplace: later. Harness spawn is `ADR-0034` / `ADR-0035`. MCP is `ADR-0036`–`0038`. Desktop window is Tauri + WebView2 (`ADR-0032`); tray + opt-in updates `ADR-0039`. Not Electron.

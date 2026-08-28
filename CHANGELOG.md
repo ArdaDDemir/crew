@@ -10,6 +10,17 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-28
+
+MCP resources/prompts, Windows MSI, opt-in update check, Crew.exe tray.
+
+### Added
+
+- **MCP resources and prompts** (`ADR-0038`): when a server advertises them on initialize, Crew-native turns also get `mcp_<server>_resources_list` / `_resources_read` (`uri`) and `mcp_<server>_prompts_list` / `_prompts_get` (`name` plus extra args). `tools/list` failure no longer drops a resources-only server.
+- **Windows MSI** on `bun run desktop:build`: copies `dist/crew-windows-msi/`. NSIS still `dist/crew-windows-nsis/`. Tauri can download WiX/NSIS into the build cache. Portable `dist/crew-windows/` always.
+- **Opt-in updates** (`ADR-0039`): Settings → About stores an HTTPS `updateUrl` in `~/.crew/config.json` (`CREW_UPDATE_URL` overrides). **Check for updates** fetches `{ version, notes, url }` (or Tauri `platforms.windows-x86_64`). Crew never overwrites itself; Download opens the URL. Empty URL = disabled. http only on localhost.
+- **Crew.exe tray** (`ADR-0039`): × / Close hides to the notification area. Tray menu: Show Crew, Open project, Quit (stops the sidecar). Left-click restores.
+
 ## [0.4.0] - 2026-08-28
 
 Crew.exe, Providers picker, harness spawn, MCP, CLI parity, harness permission map, Windows NSIS.

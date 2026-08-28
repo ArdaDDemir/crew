@@ -3,7 +3,7 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.4.0**.
+Current release: **0.5.0**.
 
 ---
 
@@ -13,18 +13,22 @@ Office UI + Crew.exe, People accordion, drag-split, Providers picker, Jobs, harn
 
 See `CHANGELOG.md` `[0.4.0]`.
 
+## In (0.5.0)
+
+MCP **resources/prompts** as Crew tools (`ADR-0038`). `desktop:build` also tries a **MSI**. Opt-in About **Check for updates** + Crew.exe **tray** (`ADR-0039`).
+
+See `CHANGELOG.md` `[0.5.0]`.
+
 ---
 
 ## Still later
 
 | Item | Why |
 |---|---|
-| Auto-update | Needs a public endpoint + signing keys |
+| Signed auto-install | Needs a public CDN + signing private key. About can Check against a URL you set |
 | macOS / Linux bundles | We only build on this Windows machine |
-| MSI | WiX; NSIS is the Windows installer we try |
 | T3 plugin marketplace | Out. MCP is the integration |
-| MCP resources/prompts | Tools only |
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS installer appears under `dist/crew-windows-nsis/` only if NSIS is installed when you run `bun run desktop:build`. Portable zip-folder `dist/crew-windows/` always.
+NSIS installer: `dist/crew-windows-nsis/` (`Crew_0.5.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.5.0_x64_en-US.msi`). Tauri can download NSIS/WiX into the build cache. Portable folder `dist/crew-windows/` always.

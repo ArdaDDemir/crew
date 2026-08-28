@@ -12,6 +12,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Listener, Manager};
 
 const DESKTOP_INIT: &str = r#"
@@ -231,6 +233,49 @@ fn start_into(app: &AppHandle, cwd: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn show_main(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+}
+
+fn install_tray(app: &AppHandle) -> tauri::Result<()> {
+    let show = MenuItem::with_id(app, "show", "Show Crew", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open project…", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show, &open, &quit])?;
+    let mut builder = TrayIconBuilder::new()
+        .menu(&menu)
+        .tooltip("Crew")
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => show_main(app),
+            "open" => open_or_switch(app, false),
+            "quit" => {
+                let office = app.state::<Office>();
+                kill_office(&office);
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                show_main(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon().cloned() {
+        builder = builder.icon(icon);
+    }
+    builder.build(app)?;
+    Ok(())
+}
+
 fn open_or_switch(app: &AppHandle, first: bool) {
     let cwd = if first {
         load_last_project().or_else(pick_project)
@@ -283,10 +328,19 @@ fn main() {
             let _ = app.listen("crew-open-project", move |_| {
                 open_or_switch(&handle, false);
             });
+            if let Err(err) = install_tray(app.handle()) {
+                log_line(&format!("tray failed: {err}"));
+            }
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                if window.label() == "main" {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
+            tauri::WindowEvent::Destroyed => {
                 log_line(&format!("destroyed {}", window.label()));
                 if window.label() != "main" {
                     return;
@@ -296,6 +350,7 @@ fn main() {
                 kill_office(&office);
                 app.exit(0);
             }
+            _ => {}
         })
         .build(tauri::generate_context!());
 

@@ -336,6 +336,8 @@ function fillAppTop() {
   }
   const desk = isDesktopShell();
   document.documentElement.classList.toggle("is-desktop", desk);
+  const closeBtn = document.getElementById("win-close");
+  if (closeBtn) closeBtn.title = desk ? "Hide to tray" : "Close";
   const open = document.getElementById("win-open-project");
   const btns = document.getElementById("win-btns");
   if (open) open.hidden = !desk;
@@ -2693,6 +2695,10 @@ function fillSettingsSelects() {
   if (base) base.value = state.bootstrap.baseUrl || "";
   const path = document.getElementById("app-workspace-path");
   if (path) path.textContent = state.bootstrap.cwd || "";
+  const ver = document.getElementById("app-about-ver");
+  if (ver) ver.textContent = state.bootstrap.version || "";
+  const upd = document.getElementById("app-update-url");
+  if (upd) upd.value = state.bootstrap.updateUrl || "";
 }
 
 function providerFileFromCards() {
@@ -4883,6 +4889,48 @@ document.getElementById("app-reviewer-model")?.addEventListener("change", async 
     })
   ).json();
   state.bootstrap.reviewerModel = res.reviewerModel;
+});
+document.getElementById("app-update-url")?.addEventListener("change", async (ev) => {
+  const res = await (
+    await api("/api/update-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updateUrl: ev.target.value }),
+    })
+  ).json();
+  if (res.error) {
+    toast(String(res.error));
+    return;
+  }
+  state.bootstrap.updateUrl = res.updateUrl || "";
+});
+document.getElementById("app-update-check")?.addEventListener("click", async () => {
+  const meta = document.getElementById("app-update-meta");
+  const open = document.getElementById("app-update-open");
+  if (meta) meta.textContent = "Checking…";
+  if (open) open.hidden = true;
+  try {
+    const res = await (await api("/api/update-check", { method: "POST" })).json();
+    if (res.status === "disabled") {
+      if (meta) meta.textContent = "No update server configured.";
+      return;
+    }
+    if (res.status === "current") {
+      if (meta) meta.textContent = `Up to date (${res.version}).`;
+      return;
+    }
+    if (res.status === "available") {
+      if (meta) meta.textContent = [res.version, "available", res.notes].filter(Boolean).join(" · ");
+      if (open && res.url) {
+        open.href = res.url;
+        open.hidden = false;
+      }
+      return;
+    }
+    if (meta) meta.textContent = res.error || "Update check failed.";
+  } catch (err) {
+    if (meta) meta.textContent = String(err);
+  }
 });
 document.querySelector("[data-settings-panel='providers']")?.addEventListener("keydown", (ev) => {
   if (ev.key !== "Enter" || !ev.target.matches("[data-prov-custom]")) return;

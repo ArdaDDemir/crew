@@ -43,17 +43,50 @@ export function fakeMcpRpc(fake: FakeMcp): McpRpc {
   };
 }
 
+function textFromBlocks(blocks: unknown): string {
+  if (!Array.isArray(blocks)) return "";
+  return blocks
+    .map((block) => {
+      if (!block || typeof block !== "object") return "";
+      const b = block as { type?: unknown; text?: unknown };
+      if (b.type === "text" || typeof b.text === "string") return String(b.text ?? "");
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function formatMcpResult(raw: unknown): string {
   if (!raw || typeof raw !== "object") return String(raw ?? "");
-  const row = raw as { content?: unknown; isError?: unknown; message?: unknown };
+  const row = raw as {
+    content?: unknown;
+    contents?: unknown;
+    messages?: unknown;
+    isError?: unknown;
+    message?: unknown;
+  };
   if (row.isError) return `mcp error: ${String(row.message ?? JSON.stringify(raw))}`;
-  if (Array.isArray(row.content)) {
-    const texts = row.content
+  const fromContent = textFromBlocks(row.content);
+  if (fromContent) return fromContent;
+  if (Array.isArray(row.contents)) {
+    const texts = row.contents
       .map((block) => {
         if (!block || typeof block !== "object") return "";
-        const b = block as { type?: unknown; text?: unknown };
-        if (b.type === "text" || typeof b.text === "string") return String(b.text ?? "");
-        return "";
+        const b = block as { text?: unknown };
+        return typeof b.text === "string" ? b.text : "";
+      })
+      .filter(Boolean);
+    if (texts.length) return texts.join("\n");
+  }
+  if (Array.isArray(row.messages)) {
+    const texts = row.messages
+      .map((msg) => {
+        if (!msg || typeof msg !== "object") return "";
+        const m = msg as { role?: unknown; content?: unknown };
+        const body =
+          typeof m.content === "string" ? m.content : textFromBlocks(m.content) || JSON.stringify(m.content ?? "");
+        const role = String(m.role ?? "message");
+        return body ? `${role}: ${body}` : "";
       })
       .filter(Boolean);
     if (texts.length) return texts.join("\n");
@@ -123,21 +156,95 @@ export async function collectMcpSessions(input: {
   };
 }
 
+function hasCapability(capabilities: unknown, key: string): boolean {
+  if (!capabilities || typeof capabilities !== "object") return false;
+  const val = (capabilities as Record<string, unknown>)[key];
+  return val !== undefined && val !== null && val !== false;
+}
+
+function mcpResourceTools(server: string, rpc: McpRpc): Tool[] {
+  return [
+    {
+      name: crewToolName(server, "resources_list"),
+      description: `[MCP ${server}] List MCP resources`,
+      parameters: { type: "object", properties: {} },
+      async execute() {
+        return formatMcpResult(await rpc.request("resources/list"));
+      },
+    },
+    {
+      name: crewToolName(server, "resources_read"),
+      description: `[MCP ${server}] Read an MCP resource by uri`,
+      parameters: {
+        type: "object",
+        properties: { uri: { type: "string", description: "Resource URI" } },
+        required: ["uri"],
+      },
+      async execute(args) {
+        const uri = String(args.uri ?? "").trim();
+        if (!uri) return "mcp error: uri is required";
+        return formatMcpResult(await rpc.request("resources/read", { uri }));
+      },
+    },
+  ];
+}
+
+function mcpPromptTools(server: string, rpc: McpRpc): Tool[] {
+  return [
+    {
+      name: crewToolName(server, "prompts_list"),
+      description: `[MCP ${server}] List MCP prompts`,
+      parameters: { type: "object", properties: {} },
+      async execute() {
+        return formatMcpResult(await rpc.request("prompts/list"));
+      },
+    },
+    {
+      name: crewToolName(server, "prompts_get"),
+      description: `[MCP ${server}] Get an MCP prompt by name`,
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Prompt name" },
+        },
+        required: ["name"],
+      },
+      async execute(args) {
+        const name = String(args.name ?? "").trim();
+        if (!name) return "mcp error: name is required";
+        const extra: Record<string, string> = {};
+        for (const [k, v] of Object.entries(args)) {
+          if (k === "name") continue;
+          extra[k] = String(v ?? "");
+        }
+        return formatMcpResult(await rpc.request("prompts/get", { name, arguments: extra }));
+      },
+    },
+  ];
+}
+
 export async function openMcpSession(
   server: string,
   rpc: McpRpc,
 ): Promise<{ tools: Tool[]; close: () => Promise<void> }> {
-  await rpc.request("initialize", {
+  const init = (await rpc.request("initialize", {
     protocolVersion: "2024-11-05",
     capabilities: {},
-    clientInfo: { name: "crew", version: "0.3.0" },
-  });
+    clientInfo: { name: "crew", version: "0.5.0" },
+  })) as { capabilities?: unknown };
   rpc.notify("notifications/initialized");
-  const listed = (await rpc.request("tools/list")) as { tools?: McpToolDef[] };
-  const defs = Array.isArray(listed?.tools) ? listed.tools : [];
+  let defs: McpToolDef[] = [];
+  try {
+    const listed = (await rpc.request("tools/list")) as { tools?: McpToolDef[] };
+    if (Array.isArray(listed?.tools)) defs = listed.tools;
+  } catch {
+    /* resources/prompts-only servers */
+  }
   const tools = crewToolsFromMcp(server, defs, (name, args) =>
     rpc.request("tools/call", { name, arguments: args }),
   );
+  if (hasCapability(init?.capabilities, "resources")) tools.push(...mcpResourceTools(server, rpc));
+  if (hasCapability(init?.capabilities, "prompts")) tools.push(...mcpPromptTools(server, rpc));
   return { tools, close: () => rpc.close() };
 }
 

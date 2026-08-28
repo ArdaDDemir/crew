@@ -39,6 +39,8 @@ import {
   setMode,
   setModel,
   setReviewerModel,
+  setUpdateUrl,
+  checkHostUpdate,
   snapshot,
   stopRun,
   type Host,
@@ -370,6 +372,18 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         return json({ error: err instanceof Error ? err.message : String(err) }, 400);
       }
     });
+  }
+  if (req.method === "POST" && path === "/api/update-url") {
+    return readBody(req).then((body) => {
+      try {
+        return json(setUpdateUrl(host, String(body.updateUrl ?? "")));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/update-check") {
+    return checkHostUpdate(host).then((body) => json(body));
   }
   if (req.method === "GET" && path === "/api/providers") {
     return json(getProviders(host));

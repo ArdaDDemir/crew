@@ -31,7 +31,7 @@ Tool executor does not read stdin.
 
 Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). Fingerprint subset: `path`, `command`, `name`, `id`. A matching later ask is allowed with no prompt and no `type:"ask"` stream row. It does not switch the channel to `full-access`.
 
-MCP tools (`mcp_<server>_<tool>`, `ADR-0036`) are not a fifth mode. Unknown tools map to `shell` for `decidePermission`: supervised asks; auto-accept allows. Harness CLI turns do not use this card (the CLI auto-approves).
+MCP tools (`mcp_<server>_<tool>`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised, `ADR-0036` / `ADR-0038`) are not a fifth mode. Unknown tools map to `shell` for `decidePermission`: supervised asks; auto-accept allows. Harness CLI turns do not use this card (the CLI auto-approves).
 
 Settings → Permissions:
 
