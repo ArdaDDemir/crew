@@ -26,7 +26,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 ## 1. Channel vs DM vs files
 
 1. Human DM “never edit files”, then channel “edit the title”. **HIT** (old). **Fixed (`ADR-0016`):** latest human across channel + human↔bot DM wins; the turn gets a pointer, not a dump.
-2. Channel “edit the title”, then DM “revert that”. DM turn does not see the channel patch unless it re-reads the file. Should: always read disk first.
+2. Channel “edit the title”, then DM “revert that”. DM turn does not see the channel patch unless it re-reads the file. **Fixed:** DM pointer says the last channel account may be stale; re-read files. Disk is still truth.
 3. Human DMs coder “use red”; channel says `@designer` “use blue”. Designer never hears the DM. Coder may still paint red. Split-brain UI.
 4. Two human DMs to two bots with opposite file orders in one minute. Both wake, both patch, last write wins (lock only serializes, it does not merge).
 5. Bot-bot `dm_send` “keep this secret” then the sender accounts in the channel with the secret. Privacy leak by the speaker, not the engine.
@@ -65,7 +65,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 ## 4. Identity, prompt, language
 
-32. Other bots’ lines are `user` role labeled `@id`. Weak models still answer as the lead. (Mitigated, not gone.)
+32. Other bots’ lines are `user` role labeled `@id`. Weak models still answer as the lead. **Mitigated:** history lines are `[other bot, not you] @id`. Not gone.
 33. Human writes Turkish, system says English. Live **HIT:** accounts were English. Long Turkish history in JSONL may pull later turns back to Turkish.
 34. Soul says “be terse”, channel context says “write a novel”. Soul vs rules vs human: human should win; today all three are concatenated.
 35. Skill catalog only (name + description). **Fixed (`ADR-0021`):** full `SKILL.md` is in the prompt (capped).
@@ -74,7 +74,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 ## 5. Provider, money, length
 
 37. Two parallel OpenRouter calls. One 429, one OK. Rate gap waits the next **wave**, not the sibling. Sibling already in flight.
-38. `Inference processing failed` retries once **without tools**. Account may say they patched when they did not (no second tool round).
+38. `Inference processing failed` retries once **without tools**. **Fixed:** retry is told it cannot use tools and must not claim unapplied patches.
 39. 45s fetch timeout. User sees hang, then timeout error. Parallel peer may still finish.
 40. Context: `buildHistory` used to send **all** `message.posted`. **Fixed (`ADR-0019`, `ADR-0028`):** last 80 + `thread.compacted`; trim posted-only; optional `thread.summary`.
 41. Reasoning stored every turn. `--thinking` dump is huge; default `say` hides it. Fine.

@@ -101,6 +101,8 @@ test("DM turn sees last channel account and a newer channel human order", () => 
   expect(note).toContain("Set title to FlowHub");
   expect(note).toContain("wins");
   expect(note).toContain("I set the title to FlowHub");
+  expect(note.toLowerCase()).toContain("re-read");
+  expect(note.toLowerCase()).toContain("stale");
 });
 
 test("channel pointer is unread DMs only", () => {

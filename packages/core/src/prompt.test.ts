@@ -66,6 +66,7 @@ test("channel prompt names the self, roster, lead, rules, and tools", () => {
   expect(text).toContain("Write copy and layout.");
   expect(text).toContain("mention = wake");
   expect(text).toContain("Other bots may run at the same time");
+  expect(text).toContain("[other bot, not you]");
   expect(text).not.toContain("You are Lead");
 });
 
@@ -101,7 +102,10 @@ test("history treats other bots as user lines, self as assistant", () => {
   ];
   const hist = buildHistory(events, "coder");
   expect(hist[0]).toEqual({ role: "user", content: "human: go" });
-  expect(hist[1]).toEqual({ role: "user", content: "@lead: plan: ..." });
+  expect(hist[1]).toEqual({
+    role: "user",
+    content: "[other bot, not you] @lead: plan: ...",
+  });
   expect(hist[2]).toEqual({ role: "assistant", content: "html ready" });
 });
 

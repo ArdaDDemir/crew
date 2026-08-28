@@ -288,7 +288,14 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         next = await collect(
           input.provider.complete({
             model: id,
-            messages,
+            messages: [
+              ...messages,
+              {
+                role: "user",
+                content:
+                  "The previous model call failed. You cannot use tools this reply. Give an honest English account of what you actually completed. Do not claim patches or file writes you did not apply.",
+              },
+            ],
             tools: undefined,
           }),
           onDelta,

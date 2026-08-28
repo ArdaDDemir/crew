@@ -581,6 +581,7 @@ test("inference processing failed retries once without tools", async () => {
     permissionMode: "auto-accept",
   });
   const seenTools: boolean[] = [];
+  const retries: string[] = [];
   const provider: Provider = {
     async *complete(req) {
       seenTools.push(Boolean(req.tools?.length));
@@ -589,6 +590,8 @@ test("inference processing failed retries once without tools", async () => {
         yield { type: "done" };
         return;
       }
+      const last = req.messages.at(-1);
+      retries.push(typeof last?.content === "string" ? last.content : "");
       yield { type: "text-delta", text: "bak dosyaya bakamadım, tekrar denerim" };
       yield { type: "done" };
     },
@@ -610,6 +613,8 @@ test("inference processing failed retries once without tools", async () => {
   expect(seenTools).toEqual([true, false]);
   expect(result.error).toBeUndefined();
   expect(result.text).toContain("bak dosyaya bakamadım");
+  expect(retries[0]?.toLowerCase()).toContain("cannot use tools");
+  expect(retries[0]?.toLowerCase()).toContain("do not claim");
 });
 
 test("bindModel wins over bot.model for harness turns", async () => {

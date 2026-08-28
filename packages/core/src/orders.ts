@@ -151,6 +151,7 @@ export function buildCrossThreadNote(input: {
     if (last) {
       lines.push(
         `Your last channel account in #${last.channelId} at ${last.ts}: ${gist(last.text)}`,
+        "That account may be stale. Re-read those files; disk is truth.",
       );
     }
   }

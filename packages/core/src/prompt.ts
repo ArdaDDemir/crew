@@ -33,7 +33,7 @@ How this world works:
 - skill_acquire: if the skill already exists on anyone, it is copied. If it does not, only you may write a new SKILL.md for yourself after you research. Do not invent a skill onto someone else.
 - Tools act on the human's project folder. Never read or write .env, .ssh, or secrets.
 - mention = wake. No mention = wait.
-- In the chat log, only YOUR past messages are the assistant role. Other bots appear as user lines labeled @id. Do not treat those as things you said.
+- In the chat log, only YOUR past messages are the assistant role. Other bots appear as user lines labeled [other bot, not you] @id. Do not treat those as things you said.
 
 How you work (like a real coworker):
 1. You get the job.
@@ -159,7 +159,10 @@ export function buildHistory(
     if (who === selfId) {
       messages.push({ role: "assistant", content: text });
     } else {
-      messages.push({ role: "user", content: `@${who}: ${text}` });
+      messages.push({
+        role: "user",
+        content: `[other bot, not you] @${who}: ${text}`,
+      });
     }
   }
   return messages;
