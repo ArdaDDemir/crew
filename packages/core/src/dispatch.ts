@@ -7,6 +7,7 @@ import type { ChatEvent } from "./provider";
 import type { Participant } from "./router";
 import type { PermissionMode } from "./workspace";
 import { parseMentions } from "./mentions";
+import { RESERVED_IDS } from "./slug";
 
 export type BotProviderBind = {
   provider?: Provider;
@@ -64,6 +65,7 @@ export async function dispatchChannelPost(
   replies: { botId: string; text: string; error?: string }[];
   dms: { threadId: string; botId: string; text: string; error?: string }[];
   held?: { waiting: string[]; text: string };
+  ignored?: { names: string[]; text: string };
 }> {
   const posted = await postToChannel({
     store: input.store,
@@ -81,6 +83,27 @@ export async function dispatchChannelPost(
   const spoken = new Set<string>();
   const channel = input.workspace.getChannel(input.channelId);
   const mentioned = parseMentions(input.text);
+  const ignoredNames = mentioned.filter(
+    (id) => id !== "everyone" && !RESERVED_IDS.has(id) && !channel?.memberBotIds.includes(id),
+  );
+  let ignored: { names: string[]; text: string } | undefined;
+  if (ignoredNames.length) {
+    const names = ignoredNames.map((id) => `@${id}`).join(", ");
+    const text =
+      ignoredNames.length === 1
+        ? `Unknown ${names} is not a member of this channel.`
+        : `Unknown ${names} are not members of this channel.`;
+    ignored = { names: ignoredNames, text };
+    input.store.append({
+      v: 1,
+      id: input.nextId(),
+      ts: input.now(),
+      thread: { kind: "channel", id: input.channelId },
+      type: "mention.ignored",
+      parent: null,
+      payload: { ignored: ignoredNames, text },
+    });
+  }
   const humanPicked =
     mentioned.includes("everyone") ||
     Boolean(
@@ -242,7 +265,7 @@ export async function dispatchChannelPost(
     });
   }
 
-  return { woken: posted.woken, replies, dms, held };
+  return { woken: posted.woken, replies, dms, held, ignored };
 }
 
 export async function dispatchDm(

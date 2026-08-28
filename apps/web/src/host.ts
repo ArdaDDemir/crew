@@ -415,6 +415,16 @@ export function readThread(
             : [],
         };
       }
+      if (event.type === "mention.ignored") {
+        return {
+          type: "ignored" as const,
+          ts: event.ts,
+          text: String(event.payload.text ?? ""),
+          ignored: Array.isArray(event.payload.ignored)
+            ? event.payload.ignored.map((id) => String(id))
+            : [],
+        };
+      }
       return null;
     })
     .filter(Boolean);

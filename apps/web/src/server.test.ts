@@ -1062,6 +1062,8 @@ test("office settings has Jobs section", async () => {
     expect(js).toContain("openRouterOnly");
     expect(js).toContain("row.type === \"held\"");
     expect(js).toContain("row.held?.text");
+    expect(js).toContain("row.type === \"ignored\"");
+    expect(js).toContain("row.ignored?.text");
     expect(js).toContain("harness:");
     expect(js).toContain("model-picker");
     expect(js).toContain("pickerGroups");

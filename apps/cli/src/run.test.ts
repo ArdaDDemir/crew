@@ -98,6 +98,15 @@ test("bot create, channel create, say wakes mentioned bots and prints replies", 
   expect(said.stdout.indexOf("woke:")).toBeLessThan(said.stdout.indexOf("designer:"));
 });
 
+test("say announces unknown @ghost and still wakes coder", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const said = await cli(cwd, ["say", "landing", "@ghost then @coder go"]);
+  expect(said.code).toBe(0);
+  expect(said.stdout).toContain("woke: coder");
+  expect(said.stdout).toContain("Unknown @ghost is not a member of this channel.");
+});
+
 test("say prints held handoff for @ that will not wake", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
   await setupLanding(cwd);

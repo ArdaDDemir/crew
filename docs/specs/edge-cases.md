@@ -42,7 +42,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 12. Human no `@` → lead `@designer @coder` → workers run. Their `@tester` does **not** wake. Tester waits for a later human `say`.
 13. `@everyone` in a 4-bot room. Four parallel turns, four accounts, four possible file writes.
 14. `@Everyone` / `@CODER` — parse is case-insensitive. Fine. `@coder.` with a period — mention boundary may drop it.
-15. Unknown `@ghost` ignored. Human thinks someone woke.
+15. Unknown `@ghost` ignored. Human thinks someone woke. **Fixed (`ADR-0046`):** `mention.ignored` status line. Still not a wake.
 16. Bot `@`s itself. Filtered as author. Fine.
 17. Human `@lead do not @ anyone` and lead still `@coder` in the account. Engine will not wake coder (human already tagged lead only… wait: human tagged lead, so `humanPicked` true, no handoff). Coder stays asleep. Lead’s @ is decoration.
 18. Human message “coder should wait” **without** `@coder`, but `@designer` — coder is not woken (good) unless they were already in the wave.

@@ -3,9 +3,15 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.7.0**. Unreleased: held handoff (`ADR-0045`); inference-retry honesty; other-bot history label; DM stale re-read.
+Current release: **0.8.0**. Held/unknown `@`, inference-retry honesty, other-bot history label, DM re-read. `[Unreleased]` is empty.
 
 ---
+
+## In (0.8.0)
+
+Held handoff (`ADR-0045`). Unknown `@` announced (`ADR-0046`). Inference-retry cannot claim unrun tools. History `[other bot, not you]`. DM pointer: last channel account may be stale.
+
+See `CHANGELOG.md` `[0.8.0]`.
 
 ## In (0.7.0)
 

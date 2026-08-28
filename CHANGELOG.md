@@ -10,9 +10,14 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-28
+
+Held `@` and unknown `@` are visible. Retry and DM pointers stay honest.
+
 ### Added
 
 - **Held handoff** (`ADR-0045`): if an account `@coder` after the human already named other bots, Crew does not wake coder. It posts `handoff.held` and an English status line: `@coder was mentioned and will wait for your next message.`
+- **Unknown `@`** (`ADR-0046`): `@ghost` (or a bot not in this channel) still does not wake. Crew posts `mention.ignored`: `Unknown @ghost is not a member of this channel.`
 
 ### Fixed
 

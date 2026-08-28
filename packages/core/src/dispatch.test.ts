@@ -123,6 +123,42 @@ test("a bot that already spoke this say is not woken again by courtesy @", async
   expect(who).toEqual(["designer", "coder"]);
 });
 
+test("unknown @ghost is announced and does not wake", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "coder",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [{ type: "text-delta", text: "I am on it" }, { type: "done" }],
+    ]),
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@ghost then @coder go",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.replies.map((r) => r.botId)).toEqual(["coder"]);
+  expect(result.ignored?.names).toEqual(["ghost"]);
+  expect(result.ignored?.text).toMatch(/@ghost/);
+  expect(result.ignored?.text.toLowerCase()).toMatch(/not a member/);
+  const events = store.read({ kind: "channel", id: "landing" });
+  const ignored = events.filter((e) => e.type === "mention.ignored");
+  expect(ignored).toHaveLength(1);
+  expect(ignored[0]?.payload.ignored).toEqual(["ghost"]);
+});
+
 test("human-tagged say holds @ of member bots who did not run", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

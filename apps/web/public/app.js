@@ -1806,7 +1806,7 @@ async function openThread(kind, id) {
         text: row.text,
         kind: "error",
       });
-    } else if (row.type === "held") {
+    } else if (row.type === "held" || row.type === "ignored") {
       const li = document.createElement("li");
       li.className = "status";
       li.textContent = row.text;
@@ -3473,6 +3473,12 @@ async function onComposerSubmit(ev) {
               kind: "error",
             });
           } else if (row.type === "done") {
+            if (row.ignored?.text) {
+              const li = document.createElement("li");
+              li.className = "status";
+              li.textContent = row.ignored.text;
+              els.log?.append(li);
+            }
             if (row.held?.text) {
               const li = document.createElement("li");
               li.className = "status";

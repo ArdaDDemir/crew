@@ -6,7 +6,7 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 
 | If you are changing… | Read |
 |---|---|
-| Mention wake / who runs | 0005 → 0013 → 0014 → **0043** (fence skip) → **0045** (held handoff) |
+| Mention wake / who runs | 0005 → 0013 → 0014 → **0043** (fence skip) → **0045** (held handoff) → **0046** (unknown `@`) |
 | Desk vs channel chat | 0012, 0011 |
 | DMs / conflicting human orders | 0015, 0016, 0025 → **0033** → **0044** (unread pointer) |
 | Skills / SKILL.md | 0008 → 0021 → 0023 |
@@ -67,3 +67,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0043 | Honesty and safety hardening (Wave A) | accepted |
 | 0044 | Honesty pack Wave B/C (mcp, reviewer, shell lock, unread DM) | accepted |
 | 0045 | Held handoff is an engine pointer, not a wake | accepted |
+| 0046 | Unknown `@` is announced, still not a wake | accepted |

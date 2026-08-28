@@ -166,6 +166,27 @@ test("readThread shortens stored 429 JSON", async () => {
   expect(err.text).not.toContain("{");
 });
 
+test("readThread surfaces mention.ignored as a status row", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  host.store.append({
+    v: 1,
+    id: "e1",
+    ts: "t",
+    thread: { kind: "channel", id: "landing" },
+    type: "mention.ignored",
+    parent: null,
+    payload: {
+      ignored: ["ghost"],
+      text: "Unknown @ghost is not a member of this channel.",
+    },
+  });
+  const rows = readThread(host, "channel", "landing", { thinking: false, verbose: false });
+  const ignored = rows.find((r) => r && r.type === "ignored") as { text: string; ignored: string[] };
+  expect(ignored.text).toContain("@ghost");
+  expect(ignored.ignored).toEqual(["ghost"]);
+});
+
 test("readThread surfaces handoff.held as a status row", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
   const host = createHost({ cwd, provider: new ScriptedProvider([]) });

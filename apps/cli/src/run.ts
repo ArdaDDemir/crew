@@ -632,6 +632,7 @@ export async function runCli(
         text,
       });
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
+      if (result.ignored?.text) io.writeOut(`${result.ignored.text}\n`);
       if (result.held?.text) io.writeOut(`${result.held.text}\n`);
       for (const dm of result.dms) {
         io.writeOut(`dm: ${dm.threadId}\n`);
@@ -789,6 +790,7 @@ export async function runCli(
           text: trimmed,
         });
         printReplies(io, result.replies.filter((r) => !r.text && !r.error));
+        if (result.ignored?.text) io.writeOut(`${result.ignored.text}\n`);
         if (result.held?.text) io.writeOut(`${result.held.text}\n`);
       }
       return 0;

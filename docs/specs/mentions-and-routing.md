@@ -10,7 +10,7 @@ In a message body, a mention is `@` + a member slug:
 - `@coder`
 - `@everyone` — every **bot** member of that channel (not a license to skip permissions)
 
-Unknown `@foo` is ignored for routing (it may still appear as text). It does not error the post.
+Unknown `@foo` is ignored for routing (it may still appear as text). It does not error the post. The engine records `mention.ignored` so the human sees it was not a wake (`ADR-0046`). A bot who exists but is not in this channel is the same.
 
 Mentions are case-insensitive. Slugs are `[a-z][a-z0-9-]*`.
 
