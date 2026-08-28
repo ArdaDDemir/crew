@@ -10,6 +10,11 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Added
+
+- **`dist/latest.json`** (`ADR-0040`): `bun run desktop:build` writes `{ version, notes, url, platforms }` next to the installers. Relative `url` in that file is resolved against the hosted `latest.json` path. Optional `CREW_RELEASE_BASE` prefixes GitHub-style absolute URLs. Still no silent install.
+- `GET /api/health` includes `version`.
+
 ## [0.5.0] - 2026-08-28
 
 MCP resources/prompts, Windows MSI, opt-in update check, Crew.exe tray.

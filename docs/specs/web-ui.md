@@ -10,7 +10,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 
 | Method | Path | What |
 |---|---|---|
-| GET | `/api/health` | `{ ok: true }` |
+| GET | `/api/health` | `{ ok: true, version }` |
 | GET | `/api/bootstrap` | `version`, `updateUrl`, channels, bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
 | GET | `/api/thread?kind&id` | messages / thinking / tools / shortened errors |
 | POST | `/api/say` | NDJSON stream (`text`, `thinking`, `tool`, `ask`, `done`) |
@@ -28,7 +28,7 @@ Sidecar / CLI flags (also `crew-server.exe`): `--cwd <dir>` `--port <n>` `--publ
 | DELETE | `/api/permissions` | no query = clear all; `?tool=&key=` deletes one row |
 | POST | `/api/permission` | `allow` \| `deny` \| `always` |
 | GET | `/api/models?q=` | OpenRouter catalog search |
-| POST | `/api/key` `/api/model` `/api/fallback` `/api/allowed-models` `/api/mode` `/api/base-url` `/api/default-mode` `/api/auto-compact` `/api/reviewer` `/api/update-url` `/api/update-check` | config. `update-url` writes `~/.crew/config.json` `updateUrl` (https; http on localhost). `update-check` `{ status: disabled\|current\|available\|error }` — no self-install (`ADR-0039`) |
+| POST | `/api/key` `/api/model` `/api/fallback` `/api/allowed-models` `/api/mode` `/api/base-url` `/api/default-mode` `/api/auto-compact` `/api/reviewer` `/api/update-url` `/api/update-check` | config. `update-url` writes `~/.crew/config.json` `updateUrl` (https; http on localhost). `update-check` `{ status: disabled\|current\|available\|error }` — no self-install. Relative download URLs resolve against the `latest.json` URL (`ADR-0039`, `ADR-0040`) |
 | GET/PUT | `/api/providers` | `.crew/providers.json` `{ openrouter, claude, codex, grok, opencode }` each harness `{ enabled, binary, customModels: string[] }` |
 | GET | `/api/providers/health` | `{ cards }` with `installed`, `version`, `status` (`ready`\|`installed`\|`missing`\|`off`), `login`. PATH + `--version` (3s). Also looks in `%USERPROFILE%\.local\bin` (native Claude), npm, WinGet Links, scoop shims. Does not block bootstrap. |
 | GET | `/api/providers/models` | `{ openrouter, claude, codex, grok, opencode }` each `{ id, label }[]`. OpenRouter = whitelist. Harness lists: `customModels` first, then CLI (`grok models`, `opencode models`, Claude `--help` aliases, Codex `~/.codex/models_cache.json`) plus current fallbacks. Cached 60s; cleared on `PUT /api/providers`. |

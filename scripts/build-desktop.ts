@@ -1,5 +1,7 @@
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { changelogNotesForVersion, writeReleaseManifest } from "../apps/web/src/update";
+import { CREW_VERSION } from "../apps/web/src/version";
 
 const root = join(import.meta.dir, "..");
 const tauriDir = join(root, "apps", "desktop", "src-tauri");
@@ -76,3 +78,22 @@ if (existsSync(msiDir)) {
   cpSync(msiDir, out, { recursive: true });
   console.log(`MSI installer   ${out}`);
 }
+
+function firstFile(dir: string, re: RegExp): string | undefined {
+  if (!existsSync(dir)) return undefined;
+  const names = readdirSync(dir).filter((name) => re.test(name));
+  return names.find((name) => name.includes(CREW_VERSION)) ?? names[0];
+}
+const nsisName = firstFile(join(root, "dist", "crew-windows-nsis"), /\.exe$/i);
+const msiName = firstFile(join(root, "dist", "crew-windows-msi"), /\.msi$/i);
+const changelog = existsSync(join(root, "CHANGELOG.md"))
+  ? readFileSync(join(root, "CHANGELOG.md"), "utf8")
+  : "";
+const latest = writeReleaseManifest(join(root, "dist"), {
+  version: CREW_VERSION,
+  notes: changelogNotesForVersion(changelog, CREW_VERSION),
+  msi: msiName,
+  nsis: nsisName,
+  baseUrl: process.env.CREW_RELEASE_BASE,
+});
+console.log(`latest.json     ${latest}`);

@@ -52,6 +52,7 @@ import {
 import { flagsFromArgv, parseServerArgv, resolvePublicDir } from "./argv";
 import { loadJobs, parseJobsBody, saveJobs } from "./jobs";
 import { loadDmPrefs, parseDmPrefsBody, saveDmPrefs } from "./dm-prefs";
+import { CREW_VERSION } from "./version";
 
 export type ServerOpts = {
   cwd?: string;
@@ -147,7 +148,7 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   const path = url.pathname;
 
   if (req.method === "GET" && path === "/api/health") {
-    return json({ ok: true });
+    return json({ ok: true, version: CREW_VERSION });
   }
   if (req.method === "GET" && path === "/api/bootstrap") {
     return json(snapshot(host));

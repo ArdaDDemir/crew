@@ -40,6 +40,7 @@ test("bootstrap lists channels and health is ok", async () => {
   try {
     const health = await (await fetch(`${url}/api/health`)).json();
     expect(health.ok).toBe(true);
+    expect(health.version).toMatch(/^\d+\.\d+\.\d+$/);
     const boot = await (await fetch(`${url}/api/bootstrap`)).json();
     expect(boot.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(boot.updateUrl).toBe("");

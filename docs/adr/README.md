@@ -12,8 +12,8 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | Skills / SKILL.md | 0008 → 0021 → 0023 |
 | JSONL / compact / delete | 0004 → 0018, 0019 → **0028**; titled/jobs → **0029** → 0031 |
 | Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) |
-| Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** |
-| Desktop window | **0032** → **0039** (tray + opt-in updates) |
+| Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** |
+| Desktop window | **0032** → **0039** (tray + opt-in updates) → **0040** (`latest.json`) |
 | Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) |
 | Org tools / reserved ids | 0022 |
 | Version / law file | 0006, 0010 |
@@ -60,4 +60,5 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0036 | MCP stdio servers add tools on Crew-native turns | accepted; qualified by **0037**, **0038** |
 | 0037 | CLI parity, harness permission map, MCP URL/env, Windows NSIS | accepted |
 | 0038 | MCP resources and prompts become Crew tools | accepted |
-| 0039 | Opt-in update check and Crew.exe tray | accepted |
+| 0039 | Opt-in update check and Crew.exe tray | accepted; qualified by **0040** |
+| 0040 | `desktop:build` writes `dist/latest.json`; relative download URLs | accepted |

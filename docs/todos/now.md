@@ -13,6 +13,10 @@ Office UI + Crew.exe, People accordion, drag-split, Providers picker, Jobs, harn
 
 See `CHANGELOG.md` `[0.4.0]`.
 
+## In ([Unreleased])
+
+`dist/latest.json` from `desktop:build`; relative download URLs (`ADR-0040`). `GET /api/health` has `version`.
+
 ## In (0.5.0)
 
 MCP **resources/prompts** as Crew tools (`ADR-0038`). `desktop:build` also tries a **MSI**. Opt-in About **Check for updates** + Crew.exe **tray** (`ADR-0039`).
@@ -25,7 +29,7 @@ See `CHANGELOG.md` `[0.5.0]`.
 
 | Item | Why |
 |---|---|
-| Signed auto-install | Needs a public CDN + signing private key. About can Check against a URL you set |
+| Signed auto-install | Needs a public CDN + signing private key. Host `dist/latest.json` and paste its URL in About |
 | macOS / Linux bundles | We only build on this Windows machine |
 | T3 plugin marketplace | Out. MCP is the integration |
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |

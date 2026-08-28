@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 export type UpdateManifest = {
   version: string;
   notes: string;
@@ -43,7 +46,19 @@ export function asUpdateUrl(raw: unknown): string {
   }
 }
 
-export function parseUpdateManifest(raw: unknown): UpdateManifest | null {
+function resolveDownloadUrl(raw: string, source?: string): string {
+  const s = raw.trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return asUpdateUrl(s);
+  if (!source) return "";
+  try {
+    return asUpdateUrl(new URL(s, source).toString());
+  } catch {
+    return "";
+  }
+}
+
+export function parseUpdateManifest(raw: unknown, source?: string): UpdateManifest | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const row = raw as { version?: unknown; notes?: unknown; url?: unknown; platforms?: unknown };
   const version = String(row.version ?? "").trim();
@@ -55,14 +70,15 @@ export function parseUpdateManifest(raw: unknown): UpdateManifest | null {
     if (!url) {
       for (const p of Object.values(plats)) {
         const next = String(p?.url ?? "").trim();
-        if (/^https?:\/\//i.test(next)) {
+        if (next) {
           url = next;
           break;
         }
       }
     }
   }
-  if (!/^https?:\/\//i.test(url)) return null;
+  url = resolveDownloadUrl(url, source);
+  if (!url) return null;
   return { version, notes: String(row.notes ?? "").trim(), url };
 }
 
@@ -80,7 +96,7 @@ export async function checkCrewUpdate(input: {
   try {
     const res = await fetchImpl(url, { signal: ctrl.signal, headers: { Accept: "application/json" } });
     if (!res.ok) return { status: "error", error: `update check ${res.status}` };
-    const parsed = parseUpdateManifest(await res.json());
+    const parsed = parseUpdateManifest(await res.json(), url);
     if (!parsed) return { status: "error", error: "invalid update manifest" };
     if (cmpCrewVersion(input.current, parsed.version) >= 0) {
       return { status: "current", version: parsed.version };
@@ -91,4 +107,53 @@ export async function checkCrewUpdate(input: {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export type ReleaseManifestInput = {
+  version: string;
+  notes: string;
+  msi?: string;
+  nsis?: string;
+  baseUrl?: string;
+};
+
+function fileUrl(name: string, baseUrl?: string): string {
+  const file = name.replace(/\\/g, "/").split("/").pop() || name;
+  const base = String(baseUrl ?? "").trim().replace(/\/+$/, "");
+  if (!base) return file;
+  return `${base}/${file}`;
+}
+
+export function buildReleaseManifest(input: ReleaseManifestInput): {
+  version: string;
+  notes: string;
+  url: string;
+  platforms: Record<string, { url: string }>;
+} {
+  const msi = String(input.msi ?? "").trim();
+  const nsis = String(input.nsis ?? "").trim();
+  const url = fileUrl(msi || nsis, input.baseUrl);
+  const platforms: Record<string, { url: string }> = {};
+  if (msi) platforms["windows-x86_64"] = { url: fileUrl(msi, input.baseUrl) };
+  if (nsis) platforms["windows-x86_64-nsis"] = { url: fileUrl(nsis, input.baseUrl) };
+  return { version: input.version, notes: input.notes, url, platforms };
+}
+
+export function changelogNotesForVersion(md: string, version: string): string {
+  const esc = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = md.match(new RegExp(`## \\[${esc}\\][^\\n]*\\n([\\s\\S]*?)(?=\\n## \\[|$)`));
+  if (!m) return "";
+  const bullets = m[1]
+    .split(/\r?\n/)
+    .map((line) => line.match(/^[-*]\s+(.+)$/)?.[1] ?? "")
+    .map((text) => text.replace(/\*\*/g, "").replace(/`/g, "").trim())
+    .filter(Boolean);
+  return bullets.slice(0, 8).join("\n");
+}
+
+export function writeReleaseManifest(dir: string, input: ReleaseManifestInput): string {
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "latest.json");
+  writeFileSync(path, `${JSON.stringify(buildReleaseManifest(input), null, 2)}\n`, "utf8");
+  return path;
 }

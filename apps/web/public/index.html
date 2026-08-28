@@ -560,7 +560,7 @@
           <p class="field-hint">Local office. Crew.exe is this same UI in a WebView2 window — not a website, not Electron. Close hides to the tray; Quit from the tray icon exits.</p>
         </section>
         <section class="field">
-          <p class="field-label">Updates <button type="button" class="help" data-tip="JSON { version, notes, url } or a Tauri latest.json. Empty disables the check. https only (http on localhost). Crew does not install the file — you download it.">?</button></p>
+          <p class="field-label">Updates <button type="button" class="help" data-tip="Host dist/latest.json (from desktop:build) and paste its https URL here. Relative download names resolve against that file. Empty disables the check. http only on localhost. Crew does not install — Download opens the file URL.">?</button></p>
           <input id="app-update-url" placeholder="https://example.com/latest.json" spellcheck="false" />
           <div class="mcp-actions">
             <button type="button" class="ghost" id="app-update-check">Check for updates</button>

@@ -1,5 +1,17 @@
 import { expect, test } from "bun:test";
-import { asUpdateUrl, checkCrewUpdate, cmpCrewVersion, parseUpdateManifest } from "./update";
+import { mkdtemp } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  asUpdateUrl,
+  buildReleaseManifest,
+  changelogNotesForVersion,
+  checkCrewUpdate,
+  cmpCrewVersion,
+  parseUpdateManifest,
+  writeReleaseManifest,
+} from "./update";
 
 test("cmpCrewVersion orders 0.x minors", () => {
   expect(cmpCrewVersion("0.4.0", "0.5.0")).toBe(-1);
@@ -46,6 +58,52 @@ test("checkCrewUpdate reports available when manifest is newer", async () => {
     notes: "MSI",
     url: "https://example.com/Crew.msi",
   });
+});
+
+test("parseUpdateManifest resolves relative url against the latest.json location", () => {
+  const got = parseUpdateManifest(
+    { version: "0.5.1", notes: "fix", url: "Crew_0.5.1_x64_en-US.msi" },
+    "https://example.com/crew/latest.json",
+  );
+  expect(got?.url).toBe("https://example.com/crew/Crew_0.5.1_x64_en-US.msi");
+});
+
+test("buildReleaseManifest prefers the MSI filename and can prefix a release base", () => {
+  expect(
+    buildReleaseManifest({
+      version: "0.5.0",
+      notes: "tray",
+      msi: "Crew_0.5.0_x64_en-US.msi",
+      nsis: "Crew_0.5.0_x64-setup.exe",
+    }).url,
+  ).toBe("Crew_0.5.0_x64_en-US.msi");
+  expect(
+    buildReleaseManifest({
+      version: "0.5.0",
+      notes: "tray",
+      msi: "Crew.msi",
+      baseUrl: "https://github.com/a/b/releases/download/v0.5.0",
+    }).url,
+  ).toBe("https://github.com/a/b/releases/download/v0.5.0/Crew.msi");
+});
+
+test("changelogNotesForVersion reads Added bullets for that version", () => {
+  const md = `# Changelog\n\n## [Unreleased]\n\n## [0.5.0] - 2026-08-28\n\n### Added\n\n- **Tray** hides the window.\n- **MSI** installer.\n\n## [0.4.0] - 2026-08-28\n\n- old\n`;
+  expect(changelogNotesForVersion(md, "0.5.0")).toContain("Tray");
+  expect(changelogNotesForVersion(md, "0.5.0")).not.toContain("old");
+});
+
+test("writeReleaseManifest writes dist/latest.json", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "crew-latest-"));
+  const path = writeReleaseManifest(dir, {
+    version: "0.5.0",
+    notes: "tray",
+    msi: "Crew_0.5.0_x64_en-US.msi",
+  });
+  expect(path).toBe(join(dir, "latest.json"));
+  const body = JSON.parse(readFileSync(path, "utf8")) as { version: string; url: string };
+  expect(body.version).toBe("0.5.0");
+  expect(body.url).toBe("Crew_0.5.0_x64_en-US.msi");
 });
 
 test("checkCrewUpdate reports current when versions match", async () => {
