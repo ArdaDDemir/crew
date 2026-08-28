@@ -43,4 +43,4 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
 | Extra harnesses (Cursor, Amp) | Out |
 
-Last built installers on disk are still **0.6.0** until `bun run desktop:build`. NSIS: `dist/crew-windows-nsis/`. MSI: `dist/crew-windows-msi/`. Portable: `dist/crew-windows/`.
+NSIS: `dist/crew-windows-nsis/` (`Crew_0.7.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.7.0_x64_en-US.msi`). Portable: `dist/crew-windows/`. `dist/latest.json` is 0.7.0.
