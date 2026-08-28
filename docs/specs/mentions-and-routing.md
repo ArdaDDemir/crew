@@ -36,6 +36,8 @@ A bot is not auto-woken by its own message.
 
 **Human-tagged stop (`ADR-0014`):** if the human named member bots (or `@everyone`), only those bots run. Their `@` is chat, not a wake. If the human named nobody, the **lead** may `@` workers **once**; that is the last wave. Needing the human is a stop (ask in the channel, no `@`). The next job is the next `say`.
 
+**Held pointer (`ADR-0045`):** after those waves, member `@id` in an account who did not run this `say` is recorded as `handoff.held` (English status line). Still not a wake.
+
 ## Parallel vs wait
 
 Lead example:

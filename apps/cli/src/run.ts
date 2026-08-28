@@ -632,6 +632,7 @@ export async function runCli(
         text,
       });
       printReplies(io, result.replies.filter((r) => !r.text && !r.error));
+      if (result.held?.text) io.writeOut(`${result.held.text}\n`);
       for (const dm of result.dms) {
         io.writeOut(`dm: ${dm.threadId}\n`);
         if (dm.error) io.writeErr(`${dm.botId} ERROR: ${dm.error}\n`);
@@ -788,6 +789,7 @@ export async function runCli(
           text: trimmed,
         });
         printReplies(io, result.replies.filter((r) => !r.text && !r.error));
+        if (result.held?.text) io.writeOut(`${result.held.text}\n`);
       }
       return 0;
     }

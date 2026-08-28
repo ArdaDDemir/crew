@@ -38,7 +38,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 ## 2. Mentions, stop, handoff
 
-11. Human `@designer @coder`; designer’s account `@coder put this in`. Coder does **not** wake (`ADR-0014`). Job half-done until the next `say`.
+11. Human `@designer @coder`; designer’s account `@coder put this in`. Coder does **not** wake (`ADR-0014`). **Fixed (`ADR-0045`):** `handoff.held` + “will wait for your next message.” Next job is still the next `say`.
 12. Human no `@` → lead `@designer @coder` → workers run. Their `@tester` does **not** wake. Tester waits for a later human `say`.
 13. `@everyone` in a 4-bot room. Four parallel turns, four accounts, four possible file writes.
 14. `@Everyone` / `@CODER` — parse is case-insensitive. Fine. `@coder.` with a period — mention boundary may drop it.
@@ -107,6 +107,6 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 Do now if we touch memory: **1, 2, 6, 7, 11** (conflict + unread DM pointer + half-done handoff).
 
-`ADR-0016` covers 1, 2, 7. **`ADR-0044`:** unread DM pointer is count + newest gist after last channel account (not every id). Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11 still open (half-done handoff is the stop rule). MCP tools ask on auto-accept (`ADR-0044`).
+`ADR-0016` covers 1, 2, 7. **`ADR-0044`:** unread DM pointer is count + newest gist after last channel account (not every id). Case 6: no second DM turn if they already spoke this `say`. Case 14 URL `@` is not a wake. Case 24: empty `old_text` will not clobber an existing file. Case 11: **`ADR-0045`** records the held `@` without waking. MCP tools ask on auto-accept (`ADR-0044`).
 
 `ADR-0019` covers 40 and 54 (prompt window + `thread.compacted`). `ADR-0028` adds trim + `thread.summary`. `ADR-0044`: `>` / `>>` and `git` share the `apply_patch` lock (22–25 still race other commands). Cancel is `/stop` in `crew open` and the UI Stop button.

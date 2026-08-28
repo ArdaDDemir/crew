@@ -1806,6 +1806,11 @@ async function openThread(kind, id) {
         text: row.text,
         kind: "error",
       });
+    } else if (row.type === "held") {
+      const li = document.createElement("li");
+      li.className = "status";
+      li.textContent = row.text;
+      els.log?.append(li);
     }
   }
   if (currentTurn) currentTurn.sealed = true;
@@ -3468,6 +3473,12 @@ async function onComposerSubmit(ev) {
               kind: "error",
             });
           } else if (row.type === "done") {
+            if (row.held?.text) {
+              const li = document.createElement("li");
+              li.className = "status";
+              li.textContent = row.held.text;
+              els.log?.append(li);
+            }
             if (currentTurn) currentTurn.sealed = true;
             state.bootstrap = await (await api("/api/bootstrap")).json();
             markRead(runKind, runId);

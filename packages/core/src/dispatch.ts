@@ -63,6 +63,7 @@ export async function dispatchChannelPost(
   woken: string[];
   replies: { botId: string; text: string; error?: string }[];
   dms: { threadId: string; botId: string; text: string; error?: string }[];
+  held?: { waiting: string[]; text: string };
 }> {
   const posted = await postToChannel({
     store: input.store,
@@ -172,6 +173,39 @@ export async function dispatchChannelPost(
     allowHandoff = false;
   }
 
+  const waiting: string[] = [];
+  const seenWait = new Set<string>();
+  const members = channel?.memberBotIds ?? [];
+  for (const reply of replies) {
+    if (!reply.text.trim()) continue;
+    for (const id of parseMentions(reply.text)) {
+      const ids = id === "everyone" ? members : [id];
+      for (const mid of ids) {
+        if (!members.includes(mid) || spoken.has(mid) || seenWait.has(mid)) continue;
+        seenWait.add(mid);
+        waiting.push(mid);
+      }
+    }
+  }
+  let held: { waiting: string[]; text: string } | undefined;
+  if (waiting.length) {
+    const names = waiting.map((id) => `@${id}`).join(", ");
+    const text =
+      waiting.length === 1
+        ? `${names} was mentioned and will wait for your next message.`
+        : `${names} were mentioned and will wait for your next message.`;
+    held = { waiting, text };
+    input.store.append({
+      v: 1,
+      id: input.nextId(),
+      ts: input.now(),
+      thread: { kind: "channel", id: input.channelId },
+      type: "handoff.held",
+      parent: null,
+      payload: { waiting, text },
+    });
+  }
+
   const dms: { threadId: string; botId: string; text: string; error?: string }[] = [];
   const dmSeen = new Set<string>();
   for (const item of pendingDms) {
@@ -208,7 +242,7 @@ export async function dispatchChannelPost(
     });
   }
 
-  return { woken: posted.woken, replies, dms };
+  return { woken: posted.woken, replies, dms, held };
 }
 
 export async function dispatchDm(

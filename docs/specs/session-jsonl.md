@@ -38,6 +38,7 @@ For `dm`, `thread.id` is `botA__botB` (sorted) or `human__bot`. Extra human chat
 | `thread.compacted` | engine (`ADR-0019`; prompt window, JSONL stays) |
 | `thread.summary` | engine (`ADR-0028`; LLM compact, JSONL stays) |
 | `thread.titled` | engine (`ADR-0029`; DM title job, JSONL stays) |
+| `handoff.held` | engine (`ADR-0045`; member `@` in an account who did not run this `say`) |
 
 `message.posted` from a bot is the **account** after desk work (`ADR-0012`). Tool-round mutter stays in `assistant.delta`, not in `message.posted`.
 

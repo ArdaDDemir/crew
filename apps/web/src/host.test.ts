@@ -166,6 +166,27 @@ test("readThread shortens stored 429 JSON", async () => {
   expect(err.text).not.toContain("{");
 });
 
+test("readThread surfaces handoff.held as a status row", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  host.store.append({
+    v: 1,
+    id: "e1",
+    ts: "t",
+    thread: { kind: "channel", id: "landing" },
+    type: "handoff.held",
+    parent: null,
+    payload: {
+      waiting: ["coder"],
+      text: "@coder was mentioned and will wait for your next message.",
+    },
+  });
+  const rows = readThread(host, "channel", "landing", { thinking: false, verbose: false });
+  const held = rows.find((r) => r && r.type === "held") as { text: string; waiting: string[] };
+  expect(held.text).toContain("@coder");
+  expect(held.waiting).toEqual(["coder"]);
+});
+
 test("loadJobs missing file returns empty-model defaults", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
   const host = createHost({ cwd, provider: new ScriptedProvider([]) });

@@ -98,6 +98,23 @@ test("bot create, channel create, say wakes mentioned bots and prints replies", 
   expect(said.stdout.indexOf("woke:")).toBeLessThan(said.stdout.indexOf("designer:"));
 });
 
+test("say prints held handoff for @ that will not wake", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const said = await cli(cwd, ["say", "landing", "@designer hero yaz"], {
+    provider: {
+      async *complete() {
+        yield { type: "text-delta", text: "hero done @coder put this in" };
+        yield { type: "done" };
+      },
+    },
+  });
+  expect(said.code).toBe(0);
+  expect(said.stdout).toContain("woke: designer");
+  expect(said.stdout).toContain("@coder was mentioned and will wait for your next message.");
+  expect(said.stdout).not.toMatch(/\ncoder:/);
+});
+
 test("say without mention wakes the lead", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
   await setupLanding(cwd);

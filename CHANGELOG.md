@@ -10,6 +10,10 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Added
+
+- **Held handoff** (`ADR-0045`): if an account `@coder` after the human already named other bots, Crew does not wake coder. It posts `handoff.held` and an English status line: `@coder was mentioned and will wait for your next message.`
+
 ## [0.7.0] - 2026-08-28
 
 Honesty pack Wave A (`ADR-0043`) and Wave B/C (`ADR-0044`). MCP initialize reports the package version. CLI `woke:` prints before live accounts.

@@ -405,6 +405,16 @@ export function readThread(
           text: shortenChatError(String(event.payload.message ?? "")),
         };
       }
+      if (event.type === "handoff.held") {
+        return {
+          type: "held" as const,
+          ts: event.ts,
+          text: String(event.payload.text ?? ""),
+          waiting: Array.isArray(event.payload.waiting)
+            ? event.payload.waiting.map((id) => String(id))
+            : [],
+        };
+      }
       return null;
     })
     .filter(Boolean);

@@ -7,7 +7,7 @@ This is **not** a Discord API bot, **not** a Claude Code/Codex wrapper, **not** 
 - Product: local multi-bot runtime (`crew` **0.7.0**). Channels + `@` wake + DMs. Surface: `bun run ui` or Crew.exe; CLI is tests/scripts.
 - Stack: TypeScript + Bun. `bun test`. Desktop window: Tauri 2 + WebView2 (`ADR-0032`).
 - TDD: failing test first.
-- Architecture change: `docs/adr/` (do not rewrite accepted ADRs; next number in `docs/adr/README.md`; next is **0045**).
+- Architecture change: `docs/adr/` (do not rewrite accepted ADRs; next number in `docs/adr/README.md`; next is **0046**).
 - User-visible: `CHANGELOG.md` `[Unreleased]`.
 - `packages/core`: no `fetch`, no CLI, no Discord. Fake provider in tests.
 - Mentions: no `@` → no turn, except a human post with no mention wakes the channel lead. `@` inside fenced or inline code is not a wake (`ADR-0043`).

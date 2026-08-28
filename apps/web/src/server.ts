@@ -650,6 +650,7 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         type: "done",
         woken: result.woken,
         dms: result.dms.map((d) => ({ threadId: d.threadId, botId: d.botId })),
+        held: result.held ?? null,
       });
     });
   }

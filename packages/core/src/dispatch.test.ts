@@ -123,6 +123,43 @@ test("a bot that already spoke this say is not woken again by courtesy @", async
   expect(who).toEqual(["designer", "coder"]);
 });
 
+test("human-tagged say holds @ of member bots who did not run", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "designer", name: "Designer" });
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "designer",
+    memberBotIds: ["designer", "coder"],
+    permissionMode: "auto-accept",
+  });
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [{ type: "text-delta", text: "hero done @coder put this in index.html" }, { type: "done" }],
+    ]),
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@designer hero yaz",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.replies.map((r) => r.botId)).toEqual(["designer"]);
+  expect(result.held?.waiting).toEqual(["coder"]);
+  expect(result.held?.text).toMatch(/@coder/);
+  expect(result.held?.text).toMatch(/next message/i);
+  const events = store.read({ kind: "channel", id: "landing" });
+  const held = events.filter((e) => e.type === "handoff.held");
+  expect(held).toHaveLength(1);
+  expect(held[0]?.payload.waiting).toEqual(["coder"]);
+});
+
 test("dm_send does not give a second turn to a bot who already spoke this say", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

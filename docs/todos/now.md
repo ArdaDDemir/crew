@@ -3,7 +3,7 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.7.0**. Honesty pack (`ADR-0043`, `ADR-0044`) is in this release. `[Unreleased]` is empty.
+Current release: **0.7.0**. Unreleased: held handoff pointer (`ADR-0045`).
 
 ---
 
