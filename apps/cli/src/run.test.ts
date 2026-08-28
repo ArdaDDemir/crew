@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -134,6 +134,20 @@ test("mode changes the channel permission mode", async () => {
   const result = await cli(cwd, ["mode", "landing", "supervised"]);
   expect(result.code).toBe(0);
   expect(result.stdout).toContain("supervised");
+});
+
+test("mode sets a DM thread in dm-prefs.json", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await setupLanding(cwd);
+  const dm = await cli(cwd, ["dm", "human", "coder", "hello there"]);
+  expect(dm.code).toBe(0);
+  const result = await cli(cwd, ["mode", "human__coder", "supervised"]);
+  expect(result.code).toBe(0);
+  expect(result.stdout).toContain("supervised");
+  const prefs = JSON.parse(readFileSync(join(cwd, ".crew", "dm-prefs.json"), "utf8")) as {
+    modes?: Record<string, string>;
+  };
+  expect(prefs.modes?.["human__coder"]).toBe("supervised");
 });
 
 test("open REPL posts lines until /quit", async () => {

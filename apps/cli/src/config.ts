@@ -9,6 +9,7 @@ export type CrewConfig = {
   allowedModels?: string[];
   baseUrl?: string;
   reviewerModel?: string;
+  defaultPermissionMode?: "supervised" | "auto-accept" | "auto" | "full-access";
 };
 
 export function userConfigPath(home: string): string {
@@ -56,7 +57,17 @@ export function mergeConfig(input: {
     allowedModels: project.allowedModels ?? user.allowedModels,
     baseUrl: input.env.CREW_BASE_URL || project.baseUrl || user.baseUrl,
     reviewerModel: (project.reviewerModel || user.reviewerModel || "").trim(),
+    defaultPermissionMode: asMode(project.defaultPermissionMode) || asMode(user.defaultPermissionMode),
   };
+}
+
+function asMode(
+  raw: unknown,
+): "supervised" | "auto-accept" | "auto" | "full-access" | undefined {
+  if (raw === "supervised" || raw === "auto-accept" || raw === "auto" || raw === "full-access") {
+    return raw;
+  }
+  return undefined;
 }
 
 export function maskKey(key: string | undefined): string {

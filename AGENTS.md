@@ -8,7 +8,7 @@ If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update t
 
 ## What this is
 
-Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.5.0**.
+Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.6.0**.
 
 Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
 
@@ -85,7 +85,7 @@ docs/specs             wire contracts
 6. **Sessions are append-only JSONL** `"v": 1`. Never rewrite a line. Compact is three layers: 80-message **window** (`thread.compacted`, `ADR-0019`), **trim** (posted-only prompt), **LLM summary** (`thread.summary`, `ADR-0028`). Titles append `thread.titled` (`ADR-0029`).
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. Core does not import `@openrouter/*` or spawn CLIs. Enabled Grok/Claude/Codex/OpenCode Person turns spawn that CLI in adapter packages (`ADR-0034`, `ADR-0035`). Jobs stay OpenRouter.
 8. **Skills = Agent Skills `SKILL.md`.** Slug name, YAML frontmatter, body in the prompt (`ADR-0021`). Channel `RULES.md` + `CONTEXT.md` every turn. `SOUL.md` is voice.
-9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.5.0**.
+9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.6.0**.
 10. **Scope.** Do not add Electron, real Discord, git-PR, `crew serve`, or a plugin marketplace unless asked this session. MCP is Settings → MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
 11. **Reserved bot ids:** `human`, `you`, `everyone`, `engine` (`ADR-0022`). Max 16 bots, 16 channels.
 12. **UI copy is English.** The human may write Turkish; bots account in English.

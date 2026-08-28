@@ -18,7 +18,7 @@ crew skill rm <bot> <name>
 crew skill copy <fromBot> <name> <toBot>
 crew channel create <id> --bots a,b [--lead id]
 crew channel list|show <id>
-crew mode <channel> <supervised|auto-accept|auto|full-access>
+crew mode <channel|dmId> <supervised|auto-accept|auto|full-access>
 crew say <channel> <text> [--thinking] [--verbose]
 crew dm <from> <to> <text>
 crew dms

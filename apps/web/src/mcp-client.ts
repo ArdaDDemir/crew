@@ -230,7 +230,7 @@ export async function openMcpSession(
   const init = (await rpc.request("initialize", {
     protocolVersion: "2024-11-05",
     capabilities: {},
-    clientInfo: { name: "crew", version: "0.5.0" },
+    clientInfo: { name: "crew", version: "0.6.0" },
   })) as { capabilities?: unknown };
   rpc.notify("notifications/initialized");
   let defs: McpToolDef[] = [];

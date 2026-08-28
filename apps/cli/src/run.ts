@@ -34,6 +34,7 @@ import { nativeTools } from "@crew/tools-native";
 import { loadMcp, writeHarnessMcpConfig, type McpServer } from "../../web/src/mcp";
 import { collectMcpSessions, type McpRpc } from "../../web/src/mcp-client";
 import { loadProviders, whichBinary } from "../../web/src/providers";
+import { dmModeOf, ensureDmMode, loadDmPrefs, saveDmPrefs, setDmMode } from "../../web/src/dm-prefs";
 import {
   defaultHome,
   maskKey,
@@ -42,6 +43,20 @@ import {
   userConfigPath,
   writeConfigFile,
 } from "./config";
+
+function setThreadMode(
+  cwd: string,
+  workspace: FsWorkspace,
+  id: string,
+  mode: PermissionMode,
+): "channel" | "dm" {
+  if (workspace.getChannel(id)) {
+    workspace.setChannelMode(id, mode);
+    return "channel";
+  }
+  saveDmPrefs(cwd, setDmMode(loadDmPrefs(cwd), id, mode));
+  return "dm";
+}
 
 const MODES = new Set<PermissionMode>([
   "supervised",
@@ -254,7 +269,7 @@ const USAGE = `crew — local multi-bot CLI
   crew skill copy <fromBot> <name> <toBot>
   crew channel create <id> --bots a,b [--lead id]
   crew channel list|show <id>
-  crew mode <channel> <supervised|auto-accept|auto|full-access>
+  crew mode <channel|dmId> <supervised|auto-accept|auto|full-access>
   crew say <channel> <text> [--thinking] [--verbose]
   crew dm <from> <to> <text>
   crew dms
@@ -340,6 +355,10 @@ export async function runCli(
     model,
     workspaceRoot: io.cwd,
     ask,
+    permissionModeFor: (thread: { kind: "channel" | "dm"; id: string }) => {
+      if (thread.kind === "channel") return workspace.getChannel(thread.id)?.permissionMode;
+      return dmModeOf(loadDmPrefs(io.cwd), thread.id, "auto-accept");
+    },
     hasReviewer: Boolean((cfg.reviewerModel ?? "").trim()),
     review: (cfg.reviewerModel ?? "").trim()
       ? (async ({ tool, args }) => {
@@ -578,13 +597,13 @@ export async function runCli(
       const mode = rest[0] as PermissionMode | undefined;
       if (!channelId || !mode || !MODES.has(mode)) {
         throw new Error(
-          "usage: crew mode <channel> <supervised|auto-accept|auto|full-access>",
+          "usage: crew mode <channel|dmId> <supervised|auto-accept|auto|full-access>",
         );
       }
-      if (mode === "auto") {
+      if (mode === "auto" && !(cfg.reviewerModel ?? "").trim()) {
         io.writeErr("auto has no reviewer model; behaving as supervised\n");
       }
-      workspace.setChannelMode(channelId, mode);
+      setThreadMode(io.cwd, workspace, channelId, mode);
       io.writeOut(`mode: ${mode}\n`);
       return 0;
     }
@@ -594,7 +613,7 @@ export async function runCli(
       const text = rest.join(" ");
       if (!channelId || !text) throw new Error("usage: crew say <channel> <text>");
       const channel = workspace.getChannel(channelId);
-      if (channel?.permissionMode === "auto") {
+      if (channel?.permissionMode === "auto" && !(cfg.reviewerModel ?? "").trim()) {
         io.writeErr("auto has no reviewer model; behaving as supervised\n");
       }
       const mode = (channel?.permissionMode as CrewPermissionMode) || "auto-accept";
@@ -659,10 +678,25 @@ export async function runCli(
         connect: deps.mcpConnect,
       });
       try {
+      const dmId = dmThreadId(party(a), party(b));
+      const existed = store.read({ kind: "dm", id: dmId }).length > 0;
+      const prefs = loadDmPrefs(io.cwd);
+      const mode = existed
+        ? dmModeOf(prefs, dmId, "auto-accept")
+        : dmModeOf(
+            saveDmPrefs(
+              io.cwd,
+              ensureDmMode(prefs, dmId, cfg.defaultPermissionMode ?? "auto-accept"),
+            ),
+            dmId,
+            "auto-accept",
+          );
       const result = await dispatchDm({
         ...dispatchBase(),
         tools: [...tools, ...mcp.tools],
-        providerForBot: (botId) => bindHarness(io.cwd, workspace, botId, "auto-accept", deps),
+        providerForBot: (botId) => bindHarness(io.cwd, workspace, botId, mode, deps),
+        permissionModeFor: (thread) =>
+          thread.kind === "dm" ? dmModeOf(loadDmPrefs(io.cwd), thread.id, "auto-accept") : undefined,
         from: party(a),
         to: party(b),
         text,
@@ -742,10 +776,10 @@ export async function runCli(
             io.writeErr("unknown mode\n");
             continue;
           }
-          if (mode === "auto") {
+          if (mode === "auto" && !(cfg.reviewerModel ?? "").trim()) {
             io.writeErr("auto has no reviewer model; behaving as supervised\n");
           }
-          workspace.setChannelMode(channelId, mode);
+          setThreadMode(io.cwd, workspace, channelId, mode);
           io.writeOut(`mode: ${mode}\n`);
           continue;
         }

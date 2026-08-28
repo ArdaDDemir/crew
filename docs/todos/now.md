@@ -3,7 +3,7 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.5.0**.
+Current release: **0.6.0**.
 
 ---
 
@@ -13,9 +13,11 @@ Office UI + Crew.exe, People accordion, drag-split, Providers picker, Jobs, harn
 
 See `CHANGELOG.md` `[0.4.0]`.
 
-## In ([Unreleased])
+## In (0.6.0)
 
-`dist/latest.json` from `desktop:build`; relative download URLs (`ADR-0040`). `GET /api/health` has `version`. DM permission mode (`ADR-0041`). `auto` reviewerModel (`ADR-0042`).
+`dist/latest.json` from `desktop:build`; relative download URLs (`ADR-0040`). `GET /api/health` has `version`. DM permission mode (`ADR-0041`). `auto` reviewerModel (`ADR-0042`). `crew mode <dmId>`.
+
+See `CHANGELOG.md` `[0.6.0]`.
 
 ## In (0.5.0)
 
@@ -35,4 +37,4 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS installer: `dist/crew-windows-nsis/` (`Crew_0.5.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.5.0_x64_en-US.msi`). Tauri can download NSIS/WiX into the build cache. Portable folder `dist/crew-windows/` always.
+NSIS installer: `dist/crew-windows-nsis/` (`Crew_0.6.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.6.0_x64_en-US.msi`). Tauri can download NSIS/WiX into the build cache. Portable folder `dist/crew-windows/` always.

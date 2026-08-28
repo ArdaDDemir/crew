@@ -4,7 +4,7 @@ You must follow **[AGENTS.md](./AGENTS.md)**. Read it before any edit. It is the
 
 This is **not** a Discord API bot, **not** a Claude Code/Codex wrapper, **not** Electron.
 
-- Product: local multi-bot runtime (`crew` **0.5.0**). Channels + `@` wake + DMs. Surface: `bun run ui` or Crew.exe; CLI is tests/scripts.
+- Product: local multi-bot runtime (`crew` **0.6.0**). Channels + `@` wake + DMs. Surface: `bun run ui` or Crew.exe; CLI is tests/scripts.
 - Stack: TypeScript + Bun. `bun test`. Desktop window: Tauri 2 + WebView2 (`ADR-0032`).
 - TDD: failing test first.
 - Architecture change: `docs/adr/` (do not rewrite accepted ADRs; next number in `docs/adr/README.md`; current **0036**).
