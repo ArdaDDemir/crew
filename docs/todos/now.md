@@ -46,7 +46,7 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Signed auto-install | Needs a public CDN + signing private key. Host `dist/latest.json` and paste its URL in About |
 | macOS / Linux bundles | We only build on this Windows machine |
 | T3 plugin marketplace | Out. MCP is the integration |
-| Discord API / `crew serve` / computer-use | Parked `docs/todos/` |
+| Discord API / `crew serve` / computer-use | Research: `docs/todos/discord-serve-computer-use-research.md`. Still no code until ADR-0047+ |
 | Extra harnesses (Cursor, Amp) | Out |
 
 NSIS: `dist/crew-windows-nsis/` (`Crew_0.8.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.8.0_x64_en-US.msi`). Portable: `dist/crew-windows/`. `dist/latest.json` is 0.8.0.

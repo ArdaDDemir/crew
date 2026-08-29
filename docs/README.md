@@ -18,6 +18,7 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 | [todos/now.md](todos/now.md) | **Current snapshot + gaps** |
 | [todos/multi-human-remote.md](todos/multi-human-remote.md) | Parked: `crew serve` |
 | [todos/computer-use-and-browser.md](todos/computer-use-and-browser.md) | Parked: computer-use + in-app browser |
+| [todos/discord-serve-computer-use-research.md](todos/discord-serve-computer-use-research.md) | Research: Discord adapter, `crew serve`, browser/computer-use. No code until ADR-0047+ |
 | [todos/cli-is-script.md](todos/cli-is-script.md) | CLI is tests/scripts, not a TUI product |
 | [todos/desktop-app.md](todos/desktop-app.md) | Crew.exe shipped; installer later (`ADR-0032`) |
 | [superpowers/specs/](superpowers/specs/) | Product “why”. Settings/Providers/MCP: `2026-08-28-settings-providers-design.md`. Desktop: `2026-08-28-desktop-app-design.md` |
