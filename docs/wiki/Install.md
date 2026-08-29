@@ -2,8 +2,8 @@
 
 ## Windows (start here)
 
-1. Open [Crew 0.9.0](https://github.com/ArdaDDemir/crew/releases/latest).
-2. Download **Crew_0.9.0_x64-setup.exe** (NSIS) or **Crew_0.9.0_x64_en-US.msi**.
+1. Download **[Crew_0.9.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64-setup.exe)** (or the [MSI](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64_en-US.msi)).
+2. The [release page](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0) also has a portable zip.
 3. Install. WebView2 is Windows 11 / current Edge.
 4. Launch Crew. Pick a **project folder**. Crew writes `.crew/` in that folder.
 5. Settings → Providers → paste an [OpenRouter](https://openrouter.ai) API key (or another OpenAI-compatible base URL).

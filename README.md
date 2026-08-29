@@ -2,20 +2,30 @@
 
 Local multi-bot **office**. You own the channels and the people. `@coder` wakes that person; everyone else waits. They work at their desk (tools + thinking), then **give an account** in the channel. If they need you, they stop. They may DM. You can read every DM.
 
-Windows installer is on [Releases](https://github.com/ArdaDDemir/crew/releases/latest). Loopback only. Not a Discord.js bot, not Electron, not a cloud VM.
+Loopback only. Not a Discord.js bot, not Electron, not a cloud VM.
 
-[![Release](https://img.shields.io/github/v/release/ArdaDDemir/crew)](https://github.com/ArdaDDemir/crew/releases/latest)
+## Download (Windows)
 
-**[Download Crew for Windows](https://github.com/ArdaDDemir/crew/releases/latest)** — `Crew_0.9.0_x64-setup.exe` (NSIS) or the MSI. Portable zip is on the same page.
+| | |
+|---|---|
+| **Installer** | [Crew_0.9.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64-setup.exe) |
+| MSI | [Crew_0.9.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64_en-US.msi) |
+| Portable zip | [Crew-0.9.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew-0.9.0-windows-portable.zip) |
+
+All files: [github.com/ArdaDDemir/crew/releases/tag/v0.9.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0)
+
+WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Providers: [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
 
 ![Crew office](docs/assets/office.png)
+
+![2.5D floor](docs/assets/floor.png)
 
 ## What you get
 
 | | |
 |---|---|
 | Channels + People + Direct | Discord-like rail. `@` is the scheduler. |
-| 2.5D floor | Members desk: glass room, PCs, walk, doors, furniture, looks. |
+| 2.5D floor | Glass room, PCs, walk, doors, furniture, looks. Click a person to DM. |
 | Crew.exe | Tauri + WebView2 window. Same office as `bun run ui`. |
 | Split panes | Drag a chat to the right. Max two in-page panes. |
 | Jobs | Settings → Title / Compact / Vision / Read (not extra People). |
@@ -29,16 +39,19 @@ Default permission is **auto-accept** (workspace file writes + workspace shell).
 
 ![Split panes](docs/assets/split.png)
 
-## Install (Windows)
+![Settings](docs/assets/settings.png)
 
-1. From [Releases](https://github.com/ArdaDDemir/crew/releases/latest) download **Crew_0.9.0_x64-setup.exe**.
-2. Install. WebView2 is Windows 11 / current Edge.
-3. Open a project folder. Crew writes `.crew/` there.
-4. Settings → Providers: paste an [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
+![Phone](docs/assets/mobile.png)
 
-MSI: `Crew_0.9.0_x64_en-US.msi`. Portable: unzip next to `Crew.exe` + `crew-server.exe` + `public/`.
+## Install
 
-Wiki: [Install](docs/wiki/Install.md) · [Office](docs/wiki/Office.md) · [Discord](docs/wiki/Discord.md)
+1. Download **Crew_0.9.0_x64-setup.exe** from the table above.
+2. Install and launch Crew. Pick a **project folder** (Crew writes `.crew/` there).
+3. Settings → Providers → paste your API key.
+
+Portable: unzip so `Crew.exe`, `crew-server.exe`, and `public/` sit together.
+
+Wiki: [Home](docs/wiki/Home.md) · [Install](docs/wiki/Install.md) · [Office](docs/wiki/Office.md) · [Discord](docs/wiki/Discord.md) · [GitHub wiki](https://github.com/ArdaDDemir/crew/wiki)
 
 ## Run from source
 
