@@ -20,7 +20,16 @@ function run(cmd: string[], cwd: string) {
 mkdirSync(releaseDir, { recursive: true });
 console.log("compile crew-server.exe");
 run(
-  [bun, "build", "--compile", join(root, "apps", "web", "src", "server.ts"), "--outfile", sidecar],
+  [
+    bun,
+    "build",
+    "--compile",
+    "--external",
+    "playwright",
+    join(root, "apps", "web", "src", "server.ts"),
+    "--outfile",
+    sidecar,
+  ],
   root,
 );
 cpSync(publicSrc, join(releaseDir, "public"), { recursive: true });

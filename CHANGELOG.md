@@ -49,6 +49,7 @@ Humans, Discord, isolated browser, guest lock, 2.5D floor. Loopback only. Not `0
 
 ### Fixed
 
+- `desktop:build` compiles `crew-server.exe` with `--external playwright`. Chromium stays `bunx playwright install chromium`; missing Chromium is `browser unavailable` (ADR-0054).
 - `crew dms show` on a thread that was never opened exits 1 with `unknown dm`, like `crew say` on an unknown channel.
 - `apply_patch` miss includes a current-file excerpt; duplicate `old_text` asks for a unique hunk.
 - `shell` that hits the 30s cap returns `timed out after 30000ms` instead of a silent hang.

@@ -55,4 +55,4 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Public bind / live desktop mouse | Research: `docs/todos/discord-serve-computer-use-research.md`. Browser tools are in (`ADR-0050`). `0.0.0.0` and interactive-desktop mouse still parked |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS/MSI/portable under `dist/` are rebuilt by `bun run desktop:build`. Last built artifacts on this machine may still say 0.8.0 until that runs for 0.9.0.
+NSIS/MSI/portable under `dist/` are rebuilt by `bun run desktop:build`. This machine has `Crew_0.9.0_x64-setup.exe`, `Crew_0.9.0_x64_en-US.msi`, and `dist/crew-windows/`.
