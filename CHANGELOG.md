@@ -16,6 +16,8 @@ See `docs/versioning.md`.
 
 ### Changed
 
+- 2.5D floor: enclosed room (left wall), 3-face glass bay, legs, hoodie/polo silhouette, name tags no longer clip, isometric desks.
+- 2.5D floor: window and ceiling, diamond carpet, ground shadows, walk facing + step, isometric sofa/plant/lamp, richer glass bay and PCs.
 - 2.5D floor: stationary PC desks, chunkier characters, glass/carpet depth, door plaques, compact member list.
 - Floor furniture loads once per room (no GET on every presence tick). You look PUT is debounced.
 - Floor hint: Click carpet to walk · a person to DM. Holding a kind: Click to place · Esc to cancel. Copy cursor while placing.

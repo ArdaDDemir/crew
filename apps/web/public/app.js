@@ -1580,16 +1580,18 @@ function applyFloorLook(root, id) {
     hair.className = "floor-hair hair-none";
     holder.prepend(hair);
   }
+  holder.classList.remove("top-hoodie", "top-tee", "top-polo", "top-sweater");
   if (!look) {
     hair.className = "floor-hair hair-none";
     return;
   }
   if (head) {
     head.style.background = LOOK_SKIN[look.skin] || LOOK_SKIN.mid;
-    head.style.color = "#1a120c";
+    head.style.color = "transparent";
   }
   if (body) body.style.background = LOOK_TOP[look.top] || LOOK_TOP.tee;
   hair.className = `floor-hair hair-${look.hair || "none"}`;
+  holder.classList.add(`top-${look.top || "tee"}`);
 }
 
 function fillYouLookSelects() {
@@ -1697,6 +1699,12 @@ function walkYou(x, y) {
   const you = document.getElementById("floor-you");
   if (!you) return;
   const at = clampFloor(x, y);
+  const prevX = parseFloat(you.style.left) || 36;
+  you.classList.toggle("face-left", at.x < prevX - 2);
+  you.classList.toggle("face-right", at.x > prevX + 2);
+  you.classList.add("walking");
+  clearTimeout(you._walkTimer);
+  you._walkTimer = setTimeout(() => you.classList.remove("walking"), 480);
   you.style.left = `${at.x}px`;
   you.style.top = `${at.y}px`;
   you.style.zIndex = String(8 + Math.round(at.y / 12));
@@ -1925,18 +1933,20 @@ function ensureFloorSeat(id, leadId) {
   char.className = "floor-char";
   const head = document.createElement("span");
   head.className = "floor-head";
-  head.textContent = face.glyph;
   head.style.background = face.bg;
-  head.style.color = face.fg;
   const body = document.createElement("span");
   body.className = "floor-body";
   body.style.background = face.fg;
-  char.append(head, body);
+  const legs = document.createElement("span");
+  legs.className = "floor-legs";
+  char.append(head, body, legs);
   const tag = document.createElement("span");
   tag.className = "floor-tag";
   const bubble = document.createElement("span");
   bubble.className = "floor-bubble";
-  btn.append(char, tag, bubble);
+  const shadow = document.createElement("span");
+  shadow.className = "floor-shadow";
+  btn.append(shadow, char, tag, bubble);
   btn.onclick = (ev) => {
     ev.stopPropagation();
     paneOpen(state.activePane, "dm", `human__${id}`);
@@ -1993,7 +2003,7 @@ function renderFloor(hereIds, leadId) {
     btn.setAttribute("aria-label", `${displayName(id)}, ${doing}`);
     const tag = btn.querySelector(".floor-tag");
     if (tag) {
-      tag.textContent = leadId && id === leadId ? `${displayName(id)} · lead` : displayName(id);
+      tag.textContent = displayName(id);
     }
     const bubble = btn.querySelector(".floor-bubble");
     if (bubble) bubble.textContent = pose === "idle" ? "" : doing;

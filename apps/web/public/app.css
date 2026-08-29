@@ -1140,17 +1140,29 @@ svg.ico {
   border-radius: 10px;
   overflow: hidden;
   background: #1a1410;
+  box-shadow: inset 0 1px 0 #3d2a1c;
 }
 .floor-scene {
   position: relative;
-  height: 248px;
+  height: 280px;
   overflow: hidden;
   cursor: pointer;
   background:
-    linear-gradient(180deg, #5a3d2a 0 48px, #3d291c 48px 52px, #2a4f6e 52px);
+    linear-gradient(180deg, #3a281c 0 14px, #5a3d2a 14px 58px, #3d291c 58px 62px, #1e4a66 62px);
 }
 .floor-scene.holding {
   cursor: copy;
+}
+.floor-ceiling {
+  position: absolute;
+  left: 0;
+  right: 48px;
+  top: 0;
+  height: 12px;
+  z-index: 14;
+  background: linear-gradient(180deg, #7a5a3c, #4a3424);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
 }
 .floor-hint {
   margin: 0;
@@ -1162,13 +1174,44 @@ svg.ico {
   position: absolute;
   left: 0;
   right: 52px;
-  top: 0;
-  height: 48px;
+  top: 10px;
+  height: 46px;
   background:
-    linear-gradient(90deg, #c4a06a 0 2px, transparent 2px),
+    repeating-linear-gradient(90deg, #8b6240 0 10px, #7a5536 10px 11px),
     linear-gradient(180deg, #9a7350, #6e5138);
-  border-bottom: 4px solid #3d2a1c;
-  box-shadow: inset 0 -10px 0 #5a3d28;
+  border-bottom: 5px solid #3d2a1c;
+  box-shadow: inset 0 -12px 0 #5a3d28;
+}
+.floor-window {
+  position: absolute;
+  right: 18px;
+  top: 8px;
+  width: 54px;
+  height: 26px;
+  background: linear-gradient(180deg, #9ad4f0 0 40%, #3a88b8);
+  border: 2px solid #3d2412;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 10px rgba(120, 200, 230, 0.25);
+  pointer-events: none;
+}
+.floor-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 46%, #3d2412 46% 54%, transparent 54%),
+    linear-gradient(180deg, transparent 46%, #3d2412 46% 54%, transparent 54%);
+}
+.floor-wall-left {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 28px;
+  bottom: 0;
+  z-index: 4;
+  background: linear-gradient(90deg, #2a1810, #6b4a34 70%, #4a3424);
+  clip-path: polygon(0 0, 100% 10%, 100% 100%, 0 100%);
+  box-shadow: inset -4px 0 0 rgba(0, 0, 0, 0.25);
+  pointer-events: none;
 }
 .floor-wall-side {
   position: absolute;
@@ -1176,8 +1219,9 @@ svg.ico {
   top: 0;
   width: 64px;
   height: 100%;
-  background: linear-gradient(200deg, #5c4030, #3a281c);
+  background: linear-gradient(200deg, #6b4a34, #3a281c);
   clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%);
+  box-shadow: inset 8px 0 0 rgba(0, 0, 0, 0.18);
 }
 .floor-doors {
   position: absolute;
@@ -1205,13 +1249,25 @@ svg.ico {
 }
 .floor-door-slab {
   display: block;
+  position: relative;
   width: 28px;
   height: 36px;
   margin: 0 auto;
-  background: linear-gradient(180deg, #8b5a2b, #5a3516);
+  background: linear-gradient(180deg, #9a6634, #5a3516);
   border: 2px solid #3d2412;
-  border-radius: 2px 2px 0 0;
-  box-shadow: inset -6px 0 0 #6b4423;
+  border-radius: 3px 3px 0 0;
+  box-shadow: inset -7px 0 0 #6b4423, inset 0 8px 0 #c4a06a;
+}
+.floor-door-slab::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 16px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e0b84e;
+  box-shadow: 0 0 3px #e0b84e;
 }
 .floor-door-label {
   position: absolute;
@@ -1261,10 +1317,10 @@ svg.ico {
 }
 .floor-hair {
   position: absolute;
-  top: -4px;
-  width: 18px;
-  height: 8px;
-  border-radius: 6px 6px 2px 2px;
+  top: -5px;
+  width: 20px;
+  height: 9px;
+  border-radius: 7px 7px 2px 2px;
   background: #1a120c;
   z-index: 2;
   pointer-events: none;
@@ -1327,67 +1383,127 @@ svg.ico {
 }
 .floor-furn.kind-plant {
   width: 16px;
-  height: 22px;
+  height: 14px;
   background: #2f8a5b;
-  border-radius: 50% 50% 4px 4px;
-  box-shadow: 0 10px 0 -6px #6b4423;
+  border-radius: 50%;
+  box-shadow: 6px 3px 0 -3px #379a67, -5px 4px 0 -4px #246b45;
+}
+.floor-furn.kind-plant::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  bottom: -9px;
+  width: 8px;
+  height: 9px;
+  background: #8b5a2b;
+  border-radius: 1px 1px 2px 2px;
+  box-shadow: inset -2px 0 0 #5a3516;
 }
 .floor-furn.kind-lamp {
-  width: 10px;
-  height: 26px;
-  background: linear-gradient(180deg, #e0b84e 8px, #5a3516 8px);
-  border-radius: 4px 4px 2px 2px;
-  box-shadow: 0 0 10px #e0b84e88;
+  width: 6px;
+  height: 16px;
+  background: #5a3516;
+  border-radius: 1px;
+  box-shadow: 0 0 12px #e0b84e66;
+}
+.floor-furn.kind-lamp::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: -10px;
+  width: 20px;
+  height: 12px;
+  background: radial-gradient(circle at 50% 30%, #ffe08a, #e0b84e 60%, #b8860b);
+  border-radius: 50% 50% 4px 4px;
+  box-shadow: 0 0 16px #e0b84ecc;
 }
 .floor-furn.kind-sofa {
-  width: 36px;
+  width: 38px;
   height: 16px;
-  background: #6b3a5a;
+  background: #7a4468;
   border: 2px solid #3d1e32;
-  border-radius: 4px;
+  border-radius: 3px 3px 5px 5px;
+  transform: skewX(-10deg);
+}
+.floor-furn.kind-sofa::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: -9px;
+  height: 10px;
+  background: #5a2e4a;
+  border: 2px solid #3d1e32;
+  border-bottom: 0;
+  transform: skewX(10deg);
 }
 .floor-furn.kind-shelf {
   width: 22px;
   height: 28px;
   background: repeating-linear-gradient(#8b5a2b 0 5px, #5a3516 5px 7px);
   border: 2px solid #3d2412;
+  box-shadow: 4px 3px 0 #2a1810;
 }
 .floor-furn.kind-rug {
-  width: 40px;
+  width: 44px;
   height: 18px;
-  background: #a33;
+  background:
+    repeating-linear-gradient(90deg, #b33 0 6px, #8a2020 6px 8px);
   border: 2px solid #5a1515;
   border-radius: 2px;
-  transform: skewY(-8deg);
+  transform: skewY(-10deg);
+  opacity: 0.95;
 }
 .floor-carpet {
   position: absolute;
-  left: 10px;
+  left: 22px;
   right: 58px;
-  top: 50px;
-  bottom: 10px;
-  background-color: #2f6f9a;
+  top: 56px;
+  bottom: 8px;
+  background-color: #246086;
   background-image:
-    repeating-linear-gradient(115deg, #2a648c 0 10px, transparent 10px 20px),
-    repeating-linear-gradient(25deg, #3a8ab8 0 10px, transparent 10px 20px);
-  transform: skewY(-10deg);
+    repeating-linear-gradient(26.5deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 20px),
+    repeating-linear-gradient(-26.5deg, rgba(8, 24, 40, 0.22) 0 1px, transparent 1px 20px),
+    linear-gradient(160deg, #1e4a66, #3a8ab8 45%, #245a82);
+  transform: skewY(-11deg);
   transform-origin: top left;
-  border: 3px solid #1e4a66;
-  box-shadow: inset 0 0 0 5px #246086, 6px 8px 0 #1a3040;
+  border: 3px solid #163040;
+  box-shadow: inset 0 0 0 4px #1e5a7a, 10px 12px 0 #0e2430;
 }
 .floor-glass {
   position: absolute;
-  right: 16px;
-  top: 34px;
-  width: 124px;
-  height: 100px;
-  background: linear-gradient(180deg, rgba(200, 236, 255, 0.28), rgba(120, 190, 230, 0.12));
-  border: 3px solid rgba(240, 250, 255, 0.85);
-  box-shadow:
-    inset 0 0 0 2px rgba(70, 130, 170, 0.55),
-    6px 8px 0 #163040;
-  transform: skewY(-10deg);
+  right: 22px;
+  top: 38px;
+  width: 118px;
+  height: 72px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.14) 49% 51%, transparent 52%),
+    linear-gradient(180deg, rgba(220, 244, 255, 0.22), rgba(90, 170, 210, 0.08));
+  border: 3px solid rgba(240, 250, 255, 0.92);
+  box-shadow: inset 0 0 0 2px rgba(70, 130, 170, 0.5), 6px 8px 0 #163040;
+  transform: skewY(-11deg);
   z-index: 6;
+}
+.floor-glass-roof {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 10px;
+  background: linear-gradient(180deg, rgba(240, 250, 255, 0.5), rgba(160, 210, 230, 0.12));
+  border-bottom: 2px solid rgba(240, 250, 255, 0.55);
+  pointer-events: none;
+}
+.floor-glass-side {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(80, 140, 170, 0.15), rgba(200, 236, 255, 0.28));
+  border-left: 2px solid rgba(240, 250, 255, 0.45);
+  pointer-events: none;
 }
 .floor-plaque {
   position: absolute;
@@ -1404,22 +1520,41 @@ svg.ico {
   position: absolute;
   left: 16px;
   right: 16px;
-  top: 40px;
-  height: 22px;
-  background: #8b5a2b;
+  top: 44px;
+  height: 20px;
+  background: linear-gradient(180deg, #c4884a, #8b5a2b);
   border: 2px solid #5a3516;
   transform: skewY(8deg);
+  box-shadow: 0 6px 0 #5a3516;
 }
 .floor-you {
   position: absolute;
   left: 210px;
   top: 96px;
   width: 22px;
-  height: 36px;
+  height: 40px;
   z-index: 16;
   pointer-events: none;
-  filter: drop-shadow(0 0 3px #7dffb8);
+  filter: drop-shadow(0 0 4px #7dffb8);
   transition: left 0.45s linear, top 0.45s linear;
+}
+.floor-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 18px;
+  height: 6px;
+  margin-left: -9px;
+  background: rgba(10, 6, 4, 0.42);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.floor-you.walking .floor-char {
+  animation: floor-step 0.22s steps(2) infinite;
+}
+.floor-you.face-left .floor-char {
+  transform: scaleX(-1);
 }
 .floor-desks {
   position: absolute;
@@ -1451,35 +1586,48 @@ svg.ico {
 }
 .floor-pc {
   position: absolute;
-  left: 4px;
-  bottom: 0;
-  width: 40px;
-  height: 16px;
-  background: #7a4e28;
+  left: 2px;
+  bottom: 2px;
+  width: 44px;
+  height: 12px;
+  background: linear-gradient(180deg, #c4884a, #8b5a2b);
   border: 2px solid #3d2412;
-  border-radius: 2px;
-  transform: skewX(-12deg);
+  border-radius: 1px;
+  transform: skewX(-18deg);
+  box-shadow: 4px 5px 0 #2a1810;
+}
+.floor-pc::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: -5px;
+  width: 28px;
+  height: 4px;
+  background: #3d2412;
+  border-radius: 1px;
+  transform: skewX(18deg);
 }
 .floor-screen {
   position: absolute;
-  left: 10px;
-  top: -14px;
+  left: 12px;
+  top: -18px;
   width: 20px;
-  height: 14px;
-  background: #121820;
+  height: 16px;
+  background: #0e141c;
   border: 2px solid #2c3340;
   border-radius: 2px 2px 0 0;
-  transform: skewX(12deg);
+  transform: skewX(18deg);
+  box-shadow: inset 0 0 6px #000, 0 0 0 1px #111;
 }
 .floor-desk.lit .floor-screen {
-  background: #3ecf8e;
-  box-shadow: 0 0 10px #3ecf8e99;
+  background: repeating-linear-gradient(#2a8a5e 0 2px, #3ecf8e 2px 4px);
+  box-shadow: 0 0 12px #3ecf8ecc, inset 0 0 4px #e8fff4;
 }
 .floor-char {
   position: absolute;
-  left: 10px;
-  bottom: 4px;
-  width: 20px;
+  left: 12px;
+  bottom: 8px;
+  width: 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1487,21 +1635,58 @@ svg.ico {
   filter: drop-shadow(1px 2px 0 #1a120c);
 }
 .floor-head {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font: 700 8px "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0;
+  color: transparent;
   border: 1px solid #111;
   z-index: 1;
+  box-shadow: inset -3px -2px 0 rgba(0, 0, 0, 0.22), inset 3px 3px 0 rgba(255, 255, 255, 0.22);
 }
 .floor-body {
+  position: relative;
   width: 16px;
-  height: 18px;
+  height: 14px;
   margin-top: -3px;
-  clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+  clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
   border: 0;
+  box-shadow: inset -3px 0 0 rgba(0, 0, 0, 0.22);
+  z-index: 1;
+}
+.floor-legs {
+  display: block;
+  width: 12px;
+  height: 7px;
+  margin-top: -1px;
+  background: #3d2412;
+  border-radius: 0 0 2px 2px;
+  box-shadow: 7px 0 0 #3d2412;
+  transform: translateX(-4px);
+  z-index: 0;
+}
+.floor-char.top-hoodie .floor-body::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: -6px;
+  height: 8px;
+  background: inherit;
+  border-radius: 8px 8px 0 0;
+  z-index: 2;
+}
+.floor-char.top-polo .floor-body::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 8px;
+  height: 5px;
+  background: #f3e6c8;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 .floor-you .floor-char {
   position: relative;
@@ -1518,17 +1703,18 @@ svg.ico {
 .floor-tag {
   position: absolute;
   left: 50%;
-  bottom: -2px;
+  bottom: 0;
   transform: translateX(-50%);
-  max-width: 64px;
+  max-width: 56px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 9px "IBM Plex Mono", ui-monospace, monospace;
+  font: 8px "IBM Plex Mono", ui-monospace, monospace;
   color: #1a120c;
   background: #f3e6c8;
   border: 1px solid #c4a574;
   padding: 0 4px;
+  z-index: 3;
 }
 .floor-bubble {
   position: absolute;
@@ -1561,9 +1747,21 @@ svg.ico {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(1px); }
 }
+@keyframes floor-step {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.floor-you.face-left.walking .floor-char {
+  animation: floor-step-left 0.22s steps(2) infinite;
+}
+@keyframes floor-step-left {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50% { transform: scaleX(-1) translateY(-3px); }
+}
 @media (prefers-reduced-motion: reduce) {
   .floor-seat.pose-thinking .floor-head,
-  .floor-seat.pose-working .floor-char {
+  .floor-seat.pose-working .floor-char,
+  .floor-you.walking .floor-char {
     animation: none;
   }
   .floor-you,

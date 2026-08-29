@@ -1049,6 +1049,36 @@ test("floor furniture fetch is keyed by room and look save is debounced", async 
   }
 });
 
+test("floor visual depth: window, ground shadow, walk facing", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain("floor-window");
+    expect(page).toContain("floor-shadow");
+    expect(page).toContain("floor-ceiling");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("walking");
+    expect(js).toContain("face-left");
+    expect(js).toMatch(/function walkYou[\s\S]{0,400}classList\.add\(["']walking["']/);
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-window");
+    expect(css).toContain(".floor-shadow");
+    expect(css).toContain(".floor-you.walking");
+    expect(css).toContain(".floor-you.face-left");
+    expect(css).toContain(".floor-furn.kind-sofa::before");
+    expect(page).toContain("floor-wall-left");
+    expect(page).toContain("floor-glass-roof");
+    expect(page).toContain("floor-legs");
+    expect(js).toContain("top-hoodie");
+    expect(js).toMatch(/tag\.textContent = displayName\(id\)/);
+    expect(css).toContain(".floor-char.top-hoodie .floor-body::before");
+    expect(css).toContain(".floor-glass-roof");
+    expect(css).toContain(".floor-wall-left");
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("isometric floor is in the office desk", async () => {
   const { server, url } = await setup();
   try {
