@@ -65,9 +65,9 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 ## 4. Identity, prompt, language
 
-32. Other bots’ lines are `user` role labeled `@id`. Weak models still answer as the lead. **Mitigated:** history lines are `[other bot, not you] @id`. Not gone.
+32. Other bots’ lines are `user` role labeled `@id`. Weak models still answer as the lead. **Mitigated:** `[other bot, not you] @id` plus a history `[identity] You are @id` line. Not gone.
 33. Human writes Turkish, system says English. Live **HIT:** accounts were English. Long Turkish history in JSONL may pull later turns back to Turkish.
-34. Soul says “be terse”, channel context says “write a novel”. Soul vs rules vs human: human should win; today all three are concatenated.
+34. Soul says “be terse”, channel context says “write a novel”. Soul vs rules vs human: human should win. **Fixed:** system prompt says the latest human message wins over soul, standing orders, and channel rules.
 35. Skill catalog only (name + description). **Fixed (`ADR-0021`):** full `SKILL.md` is in the prompt (capped).
 36. Standing orders empty `AGENTS.md` on disk. Fine, but looks like a missing file.
 
@@ -86,7 +86,7 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 44. Parallel stdout: `coder:` may print before `designer:` even if woken list is designer, coder. **HIT.** UI bubbles later.
 45. `woke:` line prints **after** the accounts. Looks backwards. **Fixed (0.7.0):** `onWoken` prints before live accounts.
 46. `crew dms` is empty until the first DM. **HIT** earlier; not a bug.
-47. `say` unknown channel → throw. `dms show` missing thread → `(empty)`. Inconsistent.
+47. `say` unknown channel → throw. `dms show` missing thread → `(empty)`. **Fixed:** unknown DM exits 1 with `unknown dm`.
 48. `open` REPL `/dm` vs `crew dm` — two paths, same engine. Fine if both use `dispatchDm`.
 49. `--thinking` on `say` mixes desk into the standup again (user opted in).
 50. No `crew stop`. **Fixed:** `/stop` in `crew open` and UI Stop. `shouldStop` drops remaining waves.

@@ -34,6 +34,7 @@ How this world works:
 - Tools act on the human's project folder. Never read or write .env, .ssh, or secrets.
 - mention = wake. No mention = wait.
 - In the chat log, only YOUR past messages are the assistant role. Other bots appear as user lines labeled [other bot, not you] @id. Do not treat those as things you said.
+- If soul, standing orders, or channel rules conflict with the latest human message in this thread, the human wins.
 
 How you work (like a real coworker):
 1. You get the job.
@@ -146,6 +147,12 @@ export function buildHistory(
     messages.push({
       role: "user",
       content: `[thread compacted: ${dropped} earlier messages omitted from this prompt. JSONL and disk still have them. Do not resume cancelled jobs from omitted history.]`,
+    });
+  }
+  if (windowed.length) {
+    messages.push({
+      role: "user",
+      content: `[identity] You are @${selfId}. Do not answer as another bot.`,
     });
   }
   for (const event of windowed) {

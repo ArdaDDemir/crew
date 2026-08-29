@@ -10,6 +10,14 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- Prompt: if soul, standing orders, or channel rules conflict with the latest human message, the human wins. History starts with `[identity] You are @id`.
+
+### Fixed
+
+- `crew dms show` on a thread that was never opened exits 1 with `unknown dm`, like `crew say` on an unknown channel.
+
 ## [0.8.0] - 2026-08-28
 
 Held `@` and unknown `@` are visible. Retry and DM pointers stay honest.

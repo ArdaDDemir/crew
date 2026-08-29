@@ -3,7 +3,7 @@
 Date: 2026-08-28  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.8.0**. Held/unknown `@`, inference-retry honesty, other-bot history label, DM re-read. `[Unreleased]` is empty.
+Current release: **0.8.0**. Unreleased: human wins over soul/rules; identity history line; `dms show` unknown dm.
 
 ---
 

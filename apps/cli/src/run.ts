@@ -660,6 +660,8 @@ export async function runCli(
         const b = rest[1];
         if (!a) throw new Error("usage: crew dms show <a> <b>");
         const id = b ? dmThreadId(party(a), party(b)) : a;
+        const known = store.listThreads().some((t) => t.kind === "dm" && t.id === id);
+        if (!known) throw new Error(`unknown dm: ${id}`);
         printThread(io, store.read({ kind: "dm", id }), {
           thinking: showThinking,
           verbose,

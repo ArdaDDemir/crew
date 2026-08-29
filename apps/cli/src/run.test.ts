@@ -371,6 +371,14 @@ test("say unknown channel exits 1", async () => {
   expect(result.stderr).toContain("unknown channel");
 });
 
+test("dms show unknown thread exits 1 like say", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
+  await cli(cwd, ["bot", "create", "coder"]);
+  const result = await cli(cwd, ["dms", "show", "human", "coder"]);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain("unknown dm");
+});
+
 test("unknown command exits 1", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-cli-"));
   const result = await cli(cwd, ["nope"]);
