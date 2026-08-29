@@ -12,6 +12,8 @@ See `docs/versioning.md`.
 
 ### Added
 
+- Public GitHub: `ArdaDDemir/crew`. Windows NSIS/MSI/portable on Releases. MIT license. Wiki for install / office / Discord.
+
 ### Changed
 
 - 2.5D floor: stationary PC desks, chunkier characters, glass/carpet depth, door plaques, compact member list.

@@ -1,37 +1,62 @@
 # Crew
 
-Local multi-bot **office**. You own channels and people. `@id` wakes that bot; everyone else waits. They work at the desk (tools + thinking), then **account** in chat. Need-you is a stop. They may DM. You can read every DM.
+Local multi-bot **office**. You own the channels and the people. `@coder` wakes that person; everyone else waits. They work at their desk (tools + thinking), then **give an account** in the channel. If they need you, they stop. They may DM. You can read every DM.
 
-**Surface:** `bun run ui` → [http://127.0.0.1:7734](http://127.0.0.1:7734) · or `bun run desktop` (**Crew.exe**, Tauri + WebView2)
+Windows installer is on [Releases](https://github.com/ArdaDDemir/crew/releases/latest). Loopback only. Not a Discord.js bot, not Electron, not a cloud VM.
 
-**0.9.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
+[![Release](https://img.shields.io/github/v/release/ArdaDDemir/crew)](https://github.com/ArdaDDemir/crew/releases/latest)
 
-## Requirements
+**[Download Crew for Windows](https://github.com/ArdaDDemir/crew/releases/latest)** — `Crew_0.9.0_x64-setup.exe` (NSIS) or the MSI. Portable zip is on the same page.
 
-- [Bun](https://bun.sh) 1.4+
-- An [OpenRouter](https://openrouter.ai) API key (or any OpenAI-compatible `base_url`)
-- Crew.exe (`bun run desktop`): [Rust](https://rustup.rs) 1.77+ and WebView2 (Windows 11 / current Edge)
+![Crew office](docs/assets/office.png)
 
-## Quick start
+## What you get
 
-```bash
-git clone <this-repo>
-cd aibuildingapp
-bun install
-bun test
-```
+| | |
+|---|---|
+| Channels + People + Direct | Discord-like rail. `@` is the scheduler. |
+| 2.5D floor | Members desk: glass room, PCs, walk, doors, furniture, looks. |
+| Crew.exe | Tauri + WebView2 window. Same office as `bun run ui`. |
+| Split panes | Drag a chat to the right. Max two in-page panes. |
+| Jobs | Settings → Title / Compact / Vision / Read (not extra People). |
+| Providers | OpenRouter, plus optional Claude / Codex / Grok / OpenCode CLI spawn. |
+| MCP | Stdio or HTTP servers. Tools, resources, prompts on OpenRouter turns. |
+| Browser tools | Isolated Playwright profile under `.crew/browser/`. Not your mouse. |
+| Discord | Optional adapter (`apps/discord`). Core has no Discord. |
+| Invites | Owner mints a token. Guest may chat; cannot edit the office. |
 
-Windows (PowerShell):
+Default permission is **auto-accept** (workspace file writes + workspace shell). `mcp_*` and `browser_*` ask. `.env` and `~/.ssh` are always denied.
+
+![Split panes](docs/assets/split.png)
+
+## Install (Windows)
+
+1. From [Releases](https://github.com/ArdaDDemir/crew/releases/latest) download **Crew_0.9.0_x64-setup.exe**.
+2. Install. WebView2 is Windows 11 / current Edge.
+3. Open a project folder. Crew writes `.crew/` there.
+4. Settings → Providers: paste an [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
+
+MSI: `Crew_0.9.0_x64_en-US.msi`. Portable: unzip next to `Crew.exe` + `crew-server.exe` + `public/`.
+
+Wiki: [Install](https://github.com/ArdaDDemir/crew/wiki/Install) · [Office](https://github.com/ArdaDDemir/crew/wiki/Office) · [Discord](https://github.com/ArdaDDemir/crew/wiki/Discord)
+
+## Run from source
+
+[Bun](https://bun.sh) 1.4+. Crew.exe from source also needs [Rust](https://rustup.rs) 1.77+.
 
 ```powershell
+git clone https://github.com/ArdaDDemir/crew.git
+cd crew
+bun install
+bun test
 $env:OPENROUTER_API_KEY="sk-or-..."
 bun run crew -- config set key $env:OPENROUTER_API_KEY
 bun run ui
 ```
 
-Then open `http://127.0.0.1:7734`, or `bun run desktop` for the Crew.exe window. After `bun run desktop:build`, double-click `dist/crew-windows/Crew.exe`. NSIS/MSI land in `dist/crew-windows-nsis/` and `dist/crew-windows-msi/` when those tools are installed. Hard-refresh (**Ctrl+F5**) after UI pulls in the browser.
+Office: [http://127.0.0.1:7734](http://127.0.0.1:7734). Window: `bun run desktop`. Installers: `bun run desktop:build` → `dist/`. Hard-refresh (**Ctrl+F5**) after UI pulls.
 
-Optional: seed people/rooms from the CLI (same `.crew` as the UI):
+CLI `crew` is tests and scripts on the same engine, not a TUI product.
 
 ```powershell
 bun run crew -- bot create lead --name Lead
@@ -39,39 +64,22 @@ bun run crew -- bot create coder --name Coder
 bun run crew -- channel create landing --bots lead,coder --lead lead
 ```
 
-## What you get
-
-| In the office | How |
-|---|---|
-| Channels + People + Direct | Discord-like rail; many DMs per person |
-| Jump | Ctrl/Cmd+K |
-| Context menu | Right-click → Open / Open to the right / below |
-| Crew.exe | Native window (`bun run desktop`); not Electron |
-| Split panes | Drag a chat to the right, or the grip; max two in-page panes |
-| People | Click a person to expand their chats; Direct is bot↔bot |
-| Composer | Enter sends; `@path` from disk; `/help` `/compact` `/status` … |
-| Jobs | Settings → Title / Compact / Vision / Read (implementation picker, not extra People) |
-| Providers | Settings → OpenRouter + Claude / Codex / Grok / OpenCode. Enable a card → that Person’s turn **spawns the CLI** |
-| MCP | Settings → MCP stdio/HTTP servers; tools, resources, and prompts on OpenRouter turns (`mcp_<server>_…`) |
-| Compact | Last 80 messages + trim + LLM `thread.summary`; JSONL is never rewritten |
-
-Default permission is **auto-accept** (workspace file writes + workspace shell). `.env` and `~/.ssh` are always denied.
+`crew serve` is the same loopback office (`127.0.0.1` only). Not `0.0.0.0`.
 
 ## Docs
 
-Agents (and humans writing agents) start at [`AGENTS.md`](./AGENTS.md).
+Agents start at [`AGENTS.md`](./AGENTS.md). Humans: [wiki](https://github.com/ArdaDDemir/crew/wiki) first.
 
 | | |
 |---|---|
 | Map | [`docs/README.md`](docs/README.md) |
-| Decisions | [`docs/adr/`](docs/adr/) (0001–0036) |
+| Decisions | [`docs/adr/`](docs/adr/) (0001–0060) |
 | Now / gaps | [`docs/todos/now.md`](docs/todos/now.md) |
-| UI contract | [`docs/specs/web-ui.md`](docs/specs/web-ui.md) |
-| Versions | [`docs/versioning.md`](docs/versioning.md) · [`CHANGELOG.md`](CHANGELOG.md) |
+| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
-Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). Always: `.crew/permissions.json`. Humans: `.crew/humans.json`. Jobs: `.crew/jobs.json`. Providers: `.crew/providers.json`. MCP: `.crew/mcp.json`. User key: `~/.crew/config.json`.
+Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). License: MIT.
 
 ## Not this
 
-Electron, Discord API, T3 plugin marketplace, git auto-PR, `crew serve`, computer-use, in-app browser. Desktop window is Tauri + WebView2. MCP is in (`ADR-0036`–`0038`). Parked notes: `docs/todos/` (status: `docs/todos/now.md`).
+Public bind (`0.0.0.0`), live desktop mouse, Electron, signed auto-install, macOS/Linux bundles, T3 plugin marketplace. Isolated browser tools and the Discord adapter are in. Parked notes: `docs/todos/now.md`.

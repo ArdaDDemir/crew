@@ -4,7 +4,7 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 
 | Path | What |
 |---|---|
-| [adr/](adr/) | Decisions 0001–**0053** (immutable once accepted; qualify/supersede, do not rewrite) |
+| [adr/](adr/) | Decisions 0001–**0060** (immutable once accepted; qualify/supersede, do not rewrite) |
 | [specs/bots-and-channels.md](specs/bots-and-channels.md) | Bot / channel fields; reserved ids; `harness` |
 | [specs/mentions-and-routing.md](specs/mentions-and-routing.md) | Scheduler: `@` wake, one turn per `say` |
 | [specs/session-jsonl.md](specs/session-jsonl.md) | Append-only events, `thread.compacted` / `thread.summary` / `thread.titled` |
@@ -21,7 +21,7 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 | [todos/computer-use-and-browser.md](todos/computer-use-and-browser.md) | Parked: computer-use + in-app browser |
 | [todos/discord-serve-computer-use-research.md](todos/discord-serve-computer-use-research.md) | Research: Discord adapter, `crew serve`, browser/computer-use. No code until ADR-0047+ |
 | [todos/cli-is-script.md](todos/cli-is-script.md) | CLI is tests/scripts, not a TUI product |
-| [todos/desktop-app.md](todos/desktop-app.md) | Crew.exe shipped; installer later (`ADR-0032`) |
+| [todos/desktop-app.md](todos/desktop-app.md) | Crew.exe + Windows NSIS/MSI. GitHub Release is the download |
 | [superpowers/specs/](superpowers/specs/) | Product “why”. Settings/Providers/MCP: `2026-08-28-settings-providers-design.md`. Desktop: `2026-08-28-desktop-app-design.md` |
 
 Start: `AGENTS.md` → this map → the spec you are changing. New architecture: next ADR number in `adr/README.md`.

@@ -1,6 +1,6 @@
 # Todo: desktop app (low-RAM window)
 
-Status: **shipped** — portable `dist/crew-windows/` (`Crew.exe` + `crew-server.exe` + `public/`)  
+Status: **shipped** — portable `dist/crew-windows/` plus GitHub Release NSIS/MSI (`Crew.exe` + `crew-server.exe` + `public/`)  
 Owner: Arda  
 Date: 2026-08-28  
 ADR: **0032**  
