@@ -33,11 +33,11 @@ export async function attachDiscord(input: {
         console.warn(`discord outbound dropped after rate limits: ${dest}`);
       },
     });
-  let pendingAuthor = "";
+  const pendingAuthor = new Map<string, string>();
   const onMessage = async (msg: DiscordInbound) => {
     const mapped = mapInbound(cfg, msg);
     const hook = mapped.crewChannelId ? cfg.webhooks[mapped.crewChannelId] : undefined;
-    pendingAuthor = msg.authorId;
+    if (msg.channelId && msg.authorId) pendingAuthor.set(msg.channelId, msg.authorId);
     const onAsk = (botId: string, tool: string, args: Record<string, unknown>) => {
       queue.enqueue(`channel:${msg.channelId}`, () =>
         import("./rest").then(({ postDiscordMessage }) =>
@@ -82,7 +82,7 @@ export async function attachDiscord(input: {
     const decision = decideAskClick({
       customId: row.customId,
       clickerId: row.userId,
-      authorId: pendingAuthor,
+      authorId: pendingAuthor.get(row.channelId) ?? "",
     });
     const { respondDiscordInteraction } = await import("./rest");
     if (!decision) {

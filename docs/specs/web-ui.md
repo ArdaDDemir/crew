@@ -31,7 +31,7 @@ Sidecar / CLI flags (also `crew-server.exe` / `crew serve`): `--cwd <dir>` `--po
 | GET | `/api/paths?q=` | workspace-relative files `{ paths: string[] }` (depth ≤ 4, cap 50; never `.env` / `.ssh`) |
 | GET/POST | `/api/permissions` | Always rules; POST `{ tool: apply_patch\|shell, path?\|command? }` adds a fingerprint |
 | DELETE | `/api/permissions` | no query = clear all; `?tool=&key=` deletes one row |
-| POST | `/api/permission` | `allow` \| `deny` \| `always` |
+| POST | `/api/permission` | `allow` \| `deny` \| `always`. Invalid invite Bearer is 401, not owner |
 | GET | `/api/models?q=` | OpenRouter catalog search |
 | POST | `/api/key` `/api/model` `/api/fallback` `/api/allowed-models` `/api/mode` `/api/base-url` `/api/default-mode` `/api/auto-compact` `/api/reviewer` `/api/update-url` `/api/update-check` | config. `update-url` writes `~/.crew/config.json` `updateUrl` (https; http on localhost). `update-check` `{ status: disabled\|current\|available\|error }` — no self-install. Relative download URLs resolve against the `latest.json` URL (`ADR-0039`, `ADR-0040`) |
 | GET/PUT | `/api/providers` | `.crew/providers.json` `{ openrouter, claude, codex, grok, opencode }` each harness `{ enabled, binary, customModels: string[] }` |

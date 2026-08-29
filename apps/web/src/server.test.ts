@@ -621,6 +621,38 @@ test("guest bearer cannot create bots; GET /api/who names the actor", async () =
   }
 });
 
+test("invalid invite is 401 on permission and stop, not treated as owner", async () => {
+  const { server, url } = await setup();
+  try {
+    const perm = await fetch(`${url}/api/permission`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer nope",
+      },
+      body: JSON.stringify({ decision: "allow" }),
+    });
+    expect(perm.status).toBe(401);
+    expect(await perm.text()).toContain("invalid invite");
+    const stop = await fetch(`${url}/api/stop`, {
+      method: "POST",
+      headers: { Authorization: "Bearer nope" },
+    });
+    expect(stop.status).toBe(401);
+    const looks = await fetch(`${url}/api/looks`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer nope",
+      },
+      body: JSON.stringify({ hair: "buzz" }),
+    });
+    expect(looks.status).toBe(401);
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("identity chip and invite settings are in the office page", async () => {
   const { server, url } = await setup();
   try {
@@ -950,6 +982,26 @@ test("floor click-to-walk and writing walks to the table", async () => {
     expect(js).toContain("closest(\".floor-seat\")");
     const css = await (await fetch(`${url}/app.css`)).text();
     expect(css).toMatch(/\.floor-you[\s\S]{0,200}transition/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("office A-Z polish: invalid chip, json error parse, channel-only kit, Esc hold does not stop", async () => {
+  const { server, url } = await setup();
+  try {
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toMatch(/label\.textContent = ["']invalid["']/);
+    expect(js).toContain("who-chip");
+    expect(js).toMatch(/classList\.(add|toggle)\(["']invalid["']/);
+    expect(js).toMatch(/data\.error/);
+    expect(js).toMatch(/floorKit\.hidden[\s\S]{0,120}kind !== ["']channel["']/);
+    const holdEsc = js.slice(js.indexOf("function onDraftKeydown"));
+    expect(holdEsc).toMatch(/floorHold[\s\S]{0,80}clearFloorHold/);
+    expect(holdEsc).toMatch(/floorHold[\s\S]{0,200}\/api\/stop/);
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".who-chip.invalid");
+    expect(css).toContain("scrollbar-width");
   } finally {
     server.stop(true);
   }

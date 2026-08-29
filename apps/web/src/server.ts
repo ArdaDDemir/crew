@@ -197,9 +197,14 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   const url = new URL(req.url);
   const path = url.pathname;
 
+  const mutating =
+    req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS";
   if (!guestMayWrite(req.method, path)) {
     const blocked = ownerGate(req, host);
     if (blocked) return blocked;
+  } else if (mutating) {
+    const actor = inviteActor(req, undefined, loadHumans(host.cwd));
+    if (actor === "invalid") return json({ error: "invalid invite" }, 401);
   }
 
   if (req.method === "GET" && path === "/api/who") {

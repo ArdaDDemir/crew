@@ -1780,7 +1780,9 @@ function paintFloorHint() {
   if (hint) {
     hint.textContent = hold
       ? `Click to place ${hold} · Esc to cancel`
-      : "Click carpet to walk · a person to DM";
+      : state.kind === "channel"
+        ? "Click carpet to walk · a person to DM"
+        : "Click carpet to walk · a door to enter";
   }
   scene?.classList.toggle("holding", Boolean(hold));
 }
@@ -1950,13 +1952,14 @@ function renderFloor(hereIds, leadId) {
   bindFloorWalk();
   bindFloorKit();
   renderFloorDoors();
-  if (els.floorKit) els.floorKit.hidden = Boolean(inviteToken());
+  if (els.floorKit) els.floorKit.hidden = Boolean(inviteToken()) || state.kind !== "channel";
   paintFloorHint();
   refreshFloorFurniture();
   const roomKey = `${state.kind}:${state.id}`;
   if (state.floorRoom !== roomKey) {
     state.floorRoom = roomKey;
     walkYou(36, 148);
+    if (state.floorHold) clearFloorHold();
   }
   if (plaque) {
     plaque.textContent =
@@ -2224,8 +2227,10 @@ function paintWhoChip() {
   const token = inviteToken();
   const input = document.getElementById("who-token");
   const label = document.getElementById("who-label");
+  const chip = document.getElementById("who-chip");
   if (input && input.value !== token) input.value = token;
   if (!label) return;
+  chip?.classList.remove("invalid");
   if (!token) {
     label.textContent = "owner";
     return;
@@ -2233,10 +2238,12 @@ function paintWhoChip() {
   api("/api/who")
     .then((res) => res.json())
     .then((who) => {
+      chip?.classList.remove("invalid");
       label.textContent = String(who.handle || who.id || "invite");
     })
     .catch(() => {
-      label.textContent = "invite";
+      chip?.classList.add("invalid");
+      label.textContent = "invalid";
     });
 }
 
@@ -2257,11 +2264,21 @@ function bindWhoChip() {
   input.addEventListener("input", save);
 }
 
+function httpErrorMessage(raw) {
+  try {
+    const data = JSON.parse(raw);
+    if (data && typeof data.error === "string" && data.error.trim()) return data.error.trim();
+  } catch {
+    /* not json */
+  }
+  return raw;
+}
+
 async function api(path, opts) {
   const next = { ...(opts || {}) };
   next.headers = inviteHeaders(next.headers);
   const res = await fetch(path, next);
-  if (!res.ok) throw new Error((await res.text()) || res.statusText);
+  if (!res.ok) throw new Error(httpErrorMessage((await res.text()) || res.statusText));
   return res;
 }
 
@@ -3864,6 +3881,10 @@ function onDraftKeydown(ev) {
   if (ev.isComposing || ev.keyCode === 229) return;
   if (ev.key === "Escape") {
     hidePalette();
+    if (state.floorHold) {
+      clearFloorHold();
+      return;
+    }
     if (state.running) api("/api/stop", { method: "POST" }).catch(() => {});
     return;
   }

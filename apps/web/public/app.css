@@ -117,6 +117,12 @@ html, body {
   font: 11px "IBM Plex Mono", ui-monospace, monospace;
   outline: none;
 }
+.who-chip.invalid {
+  border-color: #c45c5c;
+}
+.who-chip.invalid span {
+  color: #e07070;
+}
 .invite-create-row {
   display: flex;
   gap: 8px;
@@ -1184,6 +1190,8 @@ svg.ico {
   overflow-x: auto;
   z-index: 12;
   padding: 2px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #c4a574 transparent;
 }
 .floor-doors[hidden] { display: none; }
 .floor-door {

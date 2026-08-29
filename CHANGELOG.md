@@ -21,6 +21,10 @@ See `docs/versioning.md`.
 ### Fixed
 
 - Floor: guest cannot remove furniture (no 403 toast). Escape cancels a held plant/lamp/sofa. Holding a kind no longer deletes the piece you click.
+- Invalid invite Bearer is 401 on `permission` / `stop` / looks, not treated as the owner.
+- Discord Allow/Always/Deny uses the author of that Discord channel, not the last message in any room.
+- Floor plant kit is channel-only (hidden on DMs). Esc while placing a plant does not Stop a running turn.
+- Identity chip shows **invalid** on a dead token. API errors toast the `error` field, not raw JSON.
 
 ## [0.9.0] - 2026-08-29
 
