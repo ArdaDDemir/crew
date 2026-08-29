@@ -301,6 +301,99 @@ test("channel dm_send opens a DM and wakes the other bot once", async () => {
   ).toContain("hero is in #hero");
 });
 
+test("named human say stores humanId; dm_send uses that human's DM", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const provider = new ScriptedProvider([
+    [
+      {
+        type: "tool-call",
+        id: "d1",
+        name: "dm_send",
+        arguments: JSON.stringify({ to: "human", text: "need the hero copy" }),
+      },
+      { type: "done" },
+    ],
+    [{ type: "text-delta", text: "I pinged you in DM" }, { type: "done" }],
+  ]);
+  const result = await dispatchChannelPost({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@coder go",
+    humanId: "arda",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(result.dms).toEqual([]);
+  const posted = store
+    .read({ kind: "channel", id: "landing" })
+    .find((e) => e.type === "message.posted");
+  expect(posted?.payload.author).toEqual({ kind: "human", humanId: "arda" });
+  expect(store.read({ kind: "dm", id: "human__coder" }).length).toBe(0);
+  const dm = store.read({ kind: "dm", id: "user__arda__coder" });
+  expect(dm.some((e) => e.type === "dm.opened")).toBe(true);
+  expect(
+    dm.filter((e) => e.type === "message.posted").map((e) => e.payload.text),
+  ).toContain("need the hero copy");
+});
+
+test("dm_send to human notifies onHumanDm with that humanId", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const seen: { humanId: string; text: string; threadId: string }[] = [];
+  await dispatchChannelPost({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "d1",
+          name: "dm_send",
+          arguments: JSON.stringify({ to: "human", text: "need the hero copy" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "I pinged you in DM" }, { type: "done" }],
+    ]),
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    channelId: "landing",
+    text: "@coder go",
+    humanId: "arda",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+    onHumanDm: async (row) => {
+      seen.push(row);
+    },
+  });
+  expect(seen).toEqual([
+    { humanId: "arda", text: "need the hero copy", threadId: "user__arda__coder" },
+  ]);
+});
+
 test("dm_send to human opens human__bot and does not run a DM turn", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();

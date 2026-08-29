@@ -37,3 +37,24 @@ test("parseDmThreadId reads legacy and extra conversations", () => {
 test("parseDmThreadId rejects junk", () => {
   expect(() => parseDmThreadId("coder")).toThrow();
 });
+
+test("named human DMs use user__id__bot and keep owner human__bot", () => {
+  expect(
+    dmThreadId({ kind: "human", humanId: "arda" }, { kind: "bot", botId: "coder" }),
+  ).toBe("user__arda__coder");
+  expect(dmThreadId({ kind: "human" }, { kind: "bot", botId: "coder" })).toBe("human__coder");
+  expect(parseDmThreadId("user__arda__coder")).toEqual({
+    pair: "user__arda__coder",
+    conv: "",
+    withHuman: true,
+    left: "arda",
+    right: "coder",
+  });
+  expect(parseDmThreadId("user__arda__coder__tabc12")).toEqual({
+    pair: "user__arda__coder",
+    conv: "tabc12",
+    withHuman: true,
+    left: "arda",
+    right: "coder",
+  });
+});

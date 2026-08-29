@@ -1,4 +1,4 @@
-export const RESERVED_IDS = new Set(["human", "you", "everyone", "engine"]);
+export const RESERVED_IDS = new Set(["human", "you", "everyone", "engine", "user"]);
 
 export function assertSlug(id: string): void {
   if (!/^[a-z][a-z0-9-]*$/.test(id)) {

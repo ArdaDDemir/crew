@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { nativeTools, shellLockPath } from "./tools";
+import { MemoryBrowser, nativeTools, shellLockPath } from "./tools";
 
 async function tmp() {
   const root = await mkdtemp(join(tmpdir(), "crew-tools-"));
@@ -133,3 +133,48 @@ test("shell runs a command in the workspace", async () => {
   );
   expect(out).toContain("crew-ok");
 });
+
+test("browser tools open snapshot click type on a memory page and deny file urls", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crew-tools-"));
+  const browser = new MemoryBrowser();
+  browser.seed("https://example.test/pricing", {
+    title: "Pricing",
+    nodes: [
+      { ref: "e1", role: "link", name: "Pro plan", href: "https://example.test/pro" },
+      { ref: "e2", role: "textbox", name: "Search" },
+    ],
+  });
+  const tools = Object.fromEntries(
+    nativeTools({ browser }).map((t) => [t.name, t]),
+  );
+  const opened = await tools.browser_open.execute(
+    { url: "https://example.test/pricing" },
+    { workspaceRoot: root },
+  );
+  expect(opened).toContain("Pricing");
+  const snap = await tools.browser_snapshot.execute({}, { workspaceRoot: root });
+  expect(snap).toContain("e1");
+  expect(snap).toContain("Pro plan");
+  await tools.browser_type.execute(
+    { ref: "e2", text: "crew" },
+    { workspaceRoot: root },
+  );
+  expect(await tools.browser_snapshot.execute({}, { workspaceRoot: root })).toContain("crew");
+  const clicked = await tools.browser_click.execute({ ref: "e1" }, { workspaceRoot: root });
+  expect(clicked).toContain("https://example.test/pro");
+  await expect(
+    tools.browser_open.execute({ url: "file:///C:/Windows" }, { workspaceRoot: root }),
+  ).rejects.toThrow(/denied/i);
+  const shot = await tools.browser_screenshot.execute({}, { workspaceRoot: root });
+  expect(shot).toMatch(/browser[/\\]shots[/\\]/);
+});
+
+test("playwright is a tools-native dependency and the module resolves", async () => {
+  const pkg = (await Bun.file(join(import.meta.dir, "..", "package.json")).json()) as {
+    dependencies?: Record<string, string>;
+  };
+  expect(pkg.dependencies?.playwright).toBeDefined();
+  const pw = await import("playwright");
+  expect(pw.chromium).toBeDefined();
+});
+

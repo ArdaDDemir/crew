@@ -30,7 +30,7 @@ import {
   type HarnessKind,
   type HarnessRunner,
 } from "@crew/provider-harness";
-import { nativeTools } from "@crew/tools-native";
+import { lazyPlaywrightBrowser, nativeTools } from "@crew/tools-native";
 import { loadMcp, writeHarnessMcpConfig, type McpServer } from "../../web/src/mcp";
 import { collectMcpSessions, type McpRpc } from "../../web/src/mcp-client";
 import { loadProviders, whichBinary } from "../../web/src/providers";
@@ -43,6 +43,7 @@ import {
   userConfigPath,
   writeConfigFile,
 } from "./config";
+import { parseServerArgv } from "../../web/src/argv";
 
 function setThreadMode(
   cwd: string,
@@ -74,6 +75,14 @@ export type Io = {
   readLine?: () => Promise<string | null>;
 };
 
+export type ServeOpts = {
+  cwd: string;
+  port?: number;
+  hostname?: string;
+  cors?: string;
+  publicDir?: string;
+};
+
 export type CliDeps = {
   provider?: Provider;
   tools?: Tool[];
@@ -81,6 +90,7 @@ export type CliDeps = {
   model?: string;
   harnessRun?: HarnessRunner;
   mcpConnect?: (server: McpServer) => McpRpc;
+  serve?: (opts: ServeOpts) => Promise<{ url?: string } | void>;
 };
 
 function crewRoot(cwd: string): string {
@@ -278,6 +288,7 @@ const USAGE = `crew — local multi-bot CLI
   crew log <channel> [--thinking] [--verbose]
   crew config set model|fallback|key|base-url|allowed <value>
   crew config show
+  crew serve [--port N] [--cwd DIR] [--hostname 127.0.0.1] [--cors ORIGIN]
   --yes   allow asked tools this process
   --thinking   stream thoughts (desk). default: crew log --thinking
   --verbose    stream tool names (desk). default: crew log --verbose
@@ -338,7 +349,9 @@ export async function runCli(
   const root = crewRoot(io.cwd);
   const workspace = new FsWorkspace(root);
   const store = new JsonlEventStore(join(root, "logs"));
-  const tools = deps.tools ?? nativeTools();
+  const tools =
+    deps.tools ??
+    nativeTools({ browser: lazyPlaywrightBrowser(join(io.cwd, ".crew", "browser")) });
   const home = io.home ?? defaultHome();
   const env = io.env ?? process.env;
   const cfg = mergeConfig({ cwd: io.cwd, home, env });
@@ -804,6 +817,37 @@ export async function runCli(
       printThread(io, store.read({ kind: "channel", id: channelId }), {
         thinking: showThinking,
         verbose,
+      });
+      return 0;
+    }
+
+    if (cmd === "serve") {
+      const flags = parseServerArgv(argv.slice(1));
+      const opts: ServeOpts = {
+        cwd: flags.cwd ?? io.cwd,
+        port: flags.port,
+        hostname: flags.hostname,
+        cors: flags.cors,
+      };
+      if (flags.publicDir) opts.publicDir = flags.publicDir;
+      if (deps.serve) {
+        const result = await deps.serve(opts);
+        if (result?.url) io.writeOut(`crew ui  ${result.url}\n`);
+        return 0;
+      }
+      const { startServer } = await import("../../web/src/server.ts");
+      const { attachDiscordHost } = await import("../../web/src/discord-attach.ts");
+      const { url, server, host } = startServer(opts);
+      io.writeOut(`crew ui  ${url}\n`);
+      const discord = await attachDiscordHost(host);
+      if (discord.started) io.writeOut("crew discord  attached\n");
+      await new Promise<void>((resolve) => {
+        const stop = () => {
+          server.stop(true);
+          resolve();
+        };
+        process.once("SIGINT", stop);
+        process.once("SIGTERM", stop);
       });
       return 0;
     }

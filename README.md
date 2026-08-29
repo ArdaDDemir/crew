@@ -4,7 +4,7 @@ Local multi-bot **office**. You own channels and people. `@id` wakes that bot; e
 
 **Surface:** `bun run ui` → [http://127.0.0.1:7734](http://127.0.0.1:7734) · or `bun run desktop` (**Crew.exe**, Tauri + WebView2)
 
-**0.8.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
+**0.9.0.** CLI `crew` is tests/scripts on the same engine, not a TUI product.
 
 ## Requirements
 
@@ -70,7 +70,7 @@ Agents (and humans writing agents) start at [`AGENTS.md`](./AGENTS.md).
 | Versions | [`docs/versioning.md`](docs/versioning.md) · [`CHANGELOG.md`](CHANGELOG.md) |
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
-Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). Always: `.crew/permissions.json`. Jobs: `.crew/jobs.json`. Providers: `.crew/providers.json`. MCP: `.crew/mcp.json`. User key: `~/.crew/config.json`.
+Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). Always: `.crew/permissions.json`. Humans: `.crew/humans.json`. Jobs: `.crew/jobs.json`. Providers: `.crew/providers.json`. MCP: `.crew/mcp.json`. User key: `~/.crew/config.json`.
 
 ## Not this
 

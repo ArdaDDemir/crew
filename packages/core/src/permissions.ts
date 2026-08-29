@@ -3,14 +3,40 @@ import type { PermissionMode } from "./workspace";
 
 export type PermissionVerdict = "allow" | "ask" | "deny";
 
-export type ToolKind = "read" | "apply_patch" | "shell" | "list_dir" | "mcp";
+export type ToolKind = "read" | "apply_patch" | "shell" | "list_dir" | "mcp" | "browser";
 
 export function toolKind(name: string): ToolKind {
   if (name === "apply_patch" || name === "read" || name === "shell" || name === "list_dir") {
     return name;
   }
   if (name.startsWith("mcp_")) return "mcp";
+  if (name.startsWith("browser_")) return "browser";
   return "shell";
+}
+
+export function hardDenyUrl(url: string): boolean {
+  const raw = String(url ?? "").trim();
+  if (!raw) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return true;
+  }
+  const proto = parsed.protocol.toLowerCase();
+  if (
+    proto === "file:" ||
+    proto === "chrome:" ||
+    proto === "chrome-extension:" ||
+    proto === "javascript:" ||
+    proto === "about:" ||
+    proto === "data:" ||
+    proto === "blob:"
+  ) {
+    return true;
+  }
+  if (/\.env(?:\.|$|\/)/i.test(parsed.pathname) || /\.env(?:\.|$|\/)/i.test(raw)) return true;
+  return false;
 }
 
 export function hardDenyCommand(command: string): boolean {

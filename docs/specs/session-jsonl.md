@@ -55,7 +55,7 @@ Unknown `type` values: skip, do not crash. Additive types are a patch/minor; ren
 }
 ```
 
-Author kind: `human` | `bot`. Bot authors include `botId`.
+Author kind: `human` | `bot`. Bot authors include `botId`. Human authors may include `humanId` (slug). Missing `humanId` is the owner `"human"` (`ADR-0047`). Other humans’ DMs are `user__<humanId>__<bot>`.
 
 ## `thread.compacted` payload
 

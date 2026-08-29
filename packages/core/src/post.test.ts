@@ -140,6 +140,28 @@ test("human-bot DM thread id is human__<bot>", async () => {
   expect(result.woken).toEqual(["coder"]);
 });
 
+test("named human DM stores humanId on user__ thread", async () => {
+  const store = new MemoryEventStore();
+  const result = await postToDm({
+    store,
+    nextId: seq("evt"),
+    now: () => "2026-08-27T12:00:00.000Z",
+    from: { kind: "human", humanId: "arda" },
+    to: { kind: "bot", botId: "coder" },
+    text: "fix login",
+  });
+  expect(result.threadId).toBe("user__arda__coder");
+  const events = store.read({ kind: "dm", id: "user__arda__coder" });
+  expect(events.find((e) => e.type === "dm.opened")?.payload.participants).toEqual([
+    { kind: "human", humanId: "arda" },
+    { kind: "bot", botId: "coder" },
+  ]);
+  expect(events.find((e) => e.type === "message.posted")?.payload.author).toEqual({
+    kind: "human",
+    humanId: "arda",
+  });
+});
+
 test("human can post on a second conversation with the same bot", async () => {
   const store = new MemoryEventStore();
   const deps = {

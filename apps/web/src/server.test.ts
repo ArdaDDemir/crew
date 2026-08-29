@@ -470,6 +470,178 @@ test("POST /api/model updates the workspace model", async () => {
   }
 });
 
+test("invite token say posts as that human; loopback say stays owner", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const empty = await (await fetch(`${url}/api/humans`)).json();
+    expect(empty).toEqual({ ownerId: "human", humans: [] });
+    const created = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda", handle: "Arda" }),
+    });
+    expect(created.ok).toBe(true);
+    const invited = (await created.json()) as { id: string; handle: string; token: string };
+    expect(invited.id).toBe("arda");
+    expect(invited.token.length).toBeGreaterThan(16);
+    const listed = await (await fetch(`${url}/api/humans`)).json();
+    expect(JSON.stringify(listed)).not.toContain(invited.token);
+    expect(listed.humans).toEqual([{ id: "arda", handle: "Arda", invited: true }]);
+    const disk = await Bun.file(join(cwd, ".crew", "humans.json")).text();
+    expect(disk).toContain("arda");
+    expect(disk).not.toContain(invited.token);
+
+    const say = await fetch(`${url}/api/say`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({
+        channelId: "landing",
+        text: "hello from arda @lead",
+      }),
+    });
+    const sayBody = await say.text();
+    expect(sayBody).toContain("ack from lead");
+    const log = await Bun.file(join(cwd, ".crew", "logs", "channel-landing.jsonl")).text();
+    expect(log).toContain('"humanId":"arda"');
+
+    await fetch(`${url}/api/humans/revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda" }),
+    });
+    const dead = await fetch(`${url}/api/say`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({
+        channelId: "landing",
+        text: "should fail",
+      }),
+    });
+    expect(dead.status).toBe(401);
+    expect(await dead.text()).toContain("invalid invite");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("invite create and revoke are owner-only; guest bearer is 403", async () => {
+  const { server, url } = await setup();
+  try {
+    const created = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda", handle: "Arda" }),
+    });
+    expect(created.ok).toBe(true);
+    const invited = (await created.json()) as { token: string };
+    const guestMint = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ id: "eve", handle: "Eve" }),
+    });
+    expect(guestMint.status).toBe(403);
+    expect(await guestMint.text()).toContain("owner only");
+    const listed = await (await fetch(`${url}/api/humans`)).json();
+    expect(listed.humans.map((h: { id: string }) => h.id)).toEqual(["arda"]);
+    const guestRevoke = await fetch(`${url}/api/humans/revoke`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ id: "arda" }),
+    });
+    expect(guestRevoke.status).toBe(403);
+    const badMint = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer nope",
+      },
+      body: JSON.stringify({ id: "eve", handle: "Eve" }),
+    });
+    expect(badMint.status).toBe(401);
+    expect(await badMint.text()).toContain("invalid invite");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("guest bearer cannot create bots; GET /api/who names the actor", async () => {
+  const { server, url } = await setup();
+  try {
+    const whoOwner = await (await fetch(`${url}/api/who`)).json();
+    expect(whoOwner).toEqual({ id: "human", handle: "owner", owner: true });
+    const created = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda", handle: "Arda" }),
+    });
+    const invited = (await created.json()) as { token: string };
+    const whoGuest = await (
+      await fetch(`${url}/api/who`, { headers: { Authorization: `Bearer ${invited.token}` } })
+    ).json();
+    expect(whoGuest).toEqual({ id: "arda", handle: "Arda", owner: false });
+    const badWho = await fetch(`${url}/api/who`, { headers: { Authorization: "Bearer nope" } });
+    expect(badWho.status).toBe(401);
+    const guestBot = await fetch(`${url}/api/bots`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ id: "hacker", name: "Hacker" }),
+    });
+    expect(guestBot.status).toBe(403);
+    expect(await guestBot.text()).toContain("owner only");
+    const guestAttach = await fetch(`${url}/api/attach`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ files: [{ path: "x.txt", content: "nope" }] }),
+    });
+    expect(guestAttach.status).toBe(403);
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.bots.map((b: { id: string }) => b.id)).not.toContain("hacker");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("/api/who");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("identity chip and invite settings are in the office page", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="who-chip"');
+    expect(page).toContain('id="who-token"');
+    expect(page).toContain('id="invite-create"');
+    expect(page).toContain('id="invite-list"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("crew.inviteToken");
+    expect(js).toContain("inviteHeaders");
+    expect(js).toMatch(/Authorization.*Bearer/);
+    const open = js.slice(js.indexOf("async function openAppSettings"));
+    const body = open.slice(0, open.indexOf("\ndocument.getElementById(\"invite-create\")"));
+    expect(body).toContain("invite-once");
+    expect(body).toContain("hidden = true");
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("say streams an account into the channel log", async () => {
   const { server, url } = await setup();
   try {
@@ -486,6 +658,89 @@ test("say streams an account into the channel log", async () => {
     ).json();
     expect(JSON.stringify(thread)).toContain("hello lead");
     expect(JSON.stringify(thread)).toContain("ack from lead");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("GET /api/shot serves a browser png and rejects escapes", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const dir = join(cwd, ".crew", "browser", "shots");
+    mkdirSync(dir, { recursive: true });
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    writeFileSync(join(dir, "1.png"), png);
+    const ok = await fetch(`${url}/api/shot?path=.crew/browser/shots/1.png`);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-type") ?? "").toMatch(/image\/png/i);
+    expect(Buffer.from(await ok.arrayBuffer()).length).toBeGreaterThan(10);
+    const escape = await fetch(`${url}/api/shot?path=../.env`);
+    expect(escape.status).toBe(403);
+    const env = await fetch(`${url}/api/shot?path=.crew/browser/shots/../../.env`);
+    expect(env.status).toBe(403);
+    const miss = await fetch(`${url}/api/shot?path=.crew/browser/shots/nope.png`);
+    expect(miss.status).toBe(404);
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("desk-shot");
+    expect(js).toContain("/api/shot");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("say verbose stream includes a screenshot after the tool completes", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-ui-"));
+  const ws = new FsWorkspace(join(cwd, ".crew"));
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead"],
+    permissionMode: "auto-accept",
+  });
+  writeFileSync(join(cwd, ".crew", "config.json"), `${JSON.stringify({ apiKey: "sk-test" })}\n`);
+  const { MemoryBrowser, nativeTools } = await import("@crew/tools-native");
+  const browser = new MemoryBrowser();
+  browser.seed("https://example.test/", { title: "Hi", nodes: [] });
+  const provider = new ScriptedProvider([
+    [
+      {
+        type: "tool-call",
+        id: "1",
+        name: "browser_open",
+        arguments: JSON.stringify({ url: "https://example.test/" }),
+      },
+      { type: "done" },
+    ],
+    [
+      { type: "tool-call", id: "2", name: "browser_screenshot", arguments: "{}" },
+      { type: "done" },
+    ],
+    [{ type: "text-delta", text: "shot taken" }, { type: "done" }],
+  ]);
+  const publicDir = join(import.meta.dir, "..", "public");
+  const { server, url, host } = startServer({ cwd, provider, publicDir, port: 0 });
+  host.tools = nativeTools({ browser });
+  try {
+    const res = await fetch(`${url}/api/say`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channelId: "landing",
+        text: "take a screenshot",
+        thinking: true,
+        verbose: true,
+      }),
+    });
+    const body = await res.text();
+    expect(body).toContain("browser_screenshot");
+    expect(body).toMatch(/\.crew\/browser\/shots\/.+\.png/);
+    expect(body).toContain('"shot"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toMatch(/appendTool\(row\.botId, row\.name, row\.args, row\.output, row\.shot\)/);
   } finally {
     server.stop(true);
   }
@@ -563,6 +818,200 @@ test("split panes are in the office page", async () => {
     expect(js).toMatch(/activePane !== state\.runPane/);
     expect(js).toContain("Wait for the current run to finish.");
     expect(js).toMatch(/state\.running && idx !== state\.runPane/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("GET/PUT /api/looks: owner sets bots; guest may only set self", async () => {
+  const { server, url } = await setup();
+  try {
+    const empty = await (await fetch(`${url}/api/looks`)).json();
+    expect(empty).toEqual({ bots: {}, humans: {} });
+    const ownerBot = await fetch(`${url}/api/looks`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ botId: "coder", skin: "dark", hair: "short", top: "hoodie" }),
+    });
+    expect(ownerBot.ok).toBe(true);
+    const created = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda", handle: "Arda" }),
+    });
+    const invited = (await created.json()) as { token: string };
+    const guestBot = await fetch(`${url}/api/looks`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ botId: "coder", hair: "buzz" }),
+    });
+    expect(guestBot.status).toBe(403);
+    const guestSelf = await fetch(`${url}/api/looks`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({ hair: "ponytail", top: "tee" }),
+    });
+    expect(guestSelf.ok).toBe(true);
+    const listed = await (await fetch(`${url}/api/looks`)).json();
+    expect(listed.bots.coder.top).toBe("hoodie");
+    expect(listed.humans.arda.hair).toBe("ponytail");
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor-look"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("applyFloorLook");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("GET/PUT /api/floor roundtrips furniture; guest cannot place", async () => {
+  const { server, url } = await setup();
+  try {
+    const empty = await (await fetch(`${url}/api/floor?id=landing`)).json();
+    expect(empty).toEqual({ channelId: "landing", furniture: [] });
+    const put = await fetch(`${url}/api/floor`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: "landing",
+        furniture: [{ id: "p1", kind: "plant", x: 40, y: 90 }],
+      }),
+    });
+    expect(put.ok).toBe(true);
+    const got = await (await fetch(`${url}/api/floor?id=landing`)).json();
+    expect(got.furniture).toEqual([{ id: "p1", kind: "plant", x: 40, y: 90 }]);
+    const miss = await fetch(`${url}/api/floor`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "nope", furniture: [] }),
+    });
+    expect(miss.status).toBe(400);
+    const created = await fetch(`${url}/api/humans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "arda", handle: "Arda" }),
+    });
+    const invited = (await created.json()) as { token: string };
+    const guestPut = await fetch(`${url}/api/floor`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${invited.token}`,
+      },
+      body: JSON.stringify({
+        id: "landing",
+        furniture: [{ id: "x", kind: "sofa", x: 1, y: 1 }],
+      }),
+    });
+    expect(guestPut.status).toBe(403);
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor-kit"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("placeFurniture");
+    expect(js).toContain("floor-furn");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor doors switch channel", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor-doors"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("renderFloorDoors");
+    expect(js).toContain("floor-door");
+    expect(js).toMatch(/paneOpen\(state\.activePane, ["']channel["']/);
+    expect(js).toContain("closest(\".floor-door\")");
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-door");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor click-to-walk and writing walks to the table", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor-you"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("walkYou");
+    expect(js).toContain("bindFloorWalk");
+    expect(js).toContain("tableSlot");
+    expect(js).toMatch(/pose === ["']writing["']/);
+    expect(js).toContain("closest(\".floor-seat\")");
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toMatch(/\.floor-you[\s\S]{0,200}transition/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor hint and holding cursor are in the office", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor-hint"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("paintFloorHint");
+    expect(js).toContain("Click carpet to walk");
+    expect(js).toContain("Esc to cancel");
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-scene.holding");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor hold Escape cancels; guest does not remove furniture", async () => {
+  const { server, url } = await setup();
+  try {
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain('key === "Escape"');
+    expect(js).toContain("clearFloorHold");
+    expect(js).toMatch(/function removeFurniture[\s\S]{0,200}inviteToken\(\)/);
+    expect(js).toMatch(/function placeFurniture[\s\S]{0,180}inviteToken\(\)/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor furniture fetch is keyed by room and look save is debounced", async () => {
+  const { server, url } = await setup();
+  try {
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("floorFurnRoom");
+    expect(js).toContain("floorFetchSeq");
+    expect(js).toContain("flushYouLook");
+    expect(js).toMatch(/lookTimer/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("isometric floor is in the office desk", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="floor"');
+    expect(page).toContain("floor-glass");
+    expect(page).toContain("floor-seats");
+    expect(page).toContain("floor-desks");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("renderFloor");
+    expect(js).toContain("floor-seat");
+    expect(js).toContain("human__");
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-scene");
+    expect(css).toContain("prefers-reduced-motion");
   } finally {
     server.stop(true);
   }

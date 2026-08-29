@@ -27,6 +27,12 @@ test("parseServerArgv reads cwd port public hostname", () => {
   });
 });
 
+test("parseServerArgv reads --cors origin", () => {
+  expect(parseServerArgv(["--cors", "http://127.0.0.1:3000"]).cors).toBe(
+    "http://127.0.0.1:3000",
+  );
+});
+
 test("parseServerArgv throws on unknown dash flag", () => {
   expect(() => parseServerArgv(["--cwd", "x", "--oops"])).toThrow(/unknown flag: --oops/);
 });
@@ -78,6 +84,36 @@ test("resolvePublicDir uses source public next to src", () => {
       importMetaDir: "C:\\repo\\apps\\web\\src",
     }),
   ).toBe(join("C:\\repo\\apps\\web\\src", "..", "public"));
+});
+
+test("startServer OPTIONS is 204 when --cors is set", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-ui-cors-"));
+  const ws = new FsWorkspace(join(cwd, ".crew"));
+  ws.addBot({ id: "lead", name: "Lead" });
+  ws.addChannel({
+    id: "landing",
+    leadBotId: "lead",
+    memberBotIds: ["lead"],
+    permissionMode: "auto-accept",
+  });
+  writeFileSync(join(cwd, ".crew", "config.json"), `${JSON.stringify({ apiKey: "sk-test" })}\n`);
+  const { server, url } = startServer({
+    cwd,
+    port: 0,
+    publicDir: join(import.meta.dir, "..", "public"),
+    provider: new ScriptedProvider([[{ type: "done" }]]),
+    cors: "http://127.0.0.1:3000",
+  });
+  try {
+    const preflight = await fetch(`${url}/api/health`, { method: "OPTIONS" });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe("http://127.0.0.1:3000");
+    expect(preflight.headers.get("Access-Control-Allow-Headers") ?? "").toMatch(/Authorization/i);
+    const health = await fetch(`${url}/api/health`);
+    expect(health.headers.get("Access-Control-Allow-Origin")).toBe("http://127.0.0.1:3000");
+  } finally {
+    server.stop(true);
+  }
 });
 
 test("startServer bootstrap cwd is the opted folder", async () => {

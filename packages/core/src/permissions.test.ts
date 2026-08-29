@@ -4,6 +4,7 @@ import {
   decidePermission,
   effectiveMode,
   hardDenyCommand,
+  hardDenyUrl,
   isDeniedPath,
   parseReviewerVerdict,
   toolKind,
@@ -102,6 +103,33 @@ test("parseReviewerVerdict treats YES and empty as ask", () => {
   expect(parseReviewerVerdict("YES")).toBe("ask");
   expect(parseReviewerVerdict("ALLOWED")).toBe("ask");
   expect(parseReviewerVerdict("")).toBe("ask");
+});
+
+test("browser tools are not auto-accept shell", () => {
+  expect(toolKind("browser_open")).toBe("browser");
+  expect(toolKind("browser_snapshot")).toBe("browser");
+  expect(
+    decidePermission({
+      mode: "auto-accept",
+      tool: "browser",
+      workspaceRoot: root,
+    }),
+  ).toBe("ask");
+  expect(
+    decidePermission({
+      mode: "full-access",
+      tool: "browser",
+      workspaceRoot: root,
+    }),
+  ).toBe("allow");
+});
+
+test("hardDenyUrl blocks file chrome javascript and env paths", () => {
+  expect(hardDenyUrl("file:///C:/secret")).toBe(true);
+  expect(hardDenyUrl("chrome://settings")).toBe(true);
+  expect(hardDenyUrl("javascript:alert(1)")).toBe(true);
+  expect(hardDenyUrl("https://example.com/.env")).toBe(true);
+  expect(hardDenyUrl("https://example.com/pricing")).toBe(false);
 });
 
 test("mcp tools are not auto-accept shell", () => {

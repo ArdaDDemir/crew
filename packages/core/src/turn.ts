@@ -7,6 +7,7 @@ import {
   decidePermission,
   effectiveMode,
   hardDenyCommand,
+  hardDenyUrl,
   toolKind,
   type ToolKind,
 } from "./permissions";
@@ -58,10 +59,12 @@ export type RunBotTurnInput = Clock & {
   review?: ReviewFn;
   maxRounds?: number;
   onEvent?: (event: ChatEvent) => void;
+  onToolDone?: (row: { name: string; output: string }) => void;
   onStatus?: (message: string) => void;
   sendDm?: (toBotId: string, text: string) => Promise<string>;
   shouldStop?: () => boolean;
   permissionMode?: PermissionMode;
+  humanId?: string;
 };
 
 async function settleAsk(
@@ -253,6 +256,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
     workspace: input.workspace,
     botId: input.botId,
     thread: input.thread,
+    humanId: input.humanId,
   });
   if (cross) messages.push({ role: "user", content: cross });
 
@@ -399,7 +403,9 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         const absPath = rel ? resolve(input.workspaceRoot, rel) : undefined;
         const deniedShell =
           call.name === "shell" && hardDenyCommand(String(args.command ?? ""));
-        const verdict = deniedShell
+        const deniedBrowser =
+          asKind(call.name) === "browser" && hardDenyUrl(String(args.url ?? ""));
+        const verdict = deniedShell || deniedBrowser
           ? "deny"
           : decidePermission({
               mode,
@@ -432,6 +438,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
         name: call.name,
         output: output.slice(0, 8000),
       });
+      input.onToolDone?.({ name: call.name, output: output.slice(0, 8000) });
       messages.push({
         role: "tool",
         tool_call_id: call.id,

@@ -86,6 +86,56 @@ test("streams text then a tool then a final reply", async () => {
   expect(types).toContain("bot.turn.completed");
 });
 
+test("onToolDone fires after tool.completed with name and output", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    leadBotId: "coder",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const thread = { kind: "channel" as const, id: "landing" };
+  store.append({
+    v: 1,
+    id: "seed",
+    ts: "t",
+    thread,
+    type: "message.posted",
+    parent: null,
+    payload: { author: { kind: "human" }, text: "read pkg", mentions: ["coder"] },
+  });
+  const done: { name: string; output: string }[] = [];
+  await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "call_1",
+          name: "read",
+          arguments: JSON.stringify({ path: "package.json" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "ok" }, { type: "done" }],
+    ]),
+    tools: [readTool],
+    nextId: seq(),
+    now: () => "t",
+    thread,
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+    onToolDone: (row) => done.push(row),
+  });
+  expect(done).toEqual([{ name: "read", output: "contents of package.json" }]);
+});
+
 test("hard-denied shell is denied without asking", async () => {
   const store = new MemoryEventStore();
   const workspace = new MemoryWorkspace();
@@ -139,6 +189,58 @@ test("hard-denied shell is denied without asking", async () => {
   expect(result.toolNames).toContain("shell");
   const done = store.read({ kind: "channel", id: "landing" }).find((e) => e.type === "tool.completed");
   expect(String(done?.payload.output ?? "")).toContain("permission denied");
+});
+
+test("hard-denied file:// browser open is denied without asking", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "full-access",
+  });
+  let ran = false;
+  let asked = 0;
+  const openTool: Tool = {
+    name: "browser_open",
+    description: "Open a page",
+    parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] },
+    async execute() {
+      ran = true;
+      return "opened";
+    },
+  };
+  await runBotTurn({
+    store,
+    workspace,
+    provider: new ScriptedProvider([
+      [
+        {
+          type: "tool-call",
+          id: "call_1",
+          name: "browser_open",
+          arguments: JSON.stringify({ url: "file:///C:/.env" }),
+        },
+        { type: "done" },
+      ],
+      [{ type: "text-delta", text: "I will not open local files." }, { type: "done" }],
+    ]),
+    tools: [openTool],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "test",
+    workspaceRoot: "/proj",
+    ask: async () => {
+      asked += 1;
+      return "allow";
+    },
+    hasReviewer: false,
+  });
+  expect(ran).toBe(false);
+  expect(asked).toBe(0);
 });
 
 test("hard-denied .env does not call the tool", async () => {

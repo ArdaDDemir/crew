@@ -91,8 +91,55 @@ html, body {
   -webkit-app-region: no-drag;
 }
 .app-top-actions .chip,
-.app-top-actions button {
+.app-top-actions button,
+.app-top-actions .who-chip {
   -webkit-app-region: no-drag;
+}
+.who-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px 2px 10px;
+  cursor: text;
+}
+.who-chip span {
+  font: 11px "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.who-chip input {
+  width: 7.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 11px "IBM Plex Mono", ui-monospace, monospace;
+  outline: none;
+}
+.invite-create-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.invite-create-row input {
+  min-width: 8rem;
+  flex: 1;
+}
+.invite-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+.invite-row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font: 12px "IBM Plex Sans", system-ui, sans-serif;
 }
 .win-btns {
   display: flex;
@@ -118,7 +165,7 @@ html, body {
 
 .stage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -749,6 +796,15 @@ svg.ico {
   color: var(--text);
   padding: 4px 0;
 }
+.desk-shot {
+  display: block;
+  max-width: min(100%, 420px);
+  max-height: 240px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0b0b0c;
+}
 
 .msg.you .copy {
   background: var(--lift);
@@ -989,7 +1045,7 @@ svg.ico {
   background: var(--rail);
   border-left: 1px solid var(--line);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -998,10 +1054,11 @@ svg.ico {
 .desk .rail-label { margin-top: 0; }
 .here-list {
   min-height: 0;
+  max-height: 28vh;
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   padding: 0 2px 8px;
 }
 .here-row {
@@ -1013,7 +1070,7 @@ svg.ico {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 6px 8px;
+  padding: 3px 6px;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
@@ -1068,6 +1125,443 @@ svg.ico {
   margin: 8px 4px;
   color: var(--faint);
   font-size: 12px;
+}
+
+.floor {
+  flex-shrink: 0;
+  margin: 0 2px 8px;
+  border: 1px solid #2a1f18;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1410;
+}
+.floor-scene {
+  position: relative;
+  height: 248px;
+  overflow: hidden;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, #5a3d2a 0 48px, #3d291c 48px 52px, #2a4f6e 52px);
+}
+.floor-scene.holding {
+  cursor: copy;
+}
+.floor-hint {
+  margin: 0;
+  padding: 4px 8px 2px;
+  font: 10px "IBM Plex Sans", system-ui, sans-serif;
+  color: #c4a574;
+}
+.floor-wall-back {
+  position: absolute;
+  left: 0;
+  right: 52px;
+  top: 0;
+  height: 48px;
+  background:
+    linear-gradient(90deg, #c4a06a 0 2px, transparent 2px),
+    linear-gradient(180deg, #9a7350, #6e5138);
+  border-bottom: 4px solid #3d2a1c;
+  box-shadow: inset 0 -10px 0 #5a3d28;
+}
+.floor-wall-side {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 64px;
+  height: 100%;
+  background: linear-gradient(200deg, #5c4030, #3a281c);
+  clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%);
+}
+.floor-doors {
+  position: absolute;
+  left: 8px;
+  right: 72px;
+  top: 2px;
+  height: 48px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  z-index: 12;
+  padding: 2px 2px 0;
+}
+.floor-doors[hidden] { display: none; }
+.floor-door {
+  flex: 0 0 40px;
+  height: 44px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+.floor-door-slab {
+  display: block;
+  width: 28px;
+  height: 36px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #8b5a2b, #5a3516);
+  border: 2px solid #3d2412;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset -6px 0 0 #6b4423;
+}
+.floor-door-label {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  transform: translateX(-50%);
+  font: 8px "IBM Plex Mono", ui-monospace, monospace;
+  color: #1a120c;
+  background: #f3e6c8;
+  border: 1px solid #c4a574;
+  padding: 0 3px;
+  white-space: nowrap;
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+.floor-door:hover .floor-door-slab {
+  background: linear-gradient(180deg, #a56c36, #6b4423);
+}
+.floor-look {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  background: #241810;
+  border-top: 1px solid #2a1f18;
+  font: 10px "IBM Plex Mono", ui-monospace, monospace;
+  color: #f3e6c8;
+}
+.floor-look label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.floor-look select {
+  background: #3d2a1c;
+  color: #f3e6c8;
+  border: 1px solid #c4a574;
+  border-radius: 4px;
+  font: inherit;
+}
+.look-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.floor-hair {
+  position: absolute;
+  top: -4px;
+  width: 18px;
+  height: 8px;
+  border-radius: 6px 6px 2px 2px;
+  background: #1a120c;
+  z-index: 2;
+  pointer-events: none;
+}
+.floor-hair.hair-none { display: none; }
+.floor-hair.hair-buzz { height: 4px; top: -2px; }
+.floor-hair.hair-curly {
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 4px 0 0 #1a120c, -4px 0 0 #1a120c;
+}
+.floor-hair.hair-ponytail {
+  height: 8px;
+}
+.floor-hair.hair-ponytail::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 4px;
+  width: 5px;
+  height: 10px;
+  background: #1a120c;
+  border-radius: 4px;
+}
+.floor-kit {
+  display: flex;
+  gap: 4px;
+  padding: 6px 6px 4px;
+  background: #241810;
+  border-top: 1px solid #2a1f18;
+}
+.floor-kit[hidden] { display: none; }
+.floor-kind {
+  appearance: none;
+  border: 1px solid #c4a574;
+  background: #3d2a1c;
+  color: #f3e6c8;
+  font: 10px "IBM Plex Mono", ui-monospace, monospace;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.floor-kind.on {
+  background: #2f8a5b;
+  color: #e8fff4;
+  border-color: #379a67;
+}
+.floor-stuff {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+.floor-furn {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.floor-furn.kind-plant {
+  width: 16px;
+  height: 22px;
+  background: #2f8a5b;
+  border-radius: 50% 50% 4px 4px;
+  box-shadow: 0 10px 0 -6px #6b4423;
+}
+.floor-furn.kind-lamp {
+  width: 10px;
+  height: 26px;
+  background: linear-gradient(180deg, #e0b84e 8px, #5a3516 8px);
+  border-radius: 4px 4px 2px 2px;
+  box-shadow: 0 0 10px #e0b84e88;
+}
+.floor-furn.kind-sofa {
+  width: 36px;
+  height: 16px;
+  background: #6b3a5a;
+  border: 2px solid #3d1e32;
+  border-radius: 4px;
+}
+.floor-furn.kind-shelf {
+  width: 22px;
+  height: 28px;
+  background: repeating-linear-gradient(#8b5a2b 0 5px, #5a3516 5px 7px);
+  border: 2px solid #3d2412;
+}
+.floor-furn.kind-rug {
+  width: 40px;
+  height: 18px;
+  background: #a33;
+  border: 2px solid #5a1515;
+  border-radius: 2px;
+  transform: skewY(-8deg);
+}
+.floor-carpet {
+  position: absolute;
+  left: 10px;
+  right: 58px;
+  top: 50px;
+  bottom: 10px;
+  background-color: #2f6f9a;
+  background-image:
+    repeating-linear-gradient(115deg, #2a648c 0 10px, transparent 10px 20px),
+    repeating-linear-gradient(25deg, #3a8ab8 0 10px, transparent 10px 20px);
+  transform: skewY(-10deg);
+  transform-origin: top left;
+  border: 3px solid #1e4a66;
+  box-shadow: inset 0 0 0 5px #246086, 6px 8px 0 #1a3040;
+}
+.floor-glass {
+  position: absolute;
+  right: 16px;
+  top: 34px;
+  width: 124px;
+  height: 100px;
+  background: linear-gradient(180deg, rgba(200, 236, 255, 0.28), rgba(120, 190, 230, 0.12));
+  border: 3px solid rgba(240, 250, 255, 0.85);
+  box-shadow:
+    inset 0 0 0 2px rgba(70, 130, 170, 0.55),
+    6px 8px 0 #163040;
+  transform: skewY(-10deg);
+  z-index: 6;
+}
+.floor-plaque {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  font: 10px "IBM Plex Mono", ui-monospace, monospace;
+  color: #143044;
+  background: #f3e6c8;
+  border: 1px solid #c4a574;
+  padding: 1px 6px;
+  transform: skewY(8deg);
+}
+.floor-table {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 40px;
+  height: 22px;
+  background: #8b5a2b;
+  border: 2px solid #5a3516;
+  transform: skewY(8deg);
+}
+.floor-you {
+  position: absolute;
+  left: 210px;
+  top: 96px;
+  width: 22px;
+  height: 36px;
+  z-index: 16;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px #7dffb8);
+  transition: left 0.45s linear, top 0.45s linear;
+}
+.floor-desks {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.floor-desk {
+  position: absolute;
+  width: 48px;
+  height: 28px;
+}
+.floor-seat {
+  transition: left 0.45s linear, top 0.45s linear;
+}
+.floor-seats {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+}
+.floor-seat {
+  position: absolute;
+  width: 64px;
+  height: 72px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.floor-pc {
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 40px;
+  height: 16px;
+  background: #7a4e28;
+  border: 2px solid #3d2412;
+  border-radius: 2px;
+  transform: skewX(-12deg);
+}
+.floor-screen {
+  position: absolute;
+  left: 10px;
+  top: -14px;
+  width: 20px;
+  height: 14px;
+  background: #121820;
+  border: 2px solid #2c3340;
+  border-radius: 2px 2px 0 0;
+  transform: skewX(12deg);
+}
+.floor-desk.lit .floor-screen {
+  background: #3ecf8e;
+  box-shadow: 0 0 10px #3ecf8e99;
+}
+.floor-char {
+  position: absolute;
+  left: 10px;
+  bottom: 4px;
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 0 #1a120c);
+}
+.floor-head {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 700 8px "IBM Plex Sans", system-ui, sans-serif;
+  border: 1px solid #111;
+  z-index: 1;
+}
+.floor-body {
+  width: 16px;
+  height: 18px;
+  margin-top: -3px;
+  clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+  border: 0;
+}
+.floor-you .floor-char {
+  position: relative;
+  left: 0;
+  bottom: 0;
+}
+.floor-char.you .floor-head {
+  background: #ececee;
+  color: #1a1a1c;
+}
+.floor-char.you .floor-body {
+  background: #2f8a5b;
+}
+.floor-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 9px "IBM Plex Mono", ui-monospace, monospace;
+  color: #1a120c;
+  background: #f3e6c8;
+  border: 1px solid #c4a574;
+  padding: 0 4px;
+}
+.floor-bubble {
+  position: absolute;
+  left: 36px;
+  top: 0;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 9px "IBM Plex Sans", system-ui, sans-serif;
+  color: #143044;
+  background: #fff;
+  border: 1px solid #c4a574;
+  border-radius: 8px 8px 8px 2px;
+  padding: 2px 5px;
+  display: none;
+}
+.floor-seat.busy .floor-bubble:not(:empty) { display: block; }
+.floor-seat.pose-thinking .floor-head {
+  animation: floor-bob 0.9s ease-in-out infinite;
+}
+.floor-seat.pose-working .floor-char {
+  animation: floor-type 0.35s steps(2) infinite;
+}
+@keyframes floor-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes floor-type {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floor-seat.pose-thinking .floor-head,
+  .floor-seat.pose-working .floor-char {
+    animation: none;
+  }
+  .floor-you,
+  .floor-seat {
+    transition: none;
+  }
 }
 
 .composer textarea {
@@ -2075,7 +2569,7 @@ pre.diff {
 #nav-scrim { display: none; }
 
 @media (max-width: 980px) {
-  .stage { grid-template-columns: minmax(0, 1fr) 200px; }
+  .stage { grid-template-columns: minmax(0, 1fr) 280px; }
 }
 @media (max-width: 800px) {
   .app { grid-template-columns: 1fr; grid-template-rows: 40px minmax(0, 1fr); }

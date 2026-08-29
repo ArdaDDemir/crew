@@ -8,6 +8,7 @@ import type { Participant } from "./router";
 import type { PermissionMode } from "./workspace";
 import { parseMentions } from "./mentions";
 import { RESERVED_IDS } from "./slug";
+import { humanAuthor, humanIdOf } from "./events";
 
 export type BotProviderBind = {
   provider?: Provider;
@@ -33,8 +34,11 @@ export type DispatchBase = Clock & {
   onStatus?: (message: string) => void;
   onWoken?: (woken: string[]) => void;
   onEvent?: (botId: string, event: ChatEvent) => void;
+  onToolDone?: (row: { botId: string; name: string; output: string }) => void;
   shouldStop?: () => boolean;
   permissionModeFor?: (thread: { kind: "channel" | "dm"; id: string }) => PermissionMode | undefined;
+  humanId?: string;
+  onHumanDm?: (row: { humanId: string; text: string; threadId: string }) => Promise<void>;
 };
 
 function bindTurn(input: DispatchBase, botId: string) {
@@ -67,13 +71,14 @@ export async function dispatchChannelPost(
   held?: { waiting: string[]; text: string };
   ignored?: { names: string[]; text: string };
 }> {
+  const author = humanAuthor(input.humanId);
   const posted = await postToChannel({
     store: input.store,
     workspace: input.workspace,
     nextId: input.nextId,
     now: input.now,
     channelId: input.channelId,
-    post: { author: { kind: "human" }, text: input.text },
+    post: { author, text: input.text },
   });
 
   input.onWoken?.(posted.woken);
@@ -137,9 +142,13 @@ export async function dispatchChannelPost(
           thread: { kind: "channel", id: input.channelId },
           permissionMode: input.permissionModeFor?.({ kind: "channel", id: input.channelId }),
           botId,
+          humanId: humanIdOf(author),
           onStatus: input.onStatus,
           onEvent: input.onEvent
             ? (event) => input.onEvent!(botId, event)
+            : undefined,
+          onToolDone: input.onToolDone
+            ? (row) => input.onToolDone!({ botId, name: row.name, output: row.output })
             : undefined,
           sendDm: async (toId, text) => {
             if (!text.trim()) return "text is required";
@@ -150,8 +159,13 @@ export async function dispatchChannelPost(
                 nextId: input.nextId,
                 now: input.now,
                 from: { kind: "bot", botId },
-                to: { kind: "human" },
+                to: author,
                 text,
+              });
+              await input.onHumanDm?.({
+                humanId: humanIdOf(author),
+                text,
+                threadId: dm.threadId,
               });
               return `dm sent to human (${dm.threadId})`;
             }
@@ -241,9 +255,14 @@ export async function dispatchChannelPost(
       thread: { kind: "dm", id: item.threadId },
       permissionMode: input.permissionModeFor?.({ kind: "dm", id: item.threadId }),
       botId: item.botId,
+      humanId: humanIdOf(author),
       onStatus: input.onStatus,
       onEvent: input.onEvent
         ? (event) => input.onEvent!(item.botId, event)
+        : undefined,
+      onToolDone: input.onToolDone
+        ? (row) =>
+            input.onToolDone!({ botId: item.botId, name: row.name, output: row.output })
         : undefined,
     });
     dms.push({
@@ -291,6 +310,12 @@ export async function dispatchDm(
   });
   input.onWoken?.(posted.woken);
   const replies: { botId: string; text: string; error?: string }[] = [];
+  const dmHuman =
+    input.from.kind === "human"
+      ? input.from
+      : input.to.kind === "human"
+        ? input.to
+        : undefined;
   for (const botId of posted.woken) {
     const turn = await runBotTurn({
       ...input,
@@ -298,9 +323,13 @@ export async function dispatchDm(
       thread: { kind: "dm", id: posted.threadId },
       permissionMode: input.permissionModeFor?.({ kind: "dm", id: posted.threadId }),
       botId,
+      humanId: dmHuman ? humanIdOf(dmHuman) : undefined,
       onStatus: input.onStatus,
       onEvent: input.onEvent
         ? (event) => input.onEvent!(botId, event)
+        : undefined,
+      onToolDone: input.onToolDone
+        ? (row) => input.onToolDone!({ botId, name: row.name, output: row.output })
         : undefined,
     });
     replies.push({ botId, text: turn.text, error: turn.error });

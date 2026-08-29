@@ -5,6 +5,7 @@ export type ServerArgv = {
   port?: number;
   publicDir?: string;
   hostname?: string;
+  cors?: string;
 };
 
 export function parseServerArgv(argv: string[]): ServerArgv {
@@ -31,7 +32,8 @@ export function parseServerArgv(argv: string[]): ServerArgv {
         throw new Error("hostname must be 127.0.0.1");
       }
       out.hostname = host === "localhost" ? "127.0.0.1" : host;
-    } else throw new Error(`unknown flag: ${flag}`);
+    } else if (flag === "--cors") out.cors = take();
+    else throw new Error(`unknown flag: ${flag}`);
   }
   return out;
 }

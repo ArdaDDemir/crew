@@ -11,9 +11,14 @@ export {
 export {
   dmConversationId,
   dmThreadId,
+  humanAuthor,
+  humanIdOf,
+  OWNER_HUMAN_ID,
   parseDmThreadId,
   threadKey,
+  type BotRef,
   type CrewEvent,
+  type HumanRef,
   type ParsedDmThread,
   type ThreadRef,
 } from "./events";
@@ -42,6 +47,7 @@ export {
   decidePermission,
   effectiveMode,
   hardDenyCommand,
+  hardDenyUrl,
   parseReviewerVerdict,
   toolKind,
 } from "./permissions";

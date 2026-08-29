@@ -28,7 +28,10 @@ crew open <channel>     (/thinking /verbose /mode /stop /quit)
 crew log <channel> [--thinking] [--verbose]
 crew config set model|fallback|key|base-url|allowed <value>
 crew config show
+crew serve [--port N] [--cwd DIR] [--hostname 127.0.0.1] [--cors ORIGIN]
 ```
+
+`crew serve` starts the same loopback office as `bun run ui` (`ADR-0048`). Hostname must be loopback. `--cors` is opt-in. Invite: `Authorization: Bearer` or JSON `token`. Not a TUI.
 
 `--bots` is the membership list. The human is always included. `--soul FILE` writes `SOUL.md`. Human `crew skill add` may write onto any bot; agents still use `skill_acquire` (copy or self-write only).
 
@@ -65,4 +68,4 @@ The same engine is `bun run ui` (`docs/specs/web-ui.md`).
 
 ## Out of 0.4
 
-Fullscreen TUI, Electron, real Discord API, git PR buttons, `crew serve`. Harness spawn and MCP (including resources/prompts) bind on `crew say` / `crew dm` the same as the office (`ADR-0037`, `ADR-0038`).
+Fullscreen TUI, Electron, git PR buttons, public `0.0.0.0`. Loopback `crew serve` is in (`ADR-0048`). Discord is `apps/discord` (`ADR-0049`), not this CLI. Harness spawn and MCP (including resources/prompts) bind on `crew say` / `crew dm` the same as the office (`ADR-0037`, `ADR-0038`).

@@ -1,6 +1,6 @@
 # Todo: computer-use + in-app browser
 
-Status: parked — Arda wants these later, not this UI program  
+Status: browser tools in (`ADR-0050`). Live desktop mouse still parked.  
 Owner: Arda  
 Date: 2026-08-27
 

@@ -33,6 +33,8 @@ Always is **per-project**, not per-bot: `.crew/permissions.json` (`ADR-0018`). F
 
 MCP tools (`mcp_<server>_<tool>`, plus `mcp_<server>_resources_*` / `_prompts_*` when advertised, `ADR-0036` / `ADR-0038`) are `ToolKind` `mcp` (`ADR-0044`): supervised and auto-accept **ask**; full-access allows. Unknown other tools still map to `shell`. Harness CLI turns do not use this card (the CLI auto-approves).
 
+Browser tools (`browser_open`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_screenshot`, `ADR-0050`) are `ToolKind` `browser`: supervised and auto-accept **ask**; full-access allows. Isolated profile `.crew/browser/`. Hard-denied URLs (every mode, reviewer skipped): `file://`, `chrome://`, `chrome-extension://`, `javascript:`, `about:`, `data:`, and `.env` paths. Not the operator's live mouse. `playwright` is a `packages/tools-native` dependency (`ADR-0054`); Chromium is still `bunx playwright install chromium`. Unit tests use `MemoryBrowser` and skip the browser download. Crew.exe does not compile Chromium into the sidecar; missing Chromium stays `browser unavailable`.
+
 Hard-denied shell (every mode, reviewer skipped): command mentions `.env` or `.ssh`, `rm -rf /`, `irm`, or `curl | iex`.
 
 Settings → Permissions:

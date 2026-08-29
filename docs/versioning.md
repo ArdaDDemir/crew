@@ -1,13 +1,13 @@
 # Versioning (0.x)
 
-Current release: **0.8.0** (`package.json`, tag `v0.8.0`). Newer work after that lives in `CHANGELOG.md` `[Unreleased]`. Version lives in the root `package.json` only. No `VERSION` file. Started at 0.1.0.
+Current release: **0.9.0** (`package.json`, tag `v0.9.0`). Newer work after that lives in `CHANGELOG.md` `[Unreleased]`. Version lives in the root `package.json` only. No `VERSION` file. Started at 0.1.0.
 
 Until 1.0, the public surface may change. We still announce breaks.
 
 ## What counts as public API
 
 1. CLI flags and subcommands
-2. Config file schema (`.crew/config.json`, `~/.crew/config.json`, `.crew/jobs.json`, `.crew/providers.json`, `.crew/permissions.json`)
+2. Config file schema (`.crew/config.json`, `~/.crew/config.json`, `.crew/jobs.json`, `.crew/providers.json`, `.crew/permissions.json`, `.crew/humans.json`, `.crew/floor.json`, `.crew/looks.json`)
 3. Session JSONL `v` field and event `type` set
 4. Skill / bot / channel markdown frontmatter we honor
 5. Permission mode names

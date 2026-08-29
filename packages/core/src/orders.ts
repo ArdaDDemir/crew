@@ -1,5 +1,5 @@
 import type { CrewEvent, ThreadRef } from "./events";
-import { threadKey } from "./events";
+import { humanIdOf, OWNER_HUMAN_ID, parseDmThreadId, threadKey } from "./events";
 import type { EventStore } from "./store";
 import type { Participant } from "./router";
 import type { Workspace } from "./workspace";
@@ -16,10 +16,34 @@ function isHumanPost(event: CrewEvent): boolean {
   return author?.kind === "human";
 }
 
+function wakingHumanId(humanId?: string): string {
+  const id = String(humanId ?? "").trim();
+  return id || OWNER_HUMAN_ID;
+}
+
+function postHumanId(event: CrewEvent): string {
+  return humanIdOf(event.payload.author as { kind?: string; humanId?: string });
+}
+
+function dmHumanId(thread: ThreadRef): string | undefined {
+  if (thread.kind !== "dm") return undefined;
+  try {
+    const parsed = parseDmThreadId(thread.id);
+    if (!parsed.withHuman) return undefined;
+    return parsed.left === "human" ? OWNER_HUMAN_ID : parsed.left;
+  } catch {
+    return undefined;
+  }
+}
+
 function dmInvolvesBot(store: EventStore, thread: ThreadRef, botId: string): boolean {
   if (thread.kind !== "dm") return false;
-  if (thread.id === `human__${botId}` || thread.id.startsWith(`human__${botId}__`)) {
-    return true;
+  try {
+    const parsed = parseDmThreadId(thread.id);
+    if (parsed.right === botId) return true;
+    if (!parsed.withHuman && parsed.left === botId) return true;
+  } catch {
+    /* fall through to opened participants */
   }
   const opened = store.read(thread).find((e) => e.type === "dm.opened");
   const raw = opened?.payload.participants;
@@ -35,7 +59,9 @@ export function collectHumanOrders(
   store: EventStore,
   workspace: Workspace,
   botId: string,
+  humanId?: string,
 ): HumanOrder[] {
+  const waking = wakingHumanId(humanId);
   const orders: HumanOrder[] = [];
   for (const thread of store.listThreads()) {
     if (thread.kind === "channel") {
@@ -46,6 +72,7 @@ export function collectHumanOrders(
     }
     for (const event of store.read(thread)) {
       if (!isHumanPost(event)) continue;
+      if (postHumanId(event) !== waking) continue;
       orders.push({
         thread,
         ts: event.ts,
@@ -106,8 +133,10 @@ export function buildCrossThreadNote(input: {
   workspace: Workspace;
   botId: string;
   thread: ThreadRef;
+  humanId?: string;
 }): string | undefined {
-  const orders = collectHumanOrders(input.store, input.workspace, input.botId);
+  const waking = wakingHumanId(input.humanId);
+  const orders = collectHumanOrders(input.store, input.workspace, input.botId, waking);
   const here = threadKey(input.thread);
   const elsewhere = orders.filter((o) => threadKey(o.thread) !== here);
   const latest = orders.at(-1);
@@ -130,21 +159,29 @@ export function buildCrossThreadNote(input: {
 
   if (input.thread.kind === "channel") {
     const lastAccount = lastOwnChannelAccount(input.store, input.botId);
-    const unread: { ts: string; text: string }[] = [];
+    const ownUnread: { ts: string; text: string }[] = [];
+    let otherUnread = 0;
     for (const thread of input.store.listThreads()) {
       if (thread.kind !== "dm" || !dmInvolvesBot(input.store, thread, input.botId)) continue;
       const lastHuman = lastHumanOn(input.store, thread);
       if (!lastHuman) continue;
       if (lastAccount && lastHuman.ts <= lastAccount.ts) continue;
-      unread.push(lastHuman);
+      const owner = dmHumanId(thread);
+      if (owner === waking) ownUnread.push(lastHuman);
+      else otherUnread += 1;
     }
-    unread.sort((a, b) => a.ts.localeCompare(b.ts));
-    if (unread.length) {
-      const newest = unread.at(-1)!;
-      const label = unread.length === 1 ? "1 unread DM" : `${unread.length} unread DMs`;
-      lines.push(
-        `${label}. Newest gist: ${gist(newest.text, 120)}. Pointer only — do not dump them in the channel.`,
-      );
+    ownUnread.sort((a, b) => a.ts.localeCompare(b.ts));
+    const unreadCount = ownUnread.length + otherUnread;
+    if (unreadCount) {
+      const unreadLabel = unreadCount === 1 ? "1 unread DM" : `${unreadCount} unread DMs`;
+      if (ownUnread.length) {
+        const newest = ownUnread.at(-1)!;
+        lines.push(
+          `${unreadLabel}. Newest gist: ${gist(newest.text, 120)}. Pointer only — do not dump them in the channel.`,
+        );
+      } else {
+        lines.push(`${unreadLabel}. Pointer only — do not dump them in the channel.`);
+      }
     }
   } else {
     const last = lastOwnChannelAccount(input.store, input.botId);

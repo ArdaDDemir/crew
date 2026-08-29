@@ -187,6 +187,35 @@ test("readThread surfaces mention.ignored as a status row", async () => {
   expect(ignored.ignored).toEqual(["ghost"]);
 });
 
+test("readThread verbose surfaces a browser screenshot path", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
+  const host = createHost({ cwd, provider: new ScriptedProvider([]) });
+  host.store.append({
+    v: 1,
+    id: "e1",
+    ts: "t",
+    thread: { kind: "channel", id: "landing" },
+    type: "tool.completed",
+    parent: null,
+    payload: {
+      botId: "coder",
+      name: "browser_screenshot",
+      output: "screenshot .crew/browser/shots/1.png",
+    },
+  });
+  const quiet = readThread(host, "channel", "landing", { thinking: false, verbose: false });
+  expect(quiet.some((r) => r && r.type === "tool")).toBe(false);
+  const rows = readThread(host, "channel", "landing", { thinking: false, verbose: true });
+  const shot = rows.find((r) => r && r.type === "tool") as {
+    name: string;
+    shot: string;
+    output: string;
+  };
+  expect(shot.name).toBe("browser_screenshot");
+  expect(shot.shot).toBe(".crew/browser/shots/1.png");
+  expect(shot.output).toContain("shots/1.png");
+});
+
 test("readThread surfaces handoff.held as a status row", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-host-"));
   const host = createHost({ cwd, provider: new ScriptedProvider([]) });

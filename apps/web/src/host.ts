@@ -10,6 +10,7 @@ import {
   lastCompact,
   lastSummary,
   parseDmThreadId,
+  humanAuthor,
   loadAlways,
   matchesAlways,
   rememberAlways,
@@ -36,7 +37,7 @@ import {
   type HarnessKind,
   type HarnessRunner,
 } from "@crew/provider-harness";
-import { nativeTools } from "@crew/tools-native";
+import { lazyPlaywrightBrowser, nativeTools } from "@crew/tools-native";
 import {
   defaultHome,
   maskKey,
@@ -90,6 +91,7 @@ export type Host = {
   grokRun?: HarnessRunner;
   harnessRun?: HarnessRunner;
   mcpConnect?: (server: McpServer) => McpRpc;
+  onHumanDm?: (row: { humanId: string; text: string; threadId: string }) => Promise<void>;
   run?: {
     stopped: boolean;
     abort?: AbortController;
@@ -125,7 +127,9 @@ export function createHost(input: {
   const cfg = mergeConfig({ cwd, home, env });
   const workspace = new FsWorkspace(join(cwd, ".crew"));
   const store = new JsonlEventStore(join(cwd, ".crew", "logs"));
-  const tools = input.tools ?? nativeTools();
+  const tools =
+    input.tools ??
+    nativeTools({ browser: lazyPlaywrightBrowser(join(cwd, ".crew", "browser")) });
   const model = cfg.model ?? "z-ai/glm-5.3-flash";
   const provider =
     input.provider ??
@@ -199,8 +203,9 @@ function clock() {
   };
 }
 
-function party(token: string) {
-  return token === "human" ? ({ kind: "human" } as const) : { kind: "bot" as const, botId: token };
+function party(token: string, humanId?: string) {
+  if (token === "human" || token === "you") return humanAuthor(humanId);
+  return { kind: "bot" as const, botId: token };
 }
 
 export const MODEL_PRESETS = [
@@ -361,6 +366,17 @@ export function snapshot(host: Host) {
   };
 }
 
+export function shotPathFromOutput(output: string): string | undefined {
+  const m = String(output ?? "").match(/\.crew\/browser\/shots\/[A-Za-z0-9._-]+\.png/);
+  return m?.[0];
+}
+
+export function shotFile(cwd: string, rel: string): string | undefined {
+  const raw = String(rel ?? "").replaceAll("\\", "/").trim();
+  if (!/^\.crew\/browser\/shots\/[A-Za-z0-9._-]+\.png$/.test(raw)) return undefined;
+  return resolve(cwd, ...raw.split("/"));
+}
+
 export function readThread(
   host: Host,
   kind: "channel" | "dm",
@@ -395,6 +411,20 @@ export function readThread(
           botId: String(event.payload.botId ?? ""),
           name: String(event.payload.name ?? ""),
           args: (event.payload.args as Record<string, unknown>) ?? {},
+        };
+      }
+      if (event.type === "tool.completed" && flags.verbose) {
+        const output = String(event.payload.output ?? "");
+        const shot = shotPathFromOutput(output);
+        if (!shot) return null;
+        return {
+          type: "tool" as const,
+          ts: event.ts,
+          botId: String(event.payload.botId ?? ""),
+          name: String(event.payload.name ?? ""),
+          args: {},
+          output,
+          shot,
         };
       }
       if (event.type === "error") {
@@ -466,6 +496,8 @@ export async function sayChannel(
   onEvent?: (botId: string, event: ChatEvent) => void,
   onStatus?: (message: string) => void,
   onAsk?: (botId: string, tool: string, args: Record<string, unknown>) => void,
+  humanId?: string,
+  onToolDone?: (row: { botId: string; name: string; output: string }) => void,
 ) {
   const channel = host.workspace.getChannel(channelId);
   if (!channel) throw new Error(`unknown channel: ${channelId}`);
@@ -511,8 +543,11 @@ export async function sayChannel(
       },
       onEvent,
       onStatus,
+      onToolDone,
       channelId,
       text,
+      humanId,
+      onHumanDm: host.onHumanDm,
       ...clock(),
     }),
     );
@@ -744,12 +779,14 @@ export async function sendDm(
   onEvent?: (botId: string, event: ChatEvent) => void,
   onStatus?: (message: string) => void,
   onAsk?: (botId: string, tool: string, args: Record<string, unknown>) => void,
+  humanId?: string,
+  onToolDone?: (row: { botId: string; name: string; output: string }) => void,
 ) {
   const previous = host.run;
   host.run = { stopped: false, abort: new AbortController() };
-  const tid =
-    threadId?.trim() ||
-    dmThreadId(party(from), party(to));
+  const fromParty = party(from, from === "human" || from === "you" ? humanId : undefined);
+  const toParty = party(to, to === "human" || to === "you" ? humanId : undefined);
+  const tid = threadId?.trim() || dmThreadId(fromParty, toParty);
   const existed = host.store.read({ kind: "dm", id: tid }).length > 0;
   const mode = rememberDmMode(host, tid, !existed);
   const crewDir = join(host.cwd, ".crew");
@@ -790,8 +827,9 @@ export async function sendDm(
       },
       onEvent,
       onStatus,
-      from: party(from),
-      to: party(to),
+      onToolDone,
+      from: fromParty,
+      to: toParty,
       text,
       threadId: threadId || undefined,
       ...clock(),

@@ -12,4 +12,4 @@ Keep:
 
 Do **not** add: TUI themes, `/vim`, `/mcp`, session picker, worktrees, CLI slash parity as a goal.
 
-New human controls land in **`bun run ui`**. Same engine. If a slash exists, it is a UI composer command first.
+New human controls land in **`bun run ui`** / **`crew serve`** (loopback HTTP, `ADR-0048`). Same engine. If a slash exists, it is a UI composer command first. `crew serve` is not a TUI.

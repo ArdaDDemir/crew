@@ -10,6 +10,39 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- 2.5D floor: stationary PC desks, chunkier characters, glass/carpet depth, door plaques, compact member list.
+- Floor furniture loads once per room (no GET on every presence tick). You look PUT is debounced.
+- Floor hint: Click carpet to walk · a person to DM. Holding a kind: Click to place · Esc to cancel. Copy cursor while placing.
+
+### Fixed
+
+- Floor: guest cannot remove furniture (no 403 toast). Escape cancels a held plant/lamp/sofa. Holding a kind no longer deletes the piece you click.
+
+## [0.9.0] - 2026-08-29
+
+Humans, Discord, isolated browser, guest lock, 2.5D floor. Loopback only. Not `0.0.0.0`.
+
+### Added
+
+- **Human ids** (`ADR-0047`): a human author may carry `humanId`. Missing id is the owner `"human"`. Owner DMs stay `human__<bot>`; other humans use `user__<id>__<bot>`. Latest-human-wins is per `(botId, humanId)`; other humans’ DMs are unread pointers without their private gist. `.crew/humans.json` stores `{ id, handle, inviteHash }` (SHA-256 hex). `POST /api/humans` shows the raw invite token once; `POST /api/humans/revoke` clears the hash. Loopback `say` still needs no token and posts as owner. `user` is a reserved bot id.
+- **`crew serve`** (`ADR-0048`): same office as `bun run ui`. `--cwd` `--port` `--hostname` (loopback only) `--cors <origin>`. Invite as `Authorization: Bearer` or JSON `token`. Invalid token is HTTP 401. Still not `0.0.0.0`.
+- **Discord adapter** (`ADR-0049`): `apps/discord`. `.crew/discord.json` maps guild/channel/user. Fail-closed. Incoming `<@id>` becomes `@humanId`. Crew accounts leave as webhook `username` (person name). Engine `handoff.held` / `mention.ignored` post as `Crew`. Token from `DISCORD_BOT_TOKEN`. Core has no Discord.
+- **Discord DMs** (`ADR-0051`): mapped human DMs the receptionist → Crew `user__<id>__<dmBotId>` (owner: `human__<bot>`). Bot account returns as a Discord DM. Missing `dmBotId` ignores DMs. Bot-bot DMs stay JSONL-only.
+- **Discord ask buttons** (`ADR-0052`): supervised / MCP / browser asks on a Discord-originated turn post Allow / Always / Deny. Only the waking Discord user can click. Always writes `.crew/permissions.json`.
+- **Discord `dm_send`** (`ADR-0053`): a channel `dm_send` to the waking human also REST-DMs their Discord user when mapped in `.crew/discord.json`. Unmapped humans stay Crew-only.
+- **Browser tools** (`ADR-0050`): `browser_open` / `_snapshot` / `_click` / `_type` / `_screenshot`. `ToolKind` `browser` — auto-accept **asks**. Always deny `file://`, `chrome://`, `javascript:`, `.env` URLs. Live profile `.crew/browser/` via Playwright when installed. Screenshots are desk paths, not the channel account. The office tools fold shows the PNG via `GET /api/shot`. Not the operator's mouse.
+- **Office leftovers** (`ADR-0054`): top-bar identity chip (`localStorage crew.inviteToken` as Bearer on `api()` and `/api/say`; empty is owner). Settings → General Create invite / list / revoke; token once; hash never in the UI. `POST /api/humans` and revoke are tokensuz owner only (guest Bearer 403). Live `say` NDJSON `tool` includes `shot` after `onToolDone` (not a new LLM event). Discord outbound is queued per destination and honors `retry_after` / `Retry-After` / `X-RateLimit-Reset-After` without blocking JSONL or wake. `playwright` is a `tools-native` dependency; Chromium is still `bunx playwright install chromium` and is not compiled into Crew.exe.
+- **Guest office writes** (`ADR-0055`): a valid invite Bearer may `say` / `dm` / ask / stop and read. Creating bots, channels, attach, compact, Settings, and other POST/PUT/PATCH/DELETE is 403 `owner only`. `GET /api/who` names the chip (`Arda`, not `invite`). Discord outbound that is still 429 after eight attempts warns and drops; Crew JSONL already finished.
+- **Isometric floor** (`ADR-0056`): the Members desk is a 2.5D Habbo-like room for the open channel — glass bay, PC desks, seated people. Activity is a pose. Click a seat opens that DM. Walking, clothes, and furniture editing are later. Core is unchanged.
+- **Floor walk** (`ADR-0057`): click empty carpet to walk **You**. A writing account walks that person to the glass table. Walking is not a wake. `prefers-reduced-motion` skips the tween.
+- **Floor doors** (`ADR-0058`): other channels are doors on the back wall. Click a door opens that channel, same as the rail. Not a wake. Clothes and furniture editing stay later.
+- **Floor furniture** (`ADR-0059`): owner places plant / lamp / sofa / shelf / rug on the channel floor. `.crew/floor.json`. Click a piece to remove. Guests see it, cannot PUT.
+- **Floor looks** (`ADR-0060`): skin / hair / top on the 2.5D floor. `.crew/looks.json`. You pick under the room; Person sheet sets a bot. Guest may only change self. Not a clothing shop.
+
 ### Changed
 
 - Prompt: if soul, standing orders, or channel rules conflict with the latest human message, the human wins. History starts with `[identity] You are @id`.

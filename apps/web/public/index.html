@@ -32,6 +32,10 @@
       <p class="app-brand">Crew</p>
       <p class="app-cwd" id="app-cwd" title="Project folder"></p>
       <div class="app-top-actions">
+        <label class="who-chip" id="who-chip" title="Paste an invite token to post as that person. Empty is the owner.">
+          <span id="who-label">owner</span>
+          <input id="who-token" type="password" placeholder="invite token" autocomplete="off" spellcheck="false" />
+        </label>
         <button type="button" class="chip" id="desk-toggle" title="Show or hide the members list" aria-pressed="true">Members</button>
         <button type="button" class="chip" id="win-open-project" hidden>Open project</button>
         <div class="win-btns" id="win-btns" hidden>
@@ -161,6 +165,55 @@
       </div>
       <aside class="desk" id="desk">
         <p class="rail-label" id="desk-label">Members</p>
+        <div id="floor" class="floor" aria-label="Channel floor">
+          <div class="floor-scene">
+            <div class="floor-wall-back"></div>
+            <div class="floor-wall-side"></div>
+            <div id="floor-doors" class="floor-doors" aria-label="Other rooms"></div>
+            <div class="floor-carpet"></div>
+            <div class="floor-glass" title="Channel table">
+              <span class="floor-plaque" id="floor-plaque">#landing</span>
+              <div class="floor-table"></div>
+            </div>
+            <div id="floor-you" class="floor-you" title="You" aria-label="You">
+              <span class="floor-char you">
+                <span class="floor-head"></span>
+                <span class="floor-body"></span>
+              </span>
+            </div>
+            <div id="floor-desks" class="floor-desks"></div>
+            <div id="floor-stuff" class="floor-stuff"></div>
+            <div id="floor-seats" class="floor-seats"></div>
+          </div>
+          <p id="floor-hint" class="floor-hint">Click carpet to walk · a person to DM</p>
+          <div id="floor-look" class="floor-look">
+            <label>Skin <select id="look-skin">
+              <option value="light">light</option>
+              <option value="mid">mid</option>
+              <option value="dark">dark</option>
+            </select></label>
+            <label>Hair <select id="look-hair">
+              <option value="short">short</option>
+              <option value="ponytail">ponytail</option>
+              <option value="buzz">buzz</option>
+              <option value="curly">curly</option>
+              <option value="none">none</option>
+            </select></label>
+            <label>Top <select id="look-top">
+              <option value="hoodie">hoodie</option>
+              <option value="tee">tee</option>
+              <option value="polo">polo</option>
+              <option value="sweater">sweater</option>
+            </select></label>
+          </div>
+          <div id="floor-kit" class="floor-kit" hidden>
+            <button type="button" class="floor-kind" data-kind="plant">Plant</button>
+            <button type="button" class="floor-kind" data-kind="lamp">Lamp</button>
+            <button type="button" class="floor-kind" data-kind="sofa">Sofa</button>
+            <button type="button" class="floor-kind" data-kind="shelf">Shelf</button>
+            <button type="button" class="floor-kind" data-kind="rug">Rug</button>
+          </div>
+        </div>
         <div id="here-list" class="here-list"></div>
       </aside>
     </div>
@@ -262,6 +315,29 @@
           <input id="bot-name" placeholder="Name" />
         </div>
       </div>
+      <section class="field">
+        <p class="field-label">Look <button type="button" class="help" data-tip="How they appear on the 2.5D floor. Skin, hair, top. Not a mention id.">?</button></p>
+        <div class="look-row">
+          <select id="bot-skin" aria-label="Skin">
+            <option value="light">light</option>
+            <option value="mid">mid</option>
+            <option value="dark">dark</option>
+          </select>
+          <select id="bot-hair" aria-label="Hair">
+            <option value="short">short</option>
+            <option value="ponytail">ponytail</option>
+            <option value="buzz">buzz</option>
+            <option value="curly">curly</option>
+            <option value="none">none</option>
+          </select>
+          <select id="bot-top" aria-label="Top">
+            <option value="hoodie">hoodie</option>
+            <option value="tee">tee</option>
+            <option value="polo">polo</option>
+            <option value="sweater">sweater</option>
+          </select>
+        </div>
+      </section>
       <section class="field">
         <p class="field-label">Rooms <button type="button" class="help" data-tip="On create you pick rooms. After that, membership is edited on the channel, not here.">?</button></p>
         <div id="bot-rooms" class="roster"></div>
@@ -382,6 +458,16 @@
             <label class="check-row"><input type="checkbox" id="app-auto-compact" /> Compact long threads</label>
           </section>
         </div>
+        <section class="field">
+          <p class="field-label">People invites <button type="button" class="help" data-tip="Owner only. Create shows the raw token once — paste it in the top-bar chip on another browser. Hash is never shown. Revoke clears the invite; the person row stays.">?</button></p>
+          <div class="invite-create-row">
+            <input id="invite-id" placeholder="id" spellcheck="false" />
+            <input id="invite-handle" placeholder="Handle" />
+            <button type="button" class="primary" id="invite-create">Create invite</button>
+          </div>
+          <p class="field-hint" id="invite-once" hidden></p>
+          <ul id="invite-list" class="invite-list"></ul>
+        </section>
       </div>
       <div class="settings-panel" data-settings-panel="providers" hidden>
         <article class="provider-card" id="prov-openrouter">

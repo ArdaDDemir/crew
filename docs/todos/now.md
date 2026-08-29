@@ -1,11 +1,17 @@
 # Now — what is in, what is missing
 
-Date: 2026-08-28  
+Date: 2026-08-29  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.8.0**. Unreleased: human wins over soul/rules; identity history line; `dms show` unknown dm; patch excerpt; shell timeout line.
+Current release: **0.9.0**. Unreleased: (empty). Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
 
 ---
+
+## In (0.9.0)
+
+Human ids (`ADR-0047`). Loopback `crew serve` (`ADR-0048`). Discord adapter (`ADR-0049`–`0053`). Browser tools (`ADR-0050`). Invite chip / live shot / Discord queue / Playwright (`ADR-0054`). Guest cannot write the office (`ADR-0055`). 2.5D floor, walk, doors, furniture, looks (`ADR-0056`–`0060`). Human wins over soul/rules; identity history line; `dms show` unknown dm; patch excerpt; shell timeout line.
+
+See `CHANGELOG.md` `[0.9.0]`.
 
 ## In (0.8.0)
 
@@ -46,7 +52,7 @@ See `CHANGELOG.md` `[0.5.0]`.
 | Signed auto-install | Needs a public CDN + signing private key. Host `dist/latest.json` and paste its URL in About |
 | macOS / Linux bundles | We only build on this Windows machine |
 | T3 plugin marketplace | Out. MCP is the integration |
-| Discord API / `crew serve` / computer-use | Research: `docs/todos/discord-serve-computer-use-research.md`. Still no code until ADR-0047+ |
+| Public bind / live desktop mouse | Research: `docs/todos/discord-serve-computer-use-research.md`. Browser tools are in (`ADR-0050`). `0.0.0.0` and interactive-desktop mouse still parked |
 | Extra harnesses (Cursor, Amp) | Out |
 
-NSIS: `dist/crew-windows-nsis/` (`Crew_0.8.0_x64-setup.exe`). MSI: `dist/crew-windows-msi/` (`Crew_0.8.0_x64_en-US.msi`). Portable: `dist/crew-windows/`. `dist/latest.json` is 0.8.0.
+NSIS/MSI/portable under `dist/` are rebuilt by `bun run desktop:build`. Last built artifacts on this machine may still say 0.8.0 until that runs for 0.9.0.

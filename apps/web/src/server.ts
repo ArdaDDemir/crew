@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { parseDmThreadId, type ChatEvent } from "@crew/core";
+import { OWNER_HUMAN_ID, parseDmThreadId, type ChatEvent } from "@crew/core";
 import {
   addAlways,
   botDetail,
@@ -21,6 +21,7 @@ import {
   parseHarness,
   putProviders,
   readThread,
+  shotFile,
   removeAlways,
   removeBot,
   removeChannel,
@@ -29,6 +30,7 @@ import {
   skillDetail,
   threadDiff,
   sendDm,
+  shotPathFromOutput,
   openDmChat,
   setAllowedModels,
   setApiKey,
@@ -50,9 +52,22 @@ import {
   regenerateTitle,
 } from "./host";
 import { flagsFromArgv, parseServerArgv, resolvePublicDir } from "./argv";
+import { attachDiscordHost } from "./discord-attach";
 import { loadJobs, parseJobsBody, saveJobs } from "./jobs";
 import { loadDmPrefs, parseDmPrefsBody, saveDmPrefs } from "./dm-prefs";
+import {
+  humanForToken,
+  inviteActor,
+  inviteHuman,
+  inviteTokenFrom,
+  loadHumans,
+  publicHumans,
+  revokeInvite,
+  saveHumans,
+} from "./humans";
 import { CREW_VERSION } from "./version";
+import { loadFloor, saveFloor } from "./floor";
+import { loadLooks, saveLook } from "./looks";
 
 export type ServerOpts = {
   cwd?: string;
@@ -60,7 +75,23 @@ export type ServerOpts = {
   hostname?: string;
   provider?: Host["provider"];
   publicDir?: string;
+  cors?: string;
 };
+
+function corsHeaders(origin: string): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  };
+}
+
+function withCors(res: Response, origin?: string): Response {
+  if (!origin) return res;
+  const headers = new Headers(res.headers);
+  for (const [key, value] of Object.entries(corsHeaders(origin))) headers.set(key, value);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -143,12 +174,118 @@ async function readBody(req: Request): Promise<Record<string, unknown>> {
   return JSON.parse(text) as Record<string, unknown>;
 }
 
+function guestMayWrite(method: string, path: string): boolean {
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return true;
+  if (method === "PUT" && path === "/api/looks") return true;
+  if (method !== "POST") return false;
+  return (
+    path === "/api/say" ||
+    path === "/api/dm" ||
+    path === "/api/permission" ||
+    path === "/api/stop"
+  );
+}
+
+function ownerGate(req: Request, host: Host): Response | undefined {
+  const actor = inviteActor(req, undefined, loadHumans(host.cwd));
+  if (actor === "invalid") return json({ error: "invalid invite" }, 401);
+  if (actor === "guest") return json({ error: "owner only" }, 403);
+  return undefined;
+}
+
 export function handleRequest(host: Host, req: Request, publicDir: string): Promise<Response> | Response {
   const url = new URL(req.url);
   const path = url.pathname;
 
+  if (!guestMayWrite(req.method, path)) {
+    const blocked = ownerGate(req, host);
+    if (blocked) return blocked;
+  }
+
+  if (req.method === "GET" && path === "/api/who") {
+    const file = loadHumans(host.cwd);
+    const actor = inviteActor(req, undefined, file);
+    if (actor === "invalid") return json({ error: "invalid invite" }, 401);
+    if (actor === "guest") {
+      const row = humanForToken(file, inviteTokenFrom(req));
+      return json({ id: row?.id ?? "", handle: row?.handle ?? "", owner: false });
+    }
+    return json({ id: OWNER_HUMAN_ID, handle: "owner", owner: true });
+  }
+  if (req.method === "GET" && path === "/api/floor") {
+    const id = url.searchParams.get("id") ?? "";
+    if (!id) return json({ error: "id required" }, 400);
+    if (!host.workspace.getChannel(id)) return json({ error: "unknown channel" }, 400);
+    return json(loadFloor(host.cwd, id));
+  }
+  if (req.method === "PUT" && path === "/api/floor") {
+    return readBody(req).then((body) => {
+      const id = String(body.id ?? "").trim();
+      if (!id) return json({ error: "id required" }, 400);
+      if (!host.workspace.getChannel(id)) return json({ error: "unknown channel" }, 400);
+      return json(saveFloor(host.cwd, id, { furniture: body.furniture }));
+    });
+  }
+  if (req.method === "GET" && path === "/api/looks") {
+    return json(loadLooks(host.cwd));
+  }
+  if (req.method === "PUT" && path === "/api/looks") {
+    return readBody(req).then((body) => {
+      const file = loadHumans(host.cwd);
+      const actor = inviteActor(req, body, file);
+      if (actor === "invalid") return json({ error: "invalid invite" }, 401);
+      const botId = String(body.botId ?? "").trim();
+      if (actor === "guest") {
+        if (botId) return json({ error: "owner only" }, 403);
+        const row = humanForToken(file, inviteTokenFrom(req, body));
+        const humanId = row?.id ?? "";
+        if (!humanId) return json({ error: "owner only" }, 403);
+        const asked = String(body.humanId ?? "").trim();
+        if (asked && asked !== humanId) return json({ error: "owner only" }, 403);
+        return json(
+          saveLook(host.cwd, {
+            humanId,
+            skin: body.skin !== undefined ? String(body.skin) : undefined,
+            hair: body.hair !== undefined ? String(body.hair) : undefined,
+            top: body.top !== undefined ? String(body.top) : undefined,
+          }),
+        );
+      }
+      const humanId = String(body.humanId ?? "").trim();
+      if (!botId && !humanId) {
+        return json(
+          saveLook(host.cwd, {
+            humanId: OWNER_HUMAN_ID,
+            skin: body.skin !== undefined ? String(body.skin) : undefined,
+            hair: body.hair !== undefined ? String(body.hair) : undefined,
+            top: body.top !== undefined ? String(body.top) : undefined,
+          }),
+        );
+      }
+      if (botId && !host.workspace.getBot(botId)) return json({ error: "unknown bot" }, 400);
+      return json(
+        saveLook(host.cwd, {
+          botId: botId || undefined,
+          humanId: botId ? undefined : humanId,
+          skin: body.skin !== undefined ? String(body.skin) : undefined,
+          hair: body.hair !== undefined ? String(body.hair) : undefined,
+          top: body.top !== undefined ? String(body.top) : undefined,
+        }),
+      );
+    });
+  }
   if (req.method === "GET" && path === "/api/health") {
     return json({ ok: true, version: CREW_VERSION });
+  }
+  if (req.method === "GET" && path === "/api/shot") {
+    const abs = shotFile(host.cwd, url.searchParams.get("path") ?? "");
+    if (!abs) return json({ error: "forbidden" }, 403);
+    const bunFile = Bun.file(abs);
+    return bunFile.exists().then((ok) =>
+      ok
+        ? new Response(bunFile, { headers: { "Content-Type": "image/png", "Cache-Control": "no-store" } })
+        : new Response("not found", { status: 404 }),
+    );
   }
   if (req.method === "GET" && path === "/api/bootstrap") {
     return json(snapshot(host));
@@ -557,6 +694,42 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
       }
     });
   }
+  if (req.method === "GET" && path === "/api/humans") {
+    return json(publicHumans(loadHumans(host.cwd)));
+  }
+  if (req.method === "POST" && path === "/api/humans") {
+    return readBody(req).then((body) => {
+      const actor = inviteActor(req, body, loadHumans(host.cwd));
+      if (actor === "invalid") return json({ error: "invalid invite" }, 401);
+      if (actor === "guest") return json({ error: "owner only" }, 403);
+      try {
+        const invited = inviteHuman(loadHumans(host.cwd), {
+          id: String(body.id ?? ""),
+          handle: String(body.handle ?? ""),
+        });
+        saveHumans(host.cwd, invited.file);
+        const row = invited.file.humans.find((h) => h.id === String(body.id ?? "").trim());
+        return json({
+          id: row?.id ?? String(body.id ?? "").trim(),
+          handle: row?.handle ?? String(body.handle ?? "").trim(),
+          token: invited.token,
+        });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    });
+  }
+  if (req.method === "POST" && path === "/api/humans/revoke") {
+    return readBody(req).then((body) => {
+      const actor = inviteActor(req, body, loadHumans(host.cwd));
+      if (actor === "invalid") return json({ error: "invalid invite" }, 401);
+      if (actor === "guest") return json({ error: "owner only" }, 403);
+      const id = String(body.id ?? "").trim();
+      if (!id) return json({ error: "id required" }, 400);
+      const next = saveHumans(host.cwd, revokeInvite(loadHumans(host.cwd), id));
+      return json(publicHumans(next));
+    });
+  }
   if (req.method === "GET" && path === "/api/jobs") {
     return json(loadJobs(host));
   }
@@ -593,8 +766,15 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
     });
   }
   if (req.method === "POST" && path === "/api/say") {
-    return ndjsonStream(async (push) => {
-      const body = await readBody(req);
+    return readBody(req).then((body) => {
+      const invite = inviteTokenFrom(req, body);
+      let humanId: string | undefined;
+      if (invite) {
+        const row = humanForToken(loadHumans(host.cwd), invite);
+        if (!row) return json({ error: "invalid invite" }, 401);
+        humanId = row.id;
+      }
+      return ndjsonStream(async (push) => {
       const text = String(body.text ?? "").trim();
       const kind = body.kind === "dm" ? "dm" : "channel";
       const channelId = String(body.channelId ?? body.id ?? "");
@@ -619,6 +799,18 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
             push({ type: "tool", botId, name: event.name, args });
           }
         };
+      const onToolDone = (row: { botId: string; name: string; output: string }) => {
+        if (!body.verbose) return;
+        const shot = shotPathFromOutput(row.output);
+        push({
+          type: "tool",
+          botId: row.botId,
+          name: row.name,
+          args: {},
+          output: row.output,
+          ...(shot ? { shot } : {}),
+        });
+      };
       const onStatus = (message: string) => push({ type: "status", message });
       const onAsk = (botId: string, tool: string, args: Record<string, unknown>) =>
         push({ type: "ask", botId, tool, args });
@@ -630,7 +822,18 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
           push({ type: "error", message: err instanceof Error ? err.message : String(err) });
           return;
         }
-        const result = await sendDm(host, "human", to, text, channelId, onEvent, onStatus, onAsk);
+        const result = await sendDm(
+          host,
+          "human",
+          to,
+          text,
+          channelId,
+          onEvent,
+          onStatus,
+          onAsk,
+          humanId,
+          onToolDone,
+        );
         push({
           type: "done",
           woken: result.woken,
@@ -645,6 +848,8 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         onEvent,
         onStatus,
         onAsk,
+        humanId,
+        onToolDone,
       );
       push({
         type: "done",
@@ -653,6 +858,7 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         held: result.held ?? null,
         ignored: result.ignored ?? null,
       });
+    });
     });
   }
   if (req.method === "GET" && path === "/api/dm-prefs") {
@@ -673,12 +879,23 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   if (req.method === "POST" && path === "/api/dm") {
     return readBody(req).then(async (body) => {
       try {
+        const invite = inviteTokenFrom(req, body);
+        let humanId: string | undefined;
+        if (invite) {
+          const row = humanForToken(loadHumans(host.cwd), invite);
+          if (!row) return json({ error: "invalid invite" }, 401);
+          humanId = row.id;
+        }
         const result = await sendDm(
           host,
           String(body.from ?? "human"),
           String(body.to ?? ""),
           String(body.text ?? ""),
           typeof body.threadId === "string" ? body.threadId : undefined,
+          undefined,
+          undefined,
+          undefined,
+          humanId,
         );
         return json(result);
       } catch (err) {
@@ -703,7 +920,13 @@ export function startServer(opts: ServerOpts = {}) {
   const host = createHost({ cwd, provider: opts.provider });
   const preferred = opts.port ?? Number(process.env.CREW_UI_PORT ?? 7734);
   const hostname = opts.hostname ?? "127.0.0.1";
-  const fetch = (req: Request) => handleRequest(host, req, publicDir);
+  const cors = opts.cors?.trim() || undefined;
+  const fetch = (req: Request) => {
+    if (cors && req.method === "OPTIONS") {
+      return withCors(new Response(null, { status: 204 }), cors);
+    }
+    return Promise.resolve(handleRequest(host, req, publicDir)).then((res) => withCors(res, cors));
+  };
   let server: ReturnType<typeof Bun.serve>;
   try {
     server = Bun.serve({ port: preferred, hostname, fetch });
@@ -725,14 +948,19 @@ if (import.meta.main) {
       execPath: process.execPath,
       importMetaDir: import.meta.dir,
     });
-  const { url } = startServer({
+  const { url, host } = startServer({
     cwd: flags.cwd,
     port: flags.port,
     hostname: flags.hostname,
     publicDir,
+    cors: flags.cors,
   });
-  const line = `crew ui  ${url}\n`;
   const writer = Bun.stdout.writer();
-  writer.write(line);
+  writer.write(`crew ui  ${url}\n`);
   writer.flush();
+  void attachDiscordHost(host).then((got) => {
+    if (!got.started) return;
+    writer.write("crew discord  attached\n");
+    writer.flush();
+  });
 }

@@ -8,14 +8,15 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 |---|---|
 | Mention wake / who runs | 0005 → 0013 → 0014 → **0043** (fence skip) → **0045** (held handoff) → **0046** (unknown `@`) |
 | Desk vs channel chat | 0012, 0011 |
-| DMs / conflicting human orders | 0015, 0016, 0025 → **0033** → **0044** (unread pointer) |
+| DMs / conflicting human orders | 0015, 0016, 0025 → **0033** → **0044** (unread pointer) → **0047** (`humanId`) |
 | Skills / SKILL.md | 0008 → 0021 → 0023 |
 | JSONL / compact / delete | 0004 → 0018, 0019 → **0028**; titled/jobs → **0029** → 0031 |
-| Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) → **0041** (DM mode) → **0042** (`auto` reviewer) → **0043** (honesty A) → **0044** (mcp / reviewer / shell lock) |
-| Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** → **0041** |
+| Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) → **0041** (DM mode) → **0042** (`auto` reviewer) → **0043** (honesty A) → **0044** (mcp / reviewer / shell lock) → **0050** (`browser`) |
+| Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** → **0041** → **0048** (`crew serve`) → **0054** (invite chip, live shot) → **0055** (guest writes) → **0056** (isometric floor) → **0057** (walk) → **0058** (doors) → **0059** (furniture) → **0060** (looks) |
+| Discord adapter | **0049** → **0051** (DMs) → **0052** (ask buttons) → **0053** (`dm_send`) → **0054** (outbound queue) |
 | Desktop window | **0032** → **0039** (tray + opt-in updates) → **0040** (`latest.json`) |
 | Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) |
-| Org tools / reserved ids | 0022 |
+| Org tools / reserved ids | 0022 → **0047** (`user`) |
 | Version / law file | 0006, 0010 |
 
 ## Index
@@ -68,3 +69,17 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0044 | Honesty pack Wave B/C (mcp, reviewer, shell lock, unread DM) | accepted |
 | 0045 | Held handoff is an engine pointer, not a wake | accepted |
 | 0046 | Unknown `@` is announced, still not a wake | accepted |
+| 0047 | Humans have ids; owner is `human` | accepted |
+| 0048 | `crew serve` is the loopback office daemon | accepted |
+| 0049 | Discord is an adapter | accepted |
+| 0050 | Isolated browser tools; not the live desktop | accepted |
+| 0051 | Discord DMs are Crew DMs | accepted |
+| 0052 | Discord ask is Allow / Deny / Always buttons | accepted |
+| 0053 | Crew `dm_send` to a mapped human also DMs Discord | accepted |
+| 0054 | Office leftovers: invite UI, live shots, Discord queue, Playwright | accepted |
+| 0055 | Guest invite cannot write the office | accepted |
+| 0056 | Channel desk is a 2.5D isometric floor | accepted |
+| 0057 | Click-to-walk on the isometric floor | accepted |
+| 0058 | Floor doors switch channel | accepted |
+| 0059 | Channel floor furniture is owner-editable | accepted |
+| 0060 | Floor looks: skin, hair, top | accepted |

@@ -128,6 +128,12 @@ const els = {
   desk: document.getElementById("desk"),
   hereList: document.getElementById("here-list"),
   deskLabel: document.getElementById("desk-label"),
+  floorSeats: document.getElementById("floor-seats"),
+  floorDesks: document.getElementById("floor-desks"),
+  floorPlaque: document.getElementById("floor-plaque"),
+  floorDoors: document.getElementById("floor-doors"),
+  floorStuff: document.getElementById("floor-stuff"),
+  floorKit: document.getElementById("floor-kit"),
 };
 
 function paneRoot(i) {
@@ -1553,6 +1559,448 @@ function presenceRow(id, leadId) {
   return btn;
 }
 
+const LOOK_SKIN = { light: "#f0d0b0", mid: "#c48a5a", dark: "#6b4423" };
+const LOOK_TOP = { hoodie: "#3a5a8c", tee: "#c45c5c", polo: "#2f8a5b", sweater: "#6b3a5a" };
+
+function lookFor(id) {
+  const looks = state.looks || { bots: {}, humans: {} };
+  if (id === "you") return looks.humans[state.whoId || "human"];
+  return looks.bots?.[id];
+}
+
+function applyFloorLook(root, id) {
+  if (!root) return;
+  const look = lookFor(id);
+  const head = root.querySelector(".floor-head");
+  const body = root.querySelector(".floor-body");
+  const holder = root.querySelector(".floor-char") || root;
+  let hair = holder.querySelector(".floor-hair");
+  if (!hair) {
+    hair = document.createElement("span");
+    hair.className = "floor-hair hair-none";
+    holder.prepend(hair);
+  }
+  if (!look) {
+    hair.className = "floor-hair hair-none";
+    return;
+  }
+  if (head) {
+    head.style.background = LOOK_SKIN[look.skin] || LOOK_SKIN.mid;
+    head.style.color = "#1a120c";
+  }
+  if (body) body.style.background = LOOK_TOP[look.top] || LOOK_TOP.tee;
+  hair.className = `floor-hair hair-${look.hair || "none"}`;
+}
+
+function fillYouLookSelects() {
+  const look = lookFor("you") || { skin: "mid", hair: "short", top: "tee" };
+  const skin = document.getElementById("look-skin");
+  const hair = document.getElementById("look-hair");
+  const top = document.getElementById("look-top");
+  if (skin) skin.value = look.skin;
+  if (hair) hair.value = look.hair;
+  if (top) top.value = look.top;
+}
+
+async function refreshLooks() {
+  try {
+    const who = await (await api("/api/who")).json();
+    state.whoId = who.id || "human";
+    state.looks = await (await api("/api/looks")).json();
+  } catch {
+    state.whoId = "human";
+    state.looks = { bots: {}, humans: {} };
+  }
+  fillYouLookSelects();
+}
+
+let lookTimer = 0;
+
+async function flushYouLook() {
+  try {
+    state.looks = await (
+      await api("/api/looks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skin: document.getElementById("look-skin")?.value,
+          hair: document.getElementById("look-hair")?.value,
+          top: document.getElementById("look-top")?.value,
+        }),
+      })
+    ).json();
+    applyFloorLook(document.getElementById("floor-you"), "you");
+  } catch (err) {
+    addMessage({ who: "error", text: String(err), kind: "error" });
+  }
+}
+
+function saveYouLook() {
+  const look = {
+    skin: document.getElementById("look-skin")?.value || "mid",
+    hair: document.getElementById("look-hair")?.value || "short",
+    top: document.getElementById("look-top")?.value || "tee",
+  };
+  state.looks = state.looks || { bots: {}, humans: {} };
+  state.looks.humans = state.looks.humans || {};
+  state.looks.humans[state.whoId || "human"] = look;
+  applyFloorLook(document.getElementById("floor-you"), "you");
+  clearTimeout(lookTimer);
+  lookTimer = setTimeout(() => {
+    flushYouLook();
+  }, 180);
+}
+
+function bindFloorLook() {
+  const box = document.getElementById("floor-look");
+  if (!box || box.dataset.bound) return;
+  box.dataset.bound = "1";
+  box.addEventListener("change", () => saveYouLook());
+}
+
+function floorPose(id) {
+  const line = String(state.activity[id] || "");
+  if (!line) return "idle";
+  if (/^Thinking/i.test(line)) return "thinking";
+  if (/^Writing/i.test(line)) return "writing";
+  return "working";
+}
+
+function deskSlot(i) {
+  const col = i % 4;
+  const row = Math.floor(i / 4);
+  return {
+    x: 18 + col * 70 + row * 22,
+    y: 78 + row * 38 - col * 12,
+    z: 10 + row * 4 + col,
+  };
+}
+
+function tableSlot(i) {
+  const col = i % 3;
+  const row = Math.floor(i / 3);
+  return {
+    x: 196 + col * 22,
+    y: 68 + row * 16,
+    z: 22 + row,
+  };
+}
+
+function clampFloor(x, y) {
+  return {
+    x: Math.max(10, Math.min(268, x)),
+    y: Math.max(56, Math.min(178, y)),
+  };
+}
+
+function walkYou(x, y) {
+  const you = document.getElementById("floor-you");
+  if (!you) return;
+  const at = clampFloor(x, y);
+  you.style.left = `${at.x}px`;
+  you.style.top = `${at.y}px`;
+  you.style.zIndex = String(8 + Math.round(at.y / 12));
+}
+
+function bindFloorWalk() {
+  const scene = document.querySelector(".floor-scene");
+  if (!scene || scene.dataset.boundWalk) return;
+  scene.dataset.boundWalk = "1";
+  scene.addEventListener("click", (ev) => {
+    if (ev.target.closest(".floor-seat")) return;
+    if (ev.target.closest(".floor-door")) return;
+    if (ev.target.closest(".floor-kit")) return;
+    const rect = scene.getBoundingClientRect();
+    const x = ev.clientX - rect.left - 8;
+    const y = ev.clientY - rect.top - 24;
+    if (state.floorHold) {
+      if (ev.target.closest(".floor-furn")) return;
+      placeFurniture(x, y);
+      return;
+    }
+    if (ev.target.closest(".floor-furn")) return;
+    walkYou(x, y);
+  });
+}
+
+function renderFloorFurniture(items) {
+  const box = els.floorStuff;
+  if (!box) return;
+  box.replaceChildren();
+  for (const item of items ?? []) {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = `floor-furn kind-${item.kind}`;
+    el.dataset.id = item.id;
+    el.style.left = `${item.x}px`;
+    el.style.top = `${item.y}px`;
+    el.style.zIndex = String(6 + Math.round(Number(item.y) / 12));
+    el.title = inviteToken() ? item.kind : `${item.kind} · click to remove`;
+    el.setAttribute("aria-label", item.kind);
+    el.onclick = (ev) => {
+      ev.stopPropagation();
+      if (state.floorHold || inviteToken()) return;
+      removeFurniture(item.id);
+    };
+    box.append(el);
+  }
+}
+
+async function refreshFloorFurniture() {
+  if (state.kind !== "channel" || !state.id) {
+    state.floorItems = [];
+    state.floorFurnRoom = "";
+    renderFloorFurniture([]);
+    return;
+  }
+  const room = state.id;
+  if (state.floorFurnRoom === room) return;
+  state.floorItems = [];
+  renderFloorFurniture([]);
+  const seq = (state.floorFetchSeq = (state.floorFetchSeq || 0) + 1);
+  try {
+    const data = await (await api(`/api/floor?id=${encodeURIComponent(room)}`)).json();
+    if (seq !== state.floorFetchSeq) return;
+    if (state.kind !== "channel" || state.id !== room) return;
+    state.floorFurnRoom = room;
+    state.floorItems = data.furniture ?? [];
+    renderFloorFurniture(state.floorItems);
+  } catch {
+    if (seq !== state.floorFetchSeq) return;
+    if (state.id !== room) return;
+    state.floorItems = [];
+    renderFloorFurniture([]);
+  }
+}
+
+function paintFloorHint() {
+  const hint = document.getElementById("floor-hint");
+  const scene = document.querySelector(".floor-scene");
+  const hold = state.floorHold;
+  if (hint) {
+    hint.textContent = hold
+      ? `Click to place ${hold} · Esc to cancel`
+      : "Click carpet to walk · a person to DM";
+  }
+  scene?.classList.toggle("holding", Boolean(hold));
+}
+
+function clearFloorHold() {
+  state.floorHold = "";
+  const kit = els.floorKit;
+  if (kit) {
+    for (const el of kit.querySelectorAll("[data-kind]")) el.classList.remove("on");
+  }
+  paintFloorHint();
+}
+
+async function placeFurniture(x, y) {
+  const kind = state.floorHold;
+  if (!kind || inviteToken() || state.kind !== "channel" || !state.id) return;
+  const at = clampFloor(x, y);
+  const furniture = [
+    ...(state.floorItems ?? []),
+    { id: `f${Date.now().toString(36)}`, kind, x: at.x, y: at.y },
+  ];
+  try {
+    const saved = await (
+      await api("/api/floor", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: state.id, furniture }),
+      })
+    ).json();
+    state.floorFurnRoom = state.id;
+    state.floorItems = saved.furniture ?? furniture;
+    renderFloorFurniture(state.floorItems);
+  } catch (err) {
+    addMessage({ who: "error", text: String(err), kind: "error" });
+  }
+}
+
+async function removeFurniture(id) {
+  if (inviteToken() || state.kind !== "channel" || !state.id) return;
+  const furniture = (state.floorItems ?? []).filter((f) => f.id !== id);
+  try {
+    const saved = await (
+      await api("/api/floor", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: state.id, furniture }),
+      })
+    ).json();
+    state.floorFurnRoom = state.id;
+    state.floorItems = saved.furniture ?? furniture;
+    renderFloorFurniture(state.floorItems);
+  } catch (err) {
+    addMessage({ who: "error", text: String(err), kind: "error" });
+  }
+}
+
+function bindFloorKit() {
+  const kit = els.floorKit;
+  if (!kit || kit.dataset.bound) return;
+  kit.dataset.bound = "1";
+  kit.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("[data-kind]");
+    if (!btn) return;
+    ev.stopPropagation();
+    const kind = btn.dataset.kind;
+    state.floorHold = state.floorHold === kind ? "" : kind;
+    for (const el of kit.querySelectorAll("[data-kind]")) {
+      el.classList.toggle("on", el.dataset.kind === state.floorHold);
+    }
+    paintFloorHint();
+  });
+  if (!kit.dataset.boundEsc) {
+    kit.dataset.boundEsc = "1";
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && state.floorHold) {
+        ev.preventDefault();
+        clearFloorHold();
+      }
+    });
+  }
+}
+
+function renderFloorDoors() {
+  const row = els.floorDoors;
+  if (!row) return;
+  const channels = state.bootstrap?.channels ?? [];
+  const here = state.kind === "channel" ? state.id : "";
+  const others = channels.filter((ch) => ch.id !== here);
+  row.replaceChildren();
+  for (const ch of others) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "floor-door";
+    btn.dataset.channelId = ch.id;
+    const icon = ch.icon && ch.icon !== "#" ? ch.icon : "#";
+    btn.title = `${icon} ${ch.title || ch.id}`;
+    btn.setAttribute("aria-label", `Enter ${ch.title || ch.id}`);
+    const slab = document.createElement("span");
+    slab.className = "floor-door-slab";
+    const label = document.createElement("span");
+    label.className = "floor-door-label";
+    label.textContent = `#${ch.id}`;
+    btn.append(slab, label);
+    btn.onclick = (ev) => {
+      ev.stopPropagation();
+      paneOpen(state.activePane, "channel", ch.id);
+    };
+    row.append(btn);
+  }
+  row.hidden = others.length === 0;
+}
+
+function ensureFloorDesk(id) {
+  const box = els.floorDesks;
+  if (!box) return null;
+  let desk = box.querySelector(`[data-desk-id="${id}"]`);
+  if (desk) return desk;
+  desk = document.createElement("div");
+  desk.className = "floor-desk";
+  desk.dataset.deskId = id;
+  const pc = document.createElement("span");
+  pc.className = "floor-pc";
+  const screen = document.createElement("span");
+  screen.className = "floor-screen";
+  pc.append(screen);
+  desk.append(pc);
+  box.append(desk);
+  return desk;
+}
+
+function ensureFloorSeat(id, leadId) {
+  let btn = els.floorSeats?.querySelector(`[data-bot-id="${id}"]`);
+  if (btn) return btn;
+  const face = faceFor(id);
+  btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "floor-seat";
+  btn.dataset.botId = id;
+  const char = document.createElement("span");
+  char.className = "floor-char";
+  const head = document.createElement("span");
+  head.className = "floor-head";
+  head.textContent = face.glyph;
+  head.style.background = face.bg;
+  head.style.color = face.fg;
+  const body = document.createElement("span");
+  body.className = "floor-body";
+  body.style.background = face.fg;
+  char.append(head, body);
+  const tag = document.createElement("span");
+  tag.className = "floor-tag";
+  const bubble = document.createElement("span");
+  bubble.className = "floor-bubble";
+  btn.append(char, tag, bubble);
+  btn.onclick = (ev) => {
+    ev.stopPropagation();
+    paneOpen(state.activePane, "dm", `human__${id}`);
+  };
+  els.floorSeats.append(btn);
+  return btn;
+}
+
+function renderFloor(hereIds, leadId) {
+  const seats = els.floorSeats;
+  const plaque = els.floorPlaque;
+  if (!seats) return;
+  bindFloorWalk();
+  bindFloorKit();
+  renderFloorDoors();
+  if (els.floorKit) els.floorKit.hidden = Boolean(inviteToken());
+  paintFloorHint();
+  refreshFloorFurniture();
+  const roomKey = `${state.kind}:${state.id}`;
+  if (state.floorRoom !== roomKey) {
+    state.floorRoom = roomKey;
+    walkYou(36, 148);
+  }
+  if (plaque) {
+    plaque.textContent =
+      state.kind === "channel" && state.id ? `#${state.id}` : "desk";
+  }
+  const keep = new Set(hereIds);
+  for (const el of [...seats.querySelectorAll(".floor-seat")]) {
+    if (!keep.has(el.dataset.botId)) el.remove();
+  }
+  for (const el of [...(els.floorDesks?.querySelectorAll(".floor-desk") ?? [])]) {
+    if (!keep.has(el.dataset.deskId)) el.remove();
+  }
+  let atTable = 0;
+  hereIds.forEach((id, i) => {
+    const home = deskSlot(i);
+    const desk = ensureFloorDesk(id);
+    if (desk) {
+      desk.style.left = `${home.x}px`;
+      desk.style.top = `${home.y + 18}px`;
+      desk.style.zIndex = String(home.z);
+    }
+    const btn = ensureFloorSeat(id, leadId);
+    const doing = state.activity[id] || "Online";
+    const pose = floorPose(id);
+    const slot = pose === "writing" ? tableSlot(atTable++) : { x: home.x + 8, y: home.y - 6, z: home.z + 1 };
+    btn.className = `floor-seat pose-${pose}${pose !== "idle" ? " busy" : ""}`;
+    btn.style.left = `${slot.x}px`;
+    btn.style.top = `${slot.y}px`;
+    btn.style.zIndex = String(slot.z);
+    btn.title = `${displayName(id)} · ${doing}`;
+    btn.setAttribute("aria-label", `${displayName(id)}, ${doing}`);
+    const tag = btn.querySelector(".floor-tag");
+    if (tag) {
+      tag.textContent = leadId && id === leadId ? `${displayName(id)} · lead` : displayName(id);
+    }
+    const bubble = btn.querySelector(".floor-bubble");
+    if (bubble) bubble.textContent = pose === "idle" ? "" : doing;
+    if (desk) desk.classList.toggle("lit", pose === "working" || pose === "thinking");
+    applyFloorLook(btn, id);
+  });
+  applyFloorLook(document.getElementById("floor-you"), "you");
+  bindFloorLook();
+}
+
 function renderPresence() {
   els.hereList.replaceChildren();
   const bots = state.bootstrap?.bots ?? [];
@@ -1569,8 +2017,9 @@ function renderPresence() {
     if (els.deskLabel) els.deskLabel.textContent = "Online";
   }
   const byId = new Map(bots.map((b) => [b.id, b]));
-  for (const id of hereIds) {
-    if (!byId.has(id)) continue;
+  const present = hereIds.filter((id) => byId.has(id));
+  renderFloor(present, leadId);
+  for (const id of present) {
     els.hereList.append(presenceRow(id, leadId));
   }
   if (!els.hereList.children.length) {
@@ -1681,16 +2130,32 @@ function appendThinking(botId, text) {
   pinBottom();
 }
 
-function appendTool(botId, name, args) {
-  if (!name) return;
+function appendTool(botId, name, args, output, shot) {
+  if (!name && !shot) return;
   if (state.running) setActivity(botId, activityLabel(name, args));
   const turn = ensureTurn(botId);
-  turn.tools.hidden = false;
-  turn.toolCount += 1;
-  turn.toolsSum.textContent = turn.toolCount === 1 ? "1 tool" : `${turn.toolCount} tools`;
-  const li = document.createElement("li");
-  li.textContent = toolLabel(name, args);
-  turn.toolList.append(li);
+  const path = shot || (String(output ?? "").match(/\.crew\/browser\/shots\/[A-Za-z0-9._-]+\.png/) || [])[0];
+  const last = turn.toolList.lastElementChild;
+  const merge =
+    last &&
+    last.dataset.name === String(name ?? "") &&
+    !last.querySelector("img");
+  const li = merge ? last : document.createElement("li");
+  if (!merge) {
+    turn.tools.hidden = false;
+    turn.toolCount += 1;
+    turn.toolsSum.textContent = turn.toolCount === 1 ? "1 tool" : `${turn.toolCount} tools`;
+    li.dataset.name = String(name ?? "");
+    li.textContent = shot ? (toolLabel(name, args) || "screenshot") : toolLabel(name, args);
+    turn.toolList.append(li);
+  }
+  if (path && !li.querySelector("img")) {
+    const img = document.createElement("img");
+    img.className = "desk-shot";
+    img.alt = "Browser screenshot";
+    img.src = `/api/shot?path=${encodeURIComponent(path)}`;
+    li.append(img);
+  }
   pinBottom();
 }
 
@@ -1742,8 +2207,60 @@ function addMessage({ who, botId, text, kind }) {
   return appendAccount(id, text, true);
 }
 
+function inviteToken() {
+  return String(localStorage.getItem("crew.inviteToken") || "").trim();
+}
+
+function inviteHeaders(extra) {
+  const headers = extra instanceof Headers
+    ? Object.fromEntries(extra.entries())
+    : { ...(extra || {}) };
+  const token = inviteToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function paintWhoChip() {
+  const token = inviteToken();
+  const input = document.getElementById("who-token");
+  const label = document.getElementById("who-label");
+  if (input && input.value !== token) input.value = token;
+  if (!label) return;
+  if (!token) {
+    label.textContent = "owner";
+    return;
+  }
+  api("/api/who")
+    .then((res) => res.json())
+    .then((who) => {
+      label.textContent = String(who.handle || who.id || "invite");
+    })
+    .catch(() => {
+      label.textContent = "invite";
+    });
+}
+
+function bindWhoChip() {
+  const input = document.getElementById("who-token");
+  if (!input || input.dataset.bound) return;
+  input.dataset.bound = "1";
+  input.value = inviteToken();
+  paintWhoChip();
+  const save = () => {
+    const raw = input.value.trim();
+    if (raw) localStorage.setItem("crew.inviteToken", raw);
+    else localStorage.removeItem("crew.inviteToken");
+    paintWhoChip();
+  };
+  input.addEventListener("change", save);
+  input.addEventListener("blur", save);
+  input.addEventListener("input", save);
+}
+
 async function api(path, opts) {
-  const res = await fetch(path, opts);
+  const next = { ...(opts || {}) };
+  next.headers = inviteHeaders(next.headers);
+  const res = await fetch(path, next);
   if (!res.ok) throw new Error((await res.text()) || res.statusText);
   return res;
 }
@@ -1798,7 +2315,7 @@ async function openThread(kind, id) {
     } else if (row.type === "thinking") {
       appendThinking(row.botId, row.text);
     } else if (row.type === "tool") {
-      appendTool(row.botId, row.name, row.args);
+      appendTool(row.botId, row.name, row.args, row.output, row.shot);
     } else if (row.type === "error") {
       addMessage({
         who: `@${row.botId}`,
@@ -2183,6 +2700,13 @@ async function openBotSettings(id) {
     clearSkillForm();
     setSkillOpenEnabled(true);
     fillBotRooms(id, false);
+    const look = (state.looks?.bots ?? {})[id] || { skin: "mid", hair: "short", top: "tee" };
+    const skin = document.getElementById("bot-skin");
+    const hair = document.getElementById("bot-hair");
+    const top = document.getElementById("bot-top");
+    if (skin) skin.value = look.skin;
+    if (hair) hair.value = look.hair;
+    if (top) top.value = look.top;
     document.getElementById("bot-delete").hidden = false;
     state.creating = "";
     els.botModal.showModal();
@@ -2472,6 +2996,18 @@ document.getElementById("bot-form").addEventListener("submit", async (ev) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
+    state.looks = await (
+      await api("/api/looks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          botId: id,
+          skin: document.getElementById("bot-skin")?.value,
+          hair: document.getElementById("bot-hair")?.value,
+          top: document.getElementById("bot-top")?.value,
+        }),
+      })
+    ).json();
     if (state.creating === "person") {
       const rooms = new Set(readBotRooms());
       for (const ch of state.bootstrap?.channels ?? []) {
@@ -2627,7 +3163,9 @@ async function restoreSplit() {
 }
 
 async function boot() {
+  bindWhoChip();
   state.bootstrap = await (await api("/api/bootstrap")).json();
+  await refreshLooks();
   fillAppTop();
   applyDesk();
   renderRail();
@@ -2643,7 +3181,7 @@ document.getElementById("desk-toggle")?.addEventListener("click", () => {
   applyDesk();
 });
 document.getElementById("app-top")?.addEventListener("dblclick", (ev) => {
-  if (ev.target.closest("button")) return;
+  if (ev.target.closest("button, input, label")) return;
   if (isDesktopShell()) windowCall("toggle");
 });
 document.getElementById("win-min")?.addEventListener("click", () => windowCall("minimize"));
@@ -3124,6 +3662,52 @@ async function refreshMcpTools() {
   }
 }
 
+async function loadInvites() {
+  const list = document.getElementById("invite-list");
+  if (!list) return;
+  try {
+    const data = await (await api("/api/humans")).json();
+    list.replaceChildren();
+    for (const h of data.humans ?? []) {
+      const li = document.createElement("li");
+      li.className = "invite-row-item";
+      const meta = document.createElement("span");
+      meta.textContent = `${h.handle} (@${h.id})${h.invited ? "" : " — revoked"}`;
+      const rev = document.createElement("button");
+      rev.type = "button";
+      rev.className = "danger";
+      rev.textContent = "Revoke";
+      rev.disabled = !h.invited;
+      rev.onclick = async () => {
+        try {
+          await api("/api/humans/revoke", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: h.id }),
+          });
+          await loadInvites();
+        } catch (err) {
+          const once = document.getElementById("invite-once");
+          if (once) {
+            once.hidden = false;
+            once.textContent = String(err);
+          }
+        }
+      };
+      li.append(meta, rev);
+      list.append(li);
+    }
+    if (!list.children.length) {
+      const empty = document.createElement("li");
+      empty.className = "field-hint";
+      empty.textContent = "No extra people yet.";
+      list.append(empty);
+    }
+  } catch (err) {
+    list.textContent = String(err);
+  }
+}
+
 async function openAppSettings() {
   document.getElementById("app-key-meta").textContent = state.bootstrap.keySet
     ? `saved ${state.bootstrap.key}`
@@ -3141,10 +3725,43 @@ async function openAppSettings() {
     fillJobs();
   });
   switchSettingsTab("general");
+  const once = document.getElementById("invite-once");
+  if (once) {
+    once.hidden = true;
+    once.textContent = "";
+  }
+  loadInvites();
   els.appModal.showModal();
   document.getElementById("model-search").value = "";
   loadCatalog("");
 }
+
+document.getElementById("invite-create")?.addEventListener("click", async () => {
+  const id = document.getElementById("invite-id")?.value.trim() ?? "";
+  const handle = document.getElementById("invite-handle")?.value.trim() ?? "";
+  const once = document.getElementById("invite-once");
+  try {
+    const res = await (await api("/api/humans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, handle: handle || id }),
+    })).json();
+    if (once) {
+      once.hidden = false;
+      once.textContent = `Token (once): ${res.token}`;
+    }
+    const idEl = document.getElementById("invite-id");
+    const handleEl = document.getElementById("invite-handle");
+    if (idEl) idEl.value = "";
+    if (handleEl) handleEl.value = "";
+    await loadInvites();
+  } catch (err) {
+    if (once) {
+      once.hidden = false;
+      once.textContent = String(err);
+    }
+  }
+});
 
 els.appSettings.addEventListener("click", () => openAppSettings());
 document.getElementById("settings-tabs")?.addEventListener("click", (ev) => {
@@ -3429,7 +4046,7 @@ async function onComposerSubmit(ev) {
       setRunning(true);
       const res = await fetch("/api/say", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: inviteHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(
           runKind === "dm"
             ? { kind: "dm", id: runId, text, thinking: true, verbose: true }
@@ -3462,7 +4079,7 @@ async function onComposerSubmit(ev) {
           } else if (row.type === "thinking") {
             appendThinking(row.botId, row.text);
           } else if (row.type === "tool") {
-            appendTool(row.botId, row.name, row.args);
+            appendTool(row.botId, row.name, row.args, row.output, row.shot);
           } else if (row.type === "ask") {
             showAsk(row);
           } else if (row.type === "error") {

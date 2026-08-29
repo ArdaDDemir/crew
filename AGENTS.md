@@ -8,7 +8,7 @@ If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update t
 
 ## What this is
 
-Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.8.0**.
+Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.9.0**.
 
 Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
 
@@ -20,15 +20,15 @@ Do **not** start building any of these unless the human asked in this session:
 
 | Not this | Reality |
 |---|---|
-| discord.js / Discord API bot | Discord-like **data model** and member list. Real Discord is a later adapter. |
+| discord.js / Discord API bot | Discord-like **data model**. Real Discord is `apps/discord` (`ADR-0049`), not core. |
 | Wrapper around Claude Code, Codex, OpenCode, Grok CLI | We are the engine. T3 is Settings / picker / permission inspiration. Enabled harness Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). |
 | Electron / T3 desktop | Local UI is `apps/web`. Window is **Tauri 2 + WebView2** (`ADR-0032`), not Electron. |
 | Single ChatGPT REPL | Product is bots + channels + mentions + DMs. |
 | Cloud VM / computer-use | Work is the human’s machine. |
 | New YAML skill format | Agent Skills `SKILL.md` only (`ADR-0021`). |
 | Python, Rust, or Go rewrite | TypeScript + Bun (`ADR-0009`). |
-| `crew serve` / multi-human | Parked: `docs/todos/multi-human-remote.md`. |
-| Computer-use / in-app browser | Parked: `docs/todos/computer-use-and-browser.md`. |
+| `crew serve` / multi-human | Loopback daemon is in (`ADR-0048`). Public `0.0.0.0` still parked: `docs/todos/multi-human-remote.md`. |
+| Computer-use / in-app browser | Isolated `browser_*` tools are in (`ADR-0050`). Live desktop mouse stays parked: `docs/todos/computer-use-and-browser.md`. |
 
 ## Read in this order
 
@@ -68,8 +68,9 @@ packages/provider-grok    Grok CLI spawn adapter (`ADR-0034`)
 packages/provider-harness Claude / Codex / OpenCode / Grok spawn (`ADR-0035`)
 apps/cli               `crew` argv adapter
 apps/web               local UI adapter (Bun.serve); providers, jobs, mcp json
+apps/discord           Discord Gateway in / webhook out (`ADR-0049`)
 apps/desktop           Crew.exe (Tauri + WebView2); sidecar is compiled `apps/web`
-docs/adr               decisions (immutable once accepted; next is 0047)
+docs/adr               decisions (immutable once accepted; next is 0061)
 docs/specs             wire contracts
 ```
 
@@ -81,13 +82,13 @@ docs/specs             wire contracts
 2. **Architecture change → ADR.** Next number in `docs/adr/`. Do not rewrite an accepted ADR; supersede it. Touch `docs/adr/README.md`.
 3. **User-visible change → `CHANGELOG.md` `[Unreleased]`.** Keep a Changelog headings.
 4. **Mention routing is the scheduler.** No tag → no turn (except human post with no `@` wakes the **lead**). `@everyone` wakes every **bot** member except the author. Unknown `@foo` is ignored for routing and announced (`ADR-0046`). `@` inside fenced or inline code is not a wake (`ADR-0043`). **One turn per bot per `say`** (`ADR-0013`). If the human already `@` named bots, no handoff wave (`ADR-0014`); held `@` becomes `handoff.held` (`ADR-0045`).
-5. **Permissions.** `supervised` \| `auto-accept` (default) \| `auto` \| `full-access`. Auto-accept = workspace file writes **and** workspace `shell`. `mcp_*` tools **ask** on auto-accept (`ADR-0044`). `auto` without a reviewer **falls back to supervised**. Reviewer first token is `ALLOW`/`DENY`/`ASK` only. Always deny `.env` and `~/.ssh`. Hard-deny shell: `.env`, `.ssh`, `rm -rf /`, `irm`, `curl|iex`. Always-allow fingerprints live in `.crew/permissions.json` (`ADR-0018`). Settings can **Add** / remove one row (`POST` / `DELETE /api/permissions`). New rooms use `defaultPermissionMode`.
+5. **Permissions.** `supervised` \| `auto-accept` (default) \| `auto` \| `full-access`. Auto-accept = workspace file writes **and** workspace `shell`. `mcp_*` and `browser_*` tools **ask** on auto-accept (`ADR-0044`, `ADR-0050`). `auto` without a reviewer **falls back to supervised**. Reviewer first token is `ALLOW`/`DENY`/`ASK` only. Always deny `.env` and `~/.ssh`. Hard-deny shell: `.env`, `.ssh`, `rm -rf /`, `irm`, `curl|iex`. Hard-deny browser: `file://`, `chrome://`, `javascript:`, `.env` URLs. Always-allow fingerprints live in `.crew/permissions.json` (`ADR-0018`). Settings can **Add** / remove one row (`POST` / `DELETE /api/permissions`). New rooms use `defaultPermissionMode`.
 6. **Sessions are append-only JSONL** `"v": 1`. Never rewrite a line. Compact is three layers: 80-message **window** (`thread.compacted`, `ADR-0019`), **trim** (posted-only prompt), **LLM summary** (`thread.summary`, `ADR-0028`). Titles append `thread.titled` (`ADR-0029`).
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. Core does not import `@openrouter/*` or spawn CLIs. Enabled Grok/Claude/Codex/OpenCode Person turns spawn that CLI in adapter packages (`ADR-0034`, `ADR-0035`). Jobs stay OpenRouter.
 8. **Skills = Agent Skills `SKILL.md`.** Slug name, YAML frontmatter, body in the prompt (`ADR-0021`). Channel `RULES.md` + `CONTEXT.md` every turn. `SOUL.md` is voice.
-9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.8.0**.
-10. **Scope.** Do not add Electron, real Discord, git-PR, `crew serve`, or a plugin marketplace unless asked this session. MCP is Settings → MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
-11. **Reserved bot ids:** `human`, `you`, `everyone`, `engine` (`ADR-0022`). Max 16 bots, 16 channels.
+9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.9.0**.
+10. **Scope.** Do not add Electron, git-PR, public `0.0.0.0` bind, or a plugin marketplace unless asked this session. Discord is `apps/discord` (`ADR-0049`). Loopback `crew serve` is the office daemon (`ADR-0048`). MCP is Settings → MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
+11. **Reserved bot ids:** `human`, `you`, `everyone`, `engine`, `user` (`ADR-0022`, `ADR-0047`). Max 16 bots, 16 channels. Extra humans live in `.crew/humans.json`; missing `author.humanId` is the owner `"human"`.
 12. **UI copy is English.** The human may write Turkish; bots account in English.
 
 ## Testing

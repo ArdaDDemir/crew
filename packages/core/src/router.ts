@@ -7,11 +7,11 @@ export type Channel = {
 };
 
 export type Participant =
-  | { kind: "human" }
+  | { kind: "human"; humanId?: string }
   | { kind: "bot"; botId: string };
 
 export type Post =
-  | { author: { kind: "human" }; text: string }
+  | { author: { kind: "human"; humanId?: string }; text: string }
   | { author: { kind: "bot"; botId: string }; text: string };
 
 export type DmThread = {

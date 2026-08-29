@@ -15,5 +15,6 @@ test("rejects empty, uppercase, and spaces", () => {
 test("rejects reserved bot ids", () => {
   expect(() => assertBotId("human")).toThrow("reserved id: human");
   expect(() => assertBotId("everyone")).toThrow("reserved id: everyone");
+  expect(() => assertBotId("user")).toThrow("reserved id: user");
   assertBotId("coder");
 });

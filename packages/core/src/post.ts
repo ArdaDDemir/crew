@@ -1,4 +1,4 @@
-import { dmThreadId, parseDmThreadId, type CrewEvent, type ThreadRef } from "./events";
+import { dmThreadId, humanAuthor, parseDmThreadId, type CrewEvent, type ThreadRef } from "./events";
 import type { EventStore } from "./store";
 import type { Workspace } from "./workspace";
 import { routeDmWake, routeWakes, type Participant, type Post } from "./router";
@@ -94,7 +94,7 @@ export async function postToDm(input: PostToDmInput) {
   };
   const post: Post =
     input.from.kind === "human"
-      ? { author: { kind: "human" }, text: input.text }
+      ? { author: humanAuthor(input.from.humanId), text: input.text }
       : { author: { kind: "bot", botId: input.from.botId }, text: input.text };
 
   const decision = routeDmWake(dm, post);

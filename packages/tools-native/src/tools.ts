@@ -2,6 +2,9 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Tool } from "@crew/core";
+import { browserTools, type BrowserDriver } from "./browser";
+export { MemoryBrowser, browserTools, type BrowserDriver, type A11yNode } from "./browser";
+export { lazyPlaywrightBrowser } from "./playwright-browser";
 
 const fileLocks = new Map<string, Promise<void>>();
 
@@ -53,9 +56,9 @@ function fileExcerpt(body: string): string {
   return `${one.slice(0, 397)}...`;
 }
 
-export function nativeTools(opts?: { shellTimeoutMs?: number }): Tool[] {
+export function nativeTools(opts?: { shellTimeoutMs?: number; browser?: BrowserDriver }): Tool[] {
   const shellTimeoutMs = opts?.shellTimeoutMs ?? 30_000;
-  return [
+  const tools: Tool[] = [
     {
       name: "read",
       description: "Read a UTF-8 text file relative to the workspace",
@@ -167,4 +170,6 @@ export function nativeTools(opts?: { shellTimeoutMs?: number }): Tool[] {
       },
     },
   ];
+  if (opts?.browser) tools.push(...browserTools(opts.browser));
+  return tools;
 }

@@ -24,6 +24,7 @@ async function cli(
     readLine?: () => Promise<string | null>;
     provider?: Provider;
     harnessRun?: import("@crew/provider-harness").HarnessRunner;
+    serve?: import("./run").CliDeps["serve"];
   },
 ) {
   let stdout = "";
@@ -40,7 +41,7 @@ async function cli(
       },
       readLine: extra?.readLine,
     },
-    { provider: extra?.provider ?? ack(), harnessRun: extra?.harnessRun },
+    { provider: extra?.provider ?? ack(), harnessRun: extra?.harnessRun, serve: extra?.serve },
   );
   return { code, stdout, stderr };
 }
@@ -377,6 +378,26 @@ test("dms show unknown thread exits 1 like say", async () => {
   const result = await cli(cwd, ["dms", "show", "human", "coder"]);
   expect(result.code).toBe(1);
   expect(result.stderr).toContain("unknown dm");
+});
+
+test("crew serve starts the office daemon", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-serve-"));
+  let seen: { cwd: string; port?: number; hostname?: string; cors?: string } | undefined;
+  const { code, stdout, stderr } = await cli(cwd, ["serve", "--port", "0", "--cors", "http://127.0.0.1:3000"], {
+    serve: async (opts) => {
+      seen = opts;
+      return { url: "http://127.0.0.1:7734" };
+    },
+  });
+  expect(code).toBe(0);
+  expect(stderr).toBe("");
+  expect(stdout).toContain("crew ui  http://127.0.0.1:7734");
+  expect(seen).toEqual({
+    cwd,
+    port: 0,
+    hostname: undefined,
+    cors: "http://127.0.0.1:3000",
+  });
 });
 
 test("unknown command exits 1", async () => {

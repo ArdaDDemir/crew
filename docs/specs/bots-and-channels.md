@@ -8,7 +8,7 @@ A bot is a persistent named teammate.
 
 | Field | Meaning |
 |---|---|
-| `id` | stable slug (`designer`, `coder`). Never renamed after create. Reserved: `human`, `you`, `everyone`, `engine` (`ADR-0022`) |
+| `id` | stable slug (`designer`, `coder`). Never renamed after create. Reserved: `human`, `you`, `everyone`, `engine`, `user` (`ADR-0022`, `ADR-0047`) |
 | `name` | display name |
 | `icon` | optional glyph |
 | `model` / `fallbackModel` | optional; else workspace default. OpenRouter ids for Crew talk |
@@ -58,6 +58,8 @@ A bot opens a DM by emitting `dm_send` (`to`, `text`) targeting another **channe
 .crew/
   config.json                  # project model, allowed, fallback, defaultPermissionMode, autoCompact, reviewerModel
   permissions.json             # Always rules (ADR-0018)
+  humans.json                  # owner + extra humans, invite SHA-256 (ADR-0047)
+  discord.json                 # optional guild/channel/user map (ADR-0049)
   jobs.json                    # title / compact / vision / read slots (ADR-0029, ADR-0031)
   providers.json               # OpenRouter + harness cards (ADR-0030, ADR-0031)
   bots/<id>/bot.json           # includes harness / harnessModel / titleModel
@@ -68,8 +70,9 @@ A bot opens a DM by emitting `dm_send` (`to`, `text`) targeting another **channe
   channels/<id>/CONTEXT.md
   channels/<id>/channel.json   # members, lead, mode, folders, icon
   logs/channel-<id>.jsonl
-  logs/dm-<a>__<b>.jsonl       # botA__botB or human__bot
-  logs/dm-human__<bot>__<t>.jsonl  # extra chats with one person (ADR-0025)
+  logs/dm-<a>__<b>.jsonl       # botA__botB or human__bot (owner)
+  logs/dm-human__<bot>__<t>.jsonl  # extra chats with the owner (ADR-0025)
+  logs/dm-user__<humanId>__<bot>.jsonl  # extra human (ADR-0047)
 ```
 
 User config: `~/.crew/config.json` (API key, default model). Project file wins for model/allowed. `.crew/` is gitignored.

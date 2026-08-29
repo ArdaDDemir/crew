@@ -64,6 +64,45 @@ test("latest human DM beats an older channel order", () => {
   expect(note).not.toContain("Set the title to FlowHub");
 });
 
+test("latest-human-wins is per humanId; other humans are unread pointers", () => {
+  const { store, workspace } = setup();
+  const channel = { kind: "channel" as const, id: "landing" };
+  const ownerDm = { kind: "dm" as const, id: "human__coder" };
+  const ardaDm = { kind: "dm" as const, id: "user__arda__coder" };
+  store.append(
+    evt("1", "2026-08-27T15:00:00.000Z", channel, "message.posted", {
+      author: { kind: "human", humanId: "arda" },
+      text: "Set the title to FlowHub @coder",
+    }),
+  );
+  store.append(
+    evt("2", "2026-08-27T15:10:00.000Z", ownerDm, "dm.opened", {
+      participants: [{ kind: "human" }, { kind: "bot", botId: "coder" }],
+    }),
+  );
+  store.append(
+    evt("3", "2026-08-27T15:11:00.000Z", ownerDm, "message.posted", {
+      author: { kind: "human" },
+      text: "Do not change index.html.",
+    }),
+  );
+  store.append(
+    evt("4", "2026-08-27T15:12:00.000Z", ardaDm, "dm.opened", {
+      participants: [{ kind: "human", humanId: "arda" }, { kind: "bot", botId: "coder" }],
+    }),
+  );
+
+  const note = buildCrossThreadNote({
+    store,
+    workspace,
+    botId: "coder",
+    thread: channel,
+    humanId: "arda",
+  });
+  expect(note ?? "").not.toContain("Do not change index.html");
+  expect(note ?? "").toMatch(/1 unread/i);
+});
+
 test("DM turn sees last channel account and a newer channel human order", () => {
   const { store, workspace } = setup();
   const channel = { kind: "channel" as const, id: "landing" };
