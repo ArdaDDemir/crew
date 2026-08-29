@@ -21,16 +21,20 @@ import {
 test("whichBinary finds native Claude in ~/.local/bin even when PATH is empty", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "crew-home-"));
   mkdirSync(join(cwd, ".local", "bin"), { recursive: true });
-  const fake = join(cwd, ".local", "bin", "claude.exe");
+  const name = process.platform === "win32" ? "claude.exe" : "claude";
+  const fake = join(cwd, ".local", "bin", name);
   writeFileSync(fake, "fake");
-  const prevHome = process.env.USERPROFILE;
+  const prevHome = process.env.HOME;
+  const prevProfile = process.env.USERPROFILE;
   const prevPath = process.env.PATH;
+  process.env.HOME = cwd;
   process.env.USERPROFILE = cwd;
-  process.env.PATH = "C:\\Windows\\system32";
+  process.env.PATH = join(cwd, "no-path");
   try {
     expect(whichBinary("claude")).toBe(fake);
   } finally {
-    process.env.USERPROFILE = prevHome;
+    process.env.HOME = prevHome;
+    process.env.USERPROFILE = prevProfile;
     process.env.PATH = prevPath;
   }
 });

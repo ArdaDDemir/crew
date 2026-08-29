@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { writeFileSync } from "node:fs";
 import { ScriptedProvider } from "@crew/core";
 import { FsWorkspace } from "@crew/workspace-fs";
@@ -69,12 +69,13 @@ test("resolvePublicDir uses --public when set", () => {
 });
 
 test("resolvePublicDir uses exe dir when importMetaDir is bunfs", () => {
+  const exe = join(tmpdir(), "Crew", "crew-server.exe");
   expect(
     resolvePublicDir({
-      execPath: "C:\\Crew\\crew-server.exe",
-      importMetaDir: "B:\\$bunfs\\root",
+      execPath: exe,
+      importMetaDir: join("$bunfs", "root"),
     }),
-  ).toBe(join("C:\\Crew", "public"));
+  ).toBe(join(dirname(exe), "public"));
 });
 
 test("resolvePublicDir uses source public next to src", () => {

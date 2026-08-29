@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { MemoryBrowser, nativeTools, shellLockPath } from "./tools";
 
 async function tmp() {
@@ -75,9 +75,9 @@ test("list_dir skips .crew .git .ssh .env and .env.*", async () => {
 });
 
 test("shellLockPath locks redirects and git, not bun test", async () => {
-  const root = "C:\\proj";
-  expect(shellLockPath("echo hi > src/a.ts", root)).toBe(join(root, "src/a.ts"));
-  expect(shellLockPath("git commit -m ok", root)).toBe(join(root, ".git"));
+  const root = join(tmpdir(), "crew-lock");
+  expect(shellLockPath("echo hi > src/a.ts", root)).toBe(resolve(root, "src/a.ts"));
+  expect(shellLockPath("git commit -m ok", root)).toBe(resolve(root, ".git"));
   expect(shellLockPath("bun test", root)).toBeUndefined();
 });
 
@@ -117,10 +117,8 @@ test("apply_patch duplicate old_text tells the model to pass a unique hunk", asy
 test("shell timeout reports timed out after the deadline", async () => {
   const root = await mkdtemp(join(tmpdir(), "crew-tools-"));
   const tools = Object.fromEntries(nativeTools({ shellTimeoutMs: 80 }).map((t) => [t.name, t]));
-  const out = await tools.shell.execute(
-    { command: "powershell -Command \"Start-Sleep -Seconds 5\"" },
-    { workspaceRoot: root },
-  );
+  const hang = process.platform === "win32" ? 'powershell -Command "Start-Sleep -Seconds 5"' : "sleep 5";
+  const out = await tools.shell.execute({ command: hang }, { workspaceRoot: root });
   expect(out.toLowerCase()).toMatch(/timed out/);
   expect(out).toContain("80");
 }, 3000);
