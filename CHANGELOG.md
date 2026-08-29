@@ -17,6 +17,8 @@ See `docs/versioning.md`.
 ### Fixed
 
 - `crew dms show` on a thread that was never opened exits 1 with `unknown dm`, like `crew say` on an unknown channel.
+- `apply_patch` miss includes a current-file excerpt; duplicate `old_text` asks for a unique hunk.
+- `shell` that hits the 30s cap returns `timed out after 30000ms` instead of a silent hang.
 
 ## [0.8.0] - 2026-08-28
 

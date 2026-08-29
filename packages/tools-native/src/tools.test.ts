@@ -92,6 +92,39 @@ test("apply_patch old_text miss tells the model to re-read", async () => {
   ).rejects.toThrow(/old_text not found.*re-read/i);
 });
 
+test("apply_patch old_text miss includes a current-file excerpt", async () => {
+  const { root, tools } = await tmp();
+  await writeFile(join(root, "a.txt"), "hero copy here");
+  await expect(
+    tools.apply_patch.execute(
+      { path: "a.txt", old_text: "nope", new_text: "x" },
+      { workspaceRoot: root },
+    ),
+  ).rejects.toThrow(/Current file:[\s\S]*hero copy here/);
+});
+
+test("apply_patch duplicate old_text tells the model to pass a unique hunk", async () => {
+  const { root, tools } = await tmp();
+  await writeFile(join(root, "a.txt"), "aa aa");
+  await expect(
+    tools.apply_patch.execute(
+      { path: "a.txt", old_text: "aa", new_text: "bb" },
+      { workspaceRoot: root },
+    ),
+  ).rejects.toThrow(/matched more than once.*unique/i);
+});
+
+test("shell timeout reports timed out after the deadline", async () => {
+  const root = await mkdtemp(join(tmpdir(), "crew-tools-"));
+  const tools = Object.fromEntries(nativeTools({ shellTimeoutMs: 80 }).map((t) => [t.name, t]));
+  const out = await tools.shell.execute(
+    { command: "powershell -Command \"Start-Sleep -Seconds 5\"" },
+    { workspaceRoot: root },
+  );
+  expect(out.toLowerCase()).toMatch(/timed out/);
+  expect(out).toContain("80");
+}, 3000);
+
 test("shell runs a command in the workspace", async () => {
   const { root, tools } = await tmp();
   const out = await tools.shell.execute(

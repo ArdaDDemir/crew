@@ -47,7 +47,14 @@ function abs(root: string, rel: unknown): string {
   return resolve(root, rel);
 }
 
-export function nativeTools(): Tool[] {
+function fileExcerpt(body: string): string {
+  const one = body.replace(/\r\n/g, "\n");
+  if (one.length <= 400) return one;
+  return `${one.slice(0, 397)}...`;
+}
+
+export function nativeTools(opts?: { shellTimeoutMs?: number }): Tool[] {
+  const shellTimeoutMs = opts?.shellTimeoutMs ?? 30_000;
   return [
     {
       name: "read",
@@ -94,9 +101,15 @@ export function nativeTools(): Tool[] {
             );
           }
           const first = body.indexOf(oldText);
-          if (first === -1) throw new Error("old_text not found — re-read the file");
+          if (first === -1) {
+            throw new Error(
+              `old_text not found — re-read the file. Current file:\n${fileExcerpt(body)}`,
+            );
+          }
           if (body.indexOf(oldText, first + 1) !== -1) {
-            throw new Error("old_text matched more than once");
+            throw new Error(
+              "old_text matched more than once — re-read the file and pass a unique hunk",
+            );
           }
           writeFileSync(path, body.replace(oldText, newText), "utf8");
           return `patched ${args.path}`;
@@ -134,9 +147,16 @@ export function nativeTools(): Tool[] {
             cwd: ctx.workspaceRoot,
             shell: true,
             encoding: "utf8",
-            timeout: 30_000,
+            timeout: shellTimeoutMs,
             maxBuffer: 1024 * 1024,
+            killSignal: "SIGKILL",
           });
+          const timedOut =
+            (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT" ||
+            /ETIMEDOUT/i.test(String(result.error ?? ""));
+          if (timedOut) {
+            return `timed out after ${shellTimeoutMs}ms: ${command}`.slice(0, 8000);
+          }
           const stdout = result.stdout ?? "";
           const stderr = result.stderr ?? "";
           const code = result.status ?? (result.error ? 1 : 0);

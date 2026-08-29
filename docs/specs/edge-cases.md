@@ -52,11 +52,11 @@ This matches Discord/Continua (DM stays private in the room) plus “one coworke
 
 ## 3. Parallel files and tools
 
-22. Designer and coder `apply_patch` the same `index.html` in one wave. Lock serializes; second patch can fail `old_text not found` or overwrite the first.
-23. `old_text` matches twice → tool error. Model may invent a second patch or claim success.
+22. Designer and coder `apply_patch` the same `index.html` in one wave. Lock serializes; second patch can fail `old_text not found`. **Fixed:** miss includes a current-file excerpt so the next patch can target disk.
+23. `old_text` matches twice → tool error. **Fixed:** error asks to re-read and pass a unique hunk. Model may still invent a second patch.
 24. Empty `old_text` on existing file. **Fixed:** does not overwrite an existing file.
 25. Coder writes via `shell` (`echo > file`) instead of `apply_patch`. **Fixed (`ADR-0044`):** `>` / `>>` and `git` share the `apply_patch` lock.
-26. `shell` timeout 30s; hung `npm`. Turn looks stuck; other parallel bot continues.
+26. `shell` timeout 30s; hung `npm`. **Fixed:** tool output is `timed out after 30000ms`. Sibling bots still continue.
 27. `list_dir` without path lists workspace root including `.crew`? **Fixed (`ADR-0043`):** `list_dir` skips `.crew`, `.git`, `.ssh`, `.env`, `.env.*`. `read` of `.env` is still denied.
 28. `read` `.env` denied. Model retries once then account-nudge. Fine if it stops.
 29. Path `..\..\Windows\...` outside workspace: auto-accept asks; `say` has no TTY → deny. Model may loop until two denials.
