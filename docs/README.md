@@ -24,4 +24,4 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 | [todos/desktop-app.md](todos/desktop-app.md) | Crew.exe + Windows NSIS/MSI. GitHub Release is the download |
 | [superpowers/specs/](superpowers/specs/) | Product “why”. Settings/Providers/MCP: `2026-08-28-settings-providers-design.md`. Desktop: `2026-08-28-desktop-app-design.md` |
 
-Start: `AGENTS.md` → this map → the spec you are changing. New architecture: next ADR number in `adr/README.md`.
+Humans first: [wiki/Home.md](wiki/Home.md) (Install, Office, Discord, Permissions). Agents: `AGENTS.md` → this map → the spec you are changing. New architecture: next ADR number in `adr/README.md`.

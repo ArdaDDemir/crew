@@ -38,7 +38,7 @@ Default permission is **auto-accept** (workspace file writes + workspace shell).
 
 MSI: `Crew_0.9.0_x64_en-US.msi`. Portable: unzip next to `Crew.exe` + `crew-server.exe` + `public/`.
 
-Wiki: [Install](https://github.com/ArdaDDemir/crew/wiki/Install) · [Office](https://github.com/ArdaDDemir/crew/wiki/Office) · [Discord](https://github.com/ArdaDDemir/crew/wiki/Discord)
+Wiki: [Install](docs/wiki/Install.md) · [Office](docs/wiki/Office.md) · [Discord](docs/wiki/Discord.md)
 
 ## Run from source
 
@@ -68,7 +68,7 @@ bun run crew -- channel create landing --bots lead,coder --lead lead
 
 ## Docs
 
-Agents start at [`AGENTS.md`](./AGENTS.md). Humans: [wiki](https://github.com/ArdaDDemir/crew/wiki) first.
+Agents start at [`AGENTS.md`](./AGENTS.md). Humans: [wiki](docs/wiki/Home.md) first.
 
 | | |
 |---|---|
