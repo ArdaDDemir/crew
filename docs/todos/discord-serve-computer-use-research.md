@@ -24,6 +24,20 @@ Recommended build order (dependency, not hype):
 
 Do **not** start all three in one PR. Each needs its own ADR (next free: **0047**).
 
+### Which to start (2026-08-28)
+
+**Start with serve, but the first PR is `humanId`, not `0.0.0.0`.**
+
+| If we start with… | What we get | What breaks / stays blocked |
+|---|---|---|
+| **Discord first** | Arda `@coder` in a guild tonight | Every Discord user collapses to `{ kind: "human" }`. Two people = one brain (`ADR-0016`). Bot-bot Discord is a second identity mess. Rework when serve lands. |
+| **Computer-use first** | Bots click a Playwright window | Fun, local, no identity work. Does not make “office with a friend” true. Safety/permission ADR anyway. Can wait. |
+| **Serve / `humanId` first** | Two browsers, two names, correct latest-human-wins, DMs `arda__coder` | Unlock Discord *and* LAN. Network bind is a later flag. Loopback + second “person” in tests is enough for v1 of 0047. |
+
+Trap: OpenCode `serve` is one operator + HTTP. Copying only `--hostname 0.0.0.0` without `humanId` is a security hole and a product lie.
+
+First concrete slice if Arda says go: **ADR-0047** — `author.humanId`, legacy `human` = owner, invite token hash, loopback still default, tests with two humans. No Discord.js, no Playwright, no public bind.
+
 ---
 
 ## 1. `crew serve` (multi-human remote)
