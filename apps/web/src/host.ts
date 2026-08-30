@@ -316,6 +316,7 @@ export function snapshot(host: Host) {
       leadBotId: ch.leadBotId ?? null,
       memberBotIds: ch.memberBotIds,
       permissionMode: ch.permissionMode,
+      brief: channelBrief(ch.context),
     })),
     bots: host.workspace.listBots().map((b) => ({
       id: b.id,
@@ -954,6 +955,16 @@ function rememberDmMode(host: Host, id: string, isNew: boolean): PermissionMode 
   const next = ensureDmMode(prefs, id, host.cfg.defaultPermissionMode ?? "auto-accept");
   saveDmPrefs(host.cwd, next);
   return dmModeOf(next, id, "auto-accept");
+}
+
+export function channelBrief(context?: string): string {
+  const line =
+    (context ?? "")
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .find(Boolean) ?? "";
+  if (line.length <= 80) return line;
+  return `${line.slice(0, 77)}…`;
 }
 
 export function channelDetail(host: Host, id: string) {

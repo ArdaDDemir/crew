@@ -39,7 +39,7 @@ Created by the human. Not a Discord guild; one workspace (cwd) has many channels
 
 The human is always a member. UI may assign a random locked slug on create.
 
-Channel rules and context are injected into **every** bot turn in that channel, in addition to that bot’s soul.
+Channel rules, context, and folders are injected into **every** bot turn in that channel, in addition to that bot’s soul. Empty CONTEXT / RULES / folders still inject a `(not set)` block: do not invent the product; ask the human.
 
 ## DM
 

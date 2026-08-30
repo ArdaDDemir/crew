@@ -660,6 +660,29 @@ svg.ico {
   font-weight: 600;
 }
 
+.room-brief {
+  display: block;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 12px/1.35 inherit;
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.room-brief.empty {
+  font-style: italic;
+  color: var(--faint);
+}
+.room-brief[hidden] {
+  display: none;
+}
+
 .chip:disabled { opacity: 0.4; cursor: default; }
 
 .thread {

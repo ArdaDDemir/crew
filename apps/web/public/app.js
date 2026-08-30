@@ -148,6 +148,7 @@ function bindPane(i) {
   els.thread = r.querySelector(".thread");
   els.log = r.querySelector(".log");
   els.title = r.querySelector(".room-title");
+  els.brief = r.querySelector(".room-brief");
   els.kicker = r.querySelector(".room-kicker");
   els.form = r.querySelector(".composer");
   els.draft = r.querySelector(".draft");
@@ -1029,6 +1030,7 @@ function renderRail() {
     const label = document.createElement("span");
     label.className = "label";
     label.textContent = `${icon}  ${ch.title || ch.id}`;
+    btn.title = ch.brief || "No About — set CONTEXT.md";
     btn.append(label);
     const unread = unreadOf("channel", ch.id);
     const badge = badgeEl(unread);
@@ -2357,6 +2359,21 @@ function setRailOpen(on) {
   if (scrim) scrim.hidden = !on;
 }
 
+function paintRoomBrief(ch) {
+  if (!els.brief) return;
+  els.brief.hidden = false;
+  const brief = String(ch?.brief ?? "").trim();
+  if (brief) {
+    els.brief.textContent = brief;
+    els.brief.classList.remove("empty");
+    els.brief.title = "Room About — CONTEXT.md, loaded every turn";
+  } else {
+    els.brief.textContent = "No About — bots will ask, not invent.";
+    els.brief.classList.add("empty");
+    els.brief.title = "Set About on this room";
+  }
+}
+
 async function openThread(kind, id) {
   setRailOpen(false);
   state.kind = kind;
@@ -2366,12 +2383,17 @@ async function openThread(kind, id) {
     const ch = state.bootstrap.channels.find((c) => c.id === id);
     const icon = ch?.icon && ch.icon !== "#" ? ch.icon : "#";
     if (els.title) els.title.textContent = `${icon} ${ch?.title || id}`;
+    paintRoomBrief(ch);
   } else {
     const dm = parseDm(id);
     if (els.kicker) {
       els.kicker.textContent = dm.withHuman ? "with you" : dmSubline({ withHuman: false, a: dm.a, b: dm.b });
     }
     if (els.title) els.title.textContent = dmHeadline(id);
+    if (els.brief) {
+      els.brief.hidden = true;
+      els.brief.textContent = "";
+    }
   }
   syncTitleRegen();
   syncModeChip();
@@ -5174,6 +5196,10 @@ function wirePane(i) {
     else if (state.id.startsWith("human__")) {
       openBotSettings(state.id.slice("human__".length));
     }
+  });
+  r.querySelector(".room-brief")?.addEventListener("click", () => {
+    activatePane(i);
+    if (state.kind === "channel") openChannelSettings();
   });
   r.querySelector(".title-regen")?.addEventListener("click", () => {
     activatePane(i);

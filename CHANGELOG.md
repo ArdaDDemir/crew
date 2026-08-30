@@ -12,6 +12,7 @@ See `docs/versioning.md`.
 
 ### Added
 
+- Channel header shows the first CONTEXT.md line, or **No About — bots will ask, not invent.** Empty CONTEXT / RULES / folders still inject `(not set)` so bots ask instead of inventing the product.
 - Public GitHub: `ArdaDDemir/crew`. Windows NSIS/MSI/portable on Releases. MIT license. Wiki for install / office / Discord.
 
 ### Changed

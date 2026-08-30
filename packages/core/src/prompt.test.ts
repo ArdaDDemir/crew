@@ -133,6 +133,29 @@ test("skill body is in the system prompt, not just the catalog line", () => {
   expect(text).toContain("Always use semantic <section> landmarks.");
 });
 
+test("empty channel context rules and folders tell the bot not to invent the product", () => {
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder" });
+  workspace.addChannel({
+    id: "scratch",
+    leadBotId: "coder",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  const text = buildSystemPrompt({
+    workspace,
+    botId: "coder",
+    thread: { kind: "channel", id: "scratch" },
+    toolNames: ["read"],
+  });
+  expect(text).toContain("## Channel context");
+  expect(text).toContain("## Channel rules");
+  expect(text).toContain("## Folders");
+  expect(text).toContain("(not set)");
+  expect(text).toContain("Do not invent the product");
+  expect(text).toMatch(/ask the human/i);
+});
+
 test("DM prompt lists only the two parties", () => {
   const text = buildSystemPrompt({
     workspace: crew(),

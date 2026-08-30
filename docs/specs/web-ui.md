@@ -12,7 +12,7 @@ Sidecar / CLI flags (also `crew-server.exe` / `crew serve`): `--cwd <dir>` `--po
 |---|---|---|
 | GET | `/api/health` | `{ ok: true, version }` |
 | GET | `/api/who` | `{ id, handle, owner }`. Missing token is the owner `{ id: "human", handle: "owner", owner: true }`. Valid invite is that person. Invalid is 401 (`ADR-0055`) |
-| GET | `/api/bootstrap` | `version`, `updateUrl`, channels, bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
+| GET | `/api/bootstrap` | `version`, `updateUrl`, channels (`brief` = first CONTEXT.md line, ≤80 chars), bots (`harness` / `harnessModel`), DMs, posted counts, allowed models, `providers`, `providerCards`, `defaultPermissionMode`, `autoCompact`, `reviewerModel`, `cwd` |
 | GET | `/api/thread?kind&id` | messages / thinking / tools / shortened errors. Verbose tools may include `shot` (`.crew/browser/shots/*.png`) |
 | GET | `/api/shot` | `?path=.crew/browser/shots/<file>.png` only. PNG. `..` and other paths 403 |
 | POST | `/api/say` | NDJSON stream (`text`, `thinking`, `tool`, `ask`, `done`). Channel: `{ channelId, text }`. DM: `{ kind: "dm", id, text }` (`ADR-0041`). Invite: `Authorization: Bearer` or JSON `token` (`ADR-0048`). Missing token posts as owner. Invalid token is HTTP 401. Verbose `tool` after execute may include `output` and `shot` (`ADR-0054`) |
@@ -59,6 +59,7 @@ Sidecar / CLI flags (also `crew-server.exe` / `crew serve`): `--cwd <dir>` `--po
 - Composer: empty dock is `+` (bottom left) and **Send** (bottom right). `+` opens File / Folder. Enter sends (IME-safe); Shift+Enter newline. `@path` from disk. `/` command palette (UI only).
 - Person/channel **Id** is a locked field. Person **Rooms** are editable only on create; after that, membership is the channel sheet.
 - Desk: Discord-style `Members — N` plus a **2.5D isometric floor** for the open channel (`ADR-0056`–`0060`): glass meeting bay, PC desks, seated members. Click empty carpet walks **You** (not a wake). A `Writing` account walks to the table. Click a seat opens `human__<id>` DM. Other channels are **doors** on the back wall. Owner kit places plant/lamp/sofa/shelf/rug. Skin/hair/top under the room (You) and on the Person sheet (bots). Green/yellow dots and activity stay on the list under the room.
+- Chat header `.room-brief` is the first CONTEXT.md line for that channel, or **No About — bots will ask, not invent.** Click opens the channel sheet. Hidden on DMs.
 - Chat header `#work-chip` shows the same live activity (`Coder · Reading index.html`); hidden when idle. Plan-approve is a later JSONL event — no extra LLM call.
 - Chat header `#context-chip` (pane-1 uses the class): `{posted}/{keep}` or `{posted}/{keep} · compacted` when a `thread.summary` exists. Updates on thread open and after compact. Auto-compact when posted > keep * 0.7, once per thread (`sessionStorage` `crew.autoCompact:{kind}:{id}`).
 - New channel/person: full sheet, random locked slug, + File / + Folder.

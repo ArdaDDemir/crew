@@ -97,13 +97,27 @@ export function buildSystemPrompt(input: PromptInput): string {
     parts.push(
       `## Members\n${members.map((b) => botLine(b, input.botId, channel?.leadBotId)).join("\n")}`,
     );
-    if (channel?.rules?.trim()) parts.push(`## Channel rules\n${channel.rules.trim()}`);
+    if (channel?.rules?.trim()) {
+      parts.push(`## Channel rules\n${channel.rules.trim()}`);
+    } else {
+      parts.push(
+        "## Channel rules\n(not set). No RULES.md in this room. Follow Crew world rules and your soul. Do not invent extra room law.",
+      );
+    }
     if (channel?.context?.trim()) {
       parts.push(`## Channel context\n${channel.context.trim()}`);
+    } else {
+      parts.push(
+        "## Channel context\n(not set). This room has no CONTEXT.md. Do not invent the product, the stack, or the goal. Ask the human what this room is building before you write files.",
+      );
     }
     if (channel?.folders?.length) {
       parts.push(
         `## Folders\n${channel.folders.map((f) => `- ${f}`).join("\n")}`,
+      );
+    } else {
+      parts.push(
+        "## Folders\n(not set). No folder hints. The project cwd is the workspace. Ask the human before assuming a path.",
       );
     }
     parts.push(

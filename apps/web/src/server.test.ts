@@ -231,6 +231,34 @@ test("POST /api/dm appears in bootstrap Direct list", async () => {
   }
 });
 
+test("bootstrap channel brief is the first CONTEXT line and the header has room-brief", async () => {
+  const { server, url } = await setup();
+  try {
+    const boot0 = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot0.channels[0].brief).toBe("");
+    const patched = await fetch(`${url}/api/channel/landing`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        context: "Ship the marketing landing.\nDo not invent extra pages.",
+      }),
+    });
+    expect(patched.ok).toBe(true);
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.channels.find((c: { id: string }) => c.id === "landing")?.brief).toBe(
+      "Ship the marketing landing.",
+    );
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('class="room-brief"');
+    expect(page).toContain("Empty = bots ask");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("No About");
+    expect(js).toContain("paintRoomBrief");
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("PATCH channel and bot persist customization", async () => {
   const { server, url } = await setup();
   try {
