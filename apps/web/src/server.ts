@@ -68,6 +68,7 @@ import {
 import { CREW_VERSION } from "./version";
 import { loadFloor, saveFloor } from "./floor";
 import { loadLooks, saveLook } from "./looks";
+import { sanitizeFolderHints } from "../public/workspace-path.js";
 
 export type ServerOpts = {
   cwd?: string;
@@ -325,11 +326,9 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
     return readBody(req).then((body) => {
       try {
         const folders =
-          typeof body.folders === "string"
-            ? body.folders.split("\n").map((s) => s.trim()).filter(Boolean)
-            : Array.isArray(body.folders)
-              ? (body.folders as string[])
-              : undefined;
+          typeof body.folders === "string" || Array.isArray(body.folders)
+            ? sanitizeFolderHints(body.folders, host.cwd)
+            : undefined;
         return json(
           host.workspace.updateChannel(decodeURIComponent(channelMatch[1]!), {
             title: body.title !== undefined ? String(body.title) : undefined,
@@ -611,7 +610,9 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
             permissionMode: body.permissionMode !== undefined ? String(body.permissionMode) : undefined,
             context: body.context !== undefined ? String(body.context) : undefined,
             rules: body.rules !== undefined ? String(body.rules) : undefined,
-            folders: Array.isArray(body.folders) ? (body.folders as string[]) : undefined,
+            folders: Array.isArray(body.folders)
+              ? sanitizeFolderHints(body.folders, host.cwd)
+              : undefined,
           }),
         );
       } catch (err) {

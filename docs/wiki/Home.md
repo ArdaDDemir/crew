@@ -7,7 +7,7 @@ Local multi-bot **office**. You own channels and people. `@coder` wakes that per
 | Page | |
 |---|---|
 | [Install](Install.md) | Crew.exe, portable zip, run from source |
-| [Office](Office.md) | Channels, `@`, DMs, floor, composer |
+| [Office](Office.md) | Rooms (About / Rules / Files), `@`, DMs, floor, composer |
 | [Discord](Discord.md) | Optional adapter. Core has no Discord |
 | [Permissions](Permissions.md) | auto-accept default, Always, hard denials |
 

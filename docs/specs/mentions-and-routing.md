@@ -72,8 +72,8 @@ A bot **may** have a channel turn and a DM turn at once (different threads).
 System layers, in order:
 
 1. Bot `SOUL.md` + `AGENTS.md`
-2. Channel `RULES.md` + `CONTEXT.md` (channel turns only)
-3. Skill catalog (names + descriptions)
+2. Channel `RULES.md` + `CONTEXT.md` + folder hints (channel turns only). Empty files still inject `(not set)`: do not invent the product; ask the human.
+3. Each of that bot’s `SKILL.md` bodies (truncated at 7000 characters)
 4. Recent thread messages (shared channel or that DM)
 5. The waking message, with an explicit line: `You were mentioned and should act. Unmentioned bots are idle.`
 

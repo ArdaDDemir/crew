@@ -2,6 +2,20 @@
 
 The office is the local UI (`bun run ui` or Crew.exe). English chrome. You may write Turkish; people account in English.
 
+## Rooms
+
+A **channel** is a project room, not a chat toy.
+
+Open **room** (or click the line under the channel title) to edit:
+
+| Field | Disk | What |
+|---|---|---|
+| **About** | `CONTEXT.md` | What this room is building. First line shows under the title. |
+| **Rules** | `RULES.md` | How people work in this room. Not a person's Soul. |
+| **Files** | `channel.json` `folders` | Workspace-relative path hints. Disk is still the project. |
+
+Empty About: the header says **No About — bots will ask, not invent.** Every turn still gets `(not set)` so they do not invent the product. Fill About before you `@` people to write files.
+
 ## Wake
 
 - `@coder` in a channel wakes coder. No `@` on a human post wakes the **lead**.

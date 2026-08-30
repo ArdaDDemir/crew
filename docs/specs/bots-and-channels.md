@@ -35,7 +35,7 @@ Created by the human. Not a Discord guild; one workspace (cwd) has many channels
 | `context` | `CONTEXT.md` — what this room is, paths, current goal |
 | `permissionMode` | see `permissions.md` |
 | `icon` | optional glyph |
-| `folders` | path hints this room cares about |
+| `folders` | workspace-relative path hints this room cares about (`..` / `.env` / `.ssh` dropped) |
 
 The human is always a member. UI may assign a random locked slug on create.
 

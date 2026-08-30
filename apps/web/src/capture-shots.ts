@@ -43,6 +43,9 @@ async function main() {
     leadBotId: "lead",
     memberBotIds: ["lead", "coder", "designer"],
     permissionMode: "auto-accept",
+    context: "Ship the marketing landing. Keep copy short.",
+    rules: "Lead assigns. Designer writes copy. Coder patches HTML/CSS.",
+    folders: ["apps/web/public"],
   });
   ws.addChannel({
     id: "ops",

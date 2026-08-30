@@ -259,6 +259,32 @@ test("bootstrap channel brief is the first CONTEXT line and the header has room-
   }
 });
 
+test("PATCH channel folders are workspace-relative and drop secrets", async () => {
+  const { server, url, cwd } = await setup();
+  try {
+    const res = await fetch(`${url}/api/channel/landing`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        folders: [join(cwd, "src"), join(cwd, "src"), "..\\.env", "public"],
+      }),
+    });
+    expect(res.ok).toBe(true);
+    const got = await (await fetch(`${url}/api/channel/landing`)).json();
+    expect(got.folders).toEqual(["src", "public"]);
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain("class=\"room-brief\"");
+    expect(page).toContain("Workspace-relative");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("workspace-path.js");
+    expect(js).toContain("resolveWorkspaceHint");
+    const helper = await (await fetch(`${url}/workspace-path.js`)).text();
+    expect(helper).toContain("export function workspaceRelPath");
+  } finally {
+    server.stop(true);
+  }
+});
+
 test("PATCH channel and bot persist customization", async () => {
   const { server, url } = await setup();
   try {

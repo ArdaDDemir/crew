@@ -24,7 +24,7 @@ WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Provi
 
 | | |
 |---|---|
-| Channels + People + Direct | Discord-like rail. `@` is the scheduler. |
+| Channels + People + Direct | Discord-like rail. `@` is the scheduler. Each room has About / Rules / Files. |
 | 2.5D floor | Glass room, PCs, walk, doors, furniture, looks. Click a person to DM. |
 | Crew.exe | Tauri + WebView2 window. Same office as `bun run ui`. |
 | Split panes | Drag a chat to the right. Max two in-page panes. |

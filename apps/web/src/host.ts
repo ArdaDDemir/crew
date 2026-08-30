@@ -1,5 +1,6 @@
 import { lstatSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { sanitizeFolderHints } from "../public/workspace-path.js";
 import {
   assertBotId,
   assertSlug,
@@ -672,7 +673,7 @@ export function createChannel(
     icon: input.icon,
     context: input.context,
     rules: input.rules,
-    folders: input.folders,
+    folders: input.folders !== undefined ? sanitizeFolderHints(input.folders, host.cwd) : undefined,
   });
   return channelDetail(host, id);
 }

@@ -1,4 +1,5 @@
 import { deskLayout, deskSlot, youHome, tableSlot } from "./floor-layout.js";
+import { workspaceRelPath, resolveWorkspaceHint } from "./workspace-path.js";
 
 const THREAD_MIME = "application/x-crew-thread";
 
@@ -2724,10 +2725,25 @@ function renderChPaths() {
 }
 
 function addChPath(raw) {
-  const n = String(raw || "").replace(/\\/g, "/").trim();
+  const n = workspaceRelPath(raw, state.bootstrap?.cwd);
   if (!n || chPaths.includes(n)) return;
   chPaths.push(n);
   renderChPaths();
+}
+
+async function addResolvedChPath(raw) {
+  const cwd = state.bootstrap?.cwd ?? "";
+  const picked = workspaceRelPath(raw, cwd);
+  if (!picked) return;
+  const leaf = picked.split("/").pop();
+  let listed = [];
+  try {
+    const data = await (await api(`/api/paths?q=${encodeURIComponent(leaf)}`)).json();
+    listed = data.paths ?? [];
+  } catch {
+    listed = [];
+  }
+  addChPath(resolveWorkspaceHint(picked, listed));
 }
 
 function randomId(prefix) {
@@ -5067,19 +5083,20 @@ document.getElementById("ch-path-extra").addEventListener("keydown", (ev) => {
   addChPath(ev.target.value);
   ev.target.value = "";
 });
-document.getElementById("ch-file-pick").addEventListener("change", (ev) => {
-  for (const f of ev.target.files ?? []) addChPath(f.webkitRelativePath || f.name);
+document.getElementById("ch-file-pick").addEventListener("change", async (ev) => {
+  const files = [...(ev.target.files ?? [])];
+  for (const f of files) await addResolvedChPath(f.webkitRelativePath || f.name);
   ev.target.value = "";
 });
-document.getElementById("ch-folder-pick").addEventListener("change", (ev) => {
+document.getElementById("ch-folder-pick").addEventListener("change", async (ev) => {
   const files = [...(ev.target.files ?? [])];
   const roots = new Set();
   for (const f of files) {
-    const rel = String(f.webkitRelativePath || f.name).replace(/\\/g, "/");
+    const rel = workspaceRelPath(f.webkitRelativePath || f.name, state.bootstrap?.cwd);
     const root = rel.split("/")[0];
-    if (root) roots.add(`${root}/`);
+    if (root) roots.add(root);
   }
-  for (const r of roots) addChPath(r);
+  for (const r of roots) await addResolvedChPath(r);
   ev.target.value = "";
 });
 function colorDiff(snippet) {

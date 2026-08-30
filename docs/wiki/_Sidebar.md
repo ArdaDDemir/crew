@@ -1,0 +1,6 @@
+* [Home](Home)
+* [Install](Install)
+* [Office](Office)
+* [Discord](Discord)
+* [Permissions](Permissions)
+* [Releases](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0)
