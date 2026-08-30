@@ -1015,6 +1015,7 @@ test("floor hint and holding cursor are in the office", async () => {
     const js = await (await fetch(`${url}/app.js`)).text();
     expect(js).toContain("paintFloorHint");
     expect(js).toContain("Click carpet to walk");
+    expect(js).toContain("a desk to sit");
     expect(js).toContain("Esc to cancel");
     const css = await (await fetch(`${url}/app.css`)).text();
     expect(css).toContain(".floor-scene.holding");
@@ -1044,6 +1045,48 @@ test("floor furniture fetch is keyed by room and look save is debounced", async 
     expect(js).toContain("floorFetchSeq");
     expect(js).toContain("flushYouLook");
     expect(js).toMatch(/lookTimer/);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor cubicles, chatboxes, and layout for many members", async () => {
+  const { server, url } = await setup();
+  try {
+    const js = await (await fetch(`${url}/app.js`)).text();
+    const layout = await (await fetch(`${url}/floor-layout.js`)).text();
+    expect(layout).toContain("function deskLayout");
+    expect(js).toMatch(/deskSlot\(i,\s*hereIds\.length\)/);
+    expect(js).toContain("floor-cubicle");
+    expect(js).toContain("youHome");
+    expect(js).toMatch(/memberBotIds\.length/);
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-cubicle-back");
+    expect(css).toContain(".floor-bubble");
+    expect(css).toMatch(/\.floor-scene[\s\S]{0,200}overflow-y:\s*auto/);
+    expect(css).toContain(".floor-seat.pose-working .floor-bubble");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor sit, door walk, furniture snap, and look swatches", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain("floor-swatch");
+    expect(page).toContain('data-look="skin"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("function doorAt");
+    expect(js).toContain("function sitYou");
+    expect(js).toContain("function snapFloor");
+    expect(js).toMatch(/function walkYou[\s\S]{0,900}doorAt/);
+    expect(js).toMatch(/function placeFurniture[\s\S]{0,500}snapFloor/);
+    expect(js).toContain("sitting");
+    const css = await (await fetch(`${url}/app.css`)).text();
+    expect(css).toContain(".floor-you.sitting");
+    expect(css).toContain(".floor-swatch");
+    expect(css).toContain(".floor-desk");
   } finally {
     server.stop(true);
   }

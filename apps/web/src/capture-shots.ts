@@ -61,11 +61,9 @@ async function main() {
   });
   saveFloor(cwd, "landing", {
     furniture: [
-      { id: "p1", kind: "plant", x: 48, y: 150 },
-      { id: "l1", kind: "lamp", x: 120, y: 88 },
-      { id: "s1", kind: "sofa", x: 70, y: 168 },
-      { id: "r1", kind: "rug", x: 160, y: 140 },
-      { id: "h1", kind: "shelf", x: 28, y: 70 },
+      { id: "p1", kind: "plant", x: 48, y: 232 },
+      { id: "s1", kind: "sofa", x: 120, y: 228 },
+      { id: "r1", kind: "rug", x: 88, y: 248 },
     ],
   });
   const provider = new ScriptedProvider([[{ type: "text-delta", text: "ack" }, { type: "done" }]]);

@@ -1,3 +1,5 @@
+import { deskLayout, deskSlot, youHome, tableSlot } from "./floor-layout.js";
+
 const THREAD_MIME = "application/x-crew-thread";
 
 const state = {
@@ -1594,6 +1596,16 @@ function applyFloorLook(root, id) {
   holder.classList.add(`top-${look.top || "tee"}`);
 }
 
+function paintLookSwatches() {
+  for (const group of document.querySelectorAll("[data-look]")) {
+    const sel = document.getElementById(`look-${group.dataset.look}`);
+    const v = sel?.value;
+    for (const b of group.querySelectorAll(".floor-swatch")) {
+      b.classList.toggle("on", b.dataset.value === v);
+    }
+  }
+}
+
 function fillYouLookSelects() {
   const look = lookFor("you") || { skin: "mid", hair: "short", top: "tee" };
   const skin = document.getElementById("look-skin");
@@ -1602,6 +1614,7 @@ function fillYouLookSelects() {
   if (skin) skin.value = look.skin;
   if (hair) hair.value = look.hair;
   if (top) top.value = look.top;
+  paintLookSwatches();
 }
 
 async function refreshLooks() {
@@ -1658,6 +1671,16 @@ function bindFloorLook() {
   if (!box || box.dataset.bound) return;
   box.dataset.bound = "1";
   box.addEventListener("change", () => saveYouLook());
+  box.addEventListener("click", (ev) => {
+    const sw = ev.target.closest(".floor-swatch");
+    if (!sw) return;
+    const group = sw.closest("[data-look]");
+    const sel = document.getElementById(`look-${group?.dataset.look}`);
+    if (!sel) return;
+    sel.value = sw.dataset.value;
+    paintLookSwatches();
+    saveYouLook();
+  });
 }
 
 function floorPose(id) {
@@ -1668,31 +1691,33 @@ function floorPose(id) {
   return "working";
 }
 
-function deskSlot(i) {
-  const col = i % 4;
-  const row = Math.floor(i / 4);
-  return {
-    x: 18 + col * 70 + row * 22,
-    y: 78 + row * 38 - col * 12,
-    z: 10 + row * 4 + col,
-  };
-}
-
-function tableSlot(i) {
-  const col = i % 3;
-  const row = Math.floor(i / 3);
-  return {
-    x: 196 + col * 22,
-    y: 68 + row * 16,
-    z: 22 + row,
-  };
-}
-
 function clampFloor(x, y) {
+  const maxX = y < 76 ? 268 : 188;
   return {
-    x: Math.max(10, Math.min(268, x)),
-    y: Math.max(56, Math.min(178, y)),
+    x: Math.max(16, Math.min(maxX, x)),
+    y: Math.max(56, Math.min(260, y)),
   };
+}
+
+function snapFloor(x, y) {
+  return { x: Math.round(x / 8) * 8, y: Math.round(y / 8) * 8 };
+}
+
+function doorAt(x, y) {
+  if (y > 70) return "";
+  const row = document.getElementById("floor-doors");
+  if (!row || row.hidden) return "";
+  let best = "";
+  let bestD = 36;
+  for (const btn of row.querySelectorAll(".floor-door")) {
+    const cx = (btn.offsetLeft || 0) + (btn.offsetWidth || 0) / 2 + (row.offsetLeft || 0);
+    const d = Math.abs(cx - x);
+    if (d < bestD) {
+      bestD = d;
+      best = btn.dataset.channelId || "";
+    }
+  }
+  return best;
 }
 
 function walkYou(x, y) {
@@ -1700,6 +1725,7 @@ function walkYou(x, y) {
   if (!you) return;
   const at = clampFloor(x, y);
   const prevX = parseFloat(you.style.left) || 36;
+  you.classList.remove("sitting");
   you.classList.toggle("face-left", at.x < prevX - 2);
   you.classList.toggle("face-right", at.x > prevX + 2);
   you.classList.add("walking");
@@ -1708,6 +1734,25 @@ function walkYou(x, y) {
   you.style.left = `${at.x}px`;
   you.style.top = `${at.y}px`;
   you.style.zIndex = String(8 + Math.round(at.y / 12));
+  const door = !state.floorHold && doorAt(at.x, at.y);
+  if (door) {
+    clearTimeout(you._doorTimer);
+    you._doorTimer = setTimeout(() => {
+      if (state.kind === "channel") paneOpen(state.activePane, "channel", door);
+    }, 460);
+  }
+}
+
+function sitYou(x, y) {
+  walkYou(x, y);
+  const you = document.getElementById("floor-you");
+  if (!you) return;
+  clearTimeout(you._doorTimer);
+  clearTimeout(you._sitTimer);
+  you._sitTimer = setTimeout(() => {
+    you.classList.remove("walking");
+    you.classList.add("sitting");
+  }, 450);
 }
 
 function bindFloorWalk() {
@@ -1789,7 +1834,7 @@ function paintFloorHint() {
     hint.textContent = hold
       ? `Click to place ${hold} · Esc to cancel`
       : state.kind === "channel"
-        ? "Click carpet to walk · a person to DM"
+        ? "Click carpet to walk · a desk to sit · a person to DM"
         : "Click carpet to walk · a door to enter";
   }
   scene?.classList.toggle("holding", Boolean(hold));
@@ -1807,7 +1852,7 @@ function clearFloorHold() {
 async function placeFurniture(x, y) {
   const kind = state.floorHold;
   if (!kind || inviteToken() || state.kind !== "channel" || !state.id) return;
-  const at = clampFloor(x, y);
+  const at = snapFloor(clampFloor(x, y).x, clampFloor(x, y).y);
   const furniture = [
     ...(state.floorItems ?? []),
     { id: `f${Date.now().toString(36)}`, kind, x: at.x, y: at.y },
@@ -1886,7 +1931,8 @@ function renderFloorDoors() {
     btn.className = "floor-door";
     btn.dataset.channelId = ch.id;
     const icon = ch.icon && ch.icon !== "#" ? ch.icon : "#";
-    btn.title = `${icon} ${ch.title || ch.id}`;
+    const n = ch.memberBotIds.length;
+    btn.title = n ? `${icon} ${ch.title || ch.id} · ${n}` : `${icon} ${ch.title || ch.id}`;
     btn.setAttribute("aria-label", `Enter ${ch.title || ch.id}`);
     const slab = document.createElement("span");
     slab.className = "floor-door-slab";
@@ -1911,12 +1957,21 @@ function ensureFloorDesk(id) {
   desk = document.createElement("div");
   desk.className = "floor-desk";
   desk.dataset.deskId = id;
+  desk.title = "Sit here";
+  const back = document.createElement("span");
+  back.className = "floor-cubicle-back";
+  const side = document.createElement("span");
+  side.className = "floor-cubicle-side";
   const pc = document.createElement("span");
   pc.className = "floor-pc";
   const screen = document.createElement("span");
   screen.className = "floor-screen";
   pc.append(screen);
-  desk.append(pc);
+  desk.append(back, side, pc);
+  desk.onclick = (ev) => {
+    ev.stopPropagation();
+    sitYou((parseFloat(desk.style.left) || 0) + 10, (parseFloat(desk.style.top) || 0) - 16);
+  };
   box.append(desk);
   return desk;
 }
@@ -1968,7 +2023,8 @@ function renderFloor(hereIds, leadId) {
   const roomKey = `${state.kind}:${state.id}`;
   if (state.floorRoom !== roomKey) {
     state.floorRoom = roomKey;
-    walkYou(36, 148);
+    const home = youHome(hereIds.length);
+    walkYou(home.x, home.y);
     if (state.floorHold) clearFloorHold();
   }
   if (plaque) {
@@ -1984,17 +2040,17 @@ function renderFloor(hereIds, leadId) {
   }
   let atTable = 0;
   hereIds.forEach((id, i) => {
-    const home = deskSlot(i);
+    const home = deskSlot(i, hereIds.length);
     const desk = ensureFloorDesk(id);
     if (desk) {
       desk.style.left = `${home.x}px`;
-      desk.style.top = `${home.y + 18}px`;
+      desk.style.top = `${home.y + 26}px`;
       desk.style.zIndex = String(home.z);
     }
     const btn = ensureFloorSeat(id, leadId);
     const doing = state.activity[id] || "Online";
     const pose = floorPose(id);
-    const slot = pose === "writing" ? tableSlot(atTable++) : { x: home.x + 8, y: home.y - 6, z: home.z + 1 };
+    const slot = pose === "writing" ? tableSlot(atTable++) : { x: home.x + 4, y: home.y + 4, z: home.z + 1 };
     btn.className = `floor-seat pose-${pose}${pose !== "idle" ? " busy" : ""}`;
     btn.style.left = `${slot.x}px`;
     btn.style.top = `${slot.y}px`;
@@ -2006,7 +2062,10 @@ function renderFloor(hereIds, leadId) {
       tag.textContent = displayName(id);
     }
     const bubble = btn.querySelector(".floor-bubble");
-    if (bubble) bubble.textContent = pose === "idle" ? "" : doing;
+    if (bubble) {
+      const short = doing.length > 28 ? `${doing.slice(0, 26)}…` : doing;
+      bubble.textContent = pose === "idle" ? "" : short;
+    }
     if (desk) desk.classList.toggle("lit", pose === "working" || pose === "thinking");
     applyFloorLook(btn, id);
   });

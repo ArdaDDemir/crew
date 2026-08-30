@@ -1145,7 +1145,8 @@ svg.ico {
 .floor-scene {
   position: relative;
   height: 280px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   cursor: pointer;
   background:
     linear-gradient(180deg, #3a281c 0 14px, #5a3d2a 14px 58px, #3d291c 58px 62px, #1e4a66 62px);
@@ -1291,24 +1292,53 @@ svg.ico {
 .floor-look {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px;
+  gap: 8px 12px;
+  padding: 6px 8px;
   background: #241810;
   border-top: 1px solid #2a1f18;
   font: 10px "IBM Plex Mono", ui-monospace, monospace;
   color: #f3e6c8;
 }
-.floor-look label {
+.look-group {
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+.floor-swatches {
+  display: flex;
   gap: 4px;
 }
-.floor-look select {
-  background: #3d2a1c;
-  color: #f3e6c8;
+.floor-swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
   border: 1px solid #c4a574;
   border-radius: 4px;
-  font: inherit;
+  cursor: pointer;
+  background: #3d2a1c;
+}
+.floor-swatch.on {
+  outline: 2px solid #e8fff4;
+  outline-offset: 1px;
+}
+.floor-swatch.skin-light { background: #f0d0b0; }
+.floor-swatch.skin-mid { background: #c48a5a; }
+.floor-swatch.skin-dark { background: #6b4423; }
+.floor-swatch.hair-short { background: #1a120c; }
+.floor-swatch.hair-ponytail { background: #1a120c; border-radius: 4px 8px 4px 4px; }
+.floor-swatch.hair-buzz { background: #3d2412; height: 10px; margin-top: 3px; }
+.floor-swatch.hair-curly { background: #1a120c; border-radius: 50%; }
+.floor-swatch.hair-none { background: #c4a574; }
+.floor-swatch.top-hoodie { background: #3a5a8c; }
+.floor-swatch.top-tee { background: #c45c5c; }
+.floor-swatch.top-polo { background: #2f8a5b; }
+.floor-swatch.top-sweater { background: #6b3a5a; }
+.floor-look-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 .look-row {
   display: flex;
@@ -1368,6 +1398,20 @@ svg.ico {
   color: #e8fff4;
   border-color: #379a67;
 }
+.floor-kind::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border-radius: 1px;
+}
+.floor-kind[data-kind="plant"]::before { background: #2f8a5b; border-radius: 50%; }
+.floor-kind[data-kind="lamp"]::before { background: #e0b84e; box-shadow: 0 4px 0 -1px #5a3516; }
+.floor-kind[data-kind="sofa"]::before { background: #7a4468; width: 12px; height: 6px; }
+.floor-kind[data-kind="shelf"]::before { background: repeating-linear-gradient(#8b5a2b 0 2px, #5a3516 2px 3px); }
+.floor-kind[data-kind="rug"]::before { background: #a33; width: 12px; height: 5px; }
 .floor-stuff {
   position: absolute;
   inset: 0;
@@ -1472,10 +1516,10 @@ svg.ico {
 }
 .floor-glass {
   position: absolute;
-  right: 22px;
-  top: 38px;
-  width: 118px;
-  height: 72px;
+  right: 8px;
+  top: 36px;
+  width: 108px;
+  height: 88px;
   overflow: hidden;
   background:
     linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.14) 49% 51%, transparent 52%),
@@ -1556,6 +1600,17 @@ svg.ico {
 .floor-you.face-left .floor-char {
   transform: scaleX(-1);
 }
+.floor-you.sitting .floor-legs {
+  height: 3px;
+  transform: translateX(-3px) scaleX(1.2);
+}
+.floor-you.sitting .floor-char {
+  bottom: 4px;
+}
+.floor-you .floor-tag {
+  bottom: -2px;
+  max-width: 40px;
+}
 .floor-desks {
   position: absolute;
   inset: 0;
@@ -1564,8 +1619,37 @@ svg.ico {
 }
 .floor-desk {
   position: absolute;
-  width: 48px;
-  height: 28px;
+  width: 72px;
+  height: 36px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.floor-cubicle-back {
+  position: absolute;
+  left: 2px;
+  width: 52px;
+  top: -12px;
+  height: 12px;
+  background: #6b4423;
+  border: 2px solid #3d2412;
+  border-bottom: 0;
+  pointer-events: none;
+}
+.floor-cubicle-side {
+  position: absolute;
+  left: 0;
+  top: -10px;
+  width: 6px;
+  height: 32px;
+  background: #4a2e1c;
+  border: 2px solid #2a1810;
+  pointer-events: none;
+}
+.floor-desk:hover .floor-pc {
+  filter: brightness(1.15);
+}
+.floor-seat:hover .floor-char {
+  filter: drop-shadow(1px 2px 0 #1a120c) brightness(1.12);
 }
 .floor-seat {
   transition: left 0.45s linear, top 0.45s linear;
@@ -1577,8 +1661,8 @@ svg.ico {
 }
 .floor-seat {
   position: absolute;
-  width: 64px;
-  height: 72px;
+  width: 48px;
+  height: 58px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -1718,26 +1802,43 @@ svg.ico {
 }
 .floor-bubble {
   position: absolute;
-  left: 36px;
-  top: 0;
-  max-width: 72px;
+  left: 38px;
+  top: -4px;
+  width: max-content;
+  max-width: 88px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: 9px "IBM Plex Sans", system-ui, sans-serif;
+  display: none;
+  font: 8px "IBM Plex Sans", system-ui, sans-serif;
+  line-height: 1.25;
   color: #143044;
   background: #fff;
   border: 1px solid #c4a574;
   border-radius: 8px 8px 8px 2px;
-  padding: 2px 5px;
-  display: none;
+  padding: 3px 6px;
+  z-index: 20;
+  box-shadow: 2px 2px 0 #1a120c;
+  white-space: normal;
+  pointer-events: none;
 }
 .floor-seat.busy .floor-bubble:not(:empty) { display: block; }
+.floor-seat.pose-working .floor-bubble {
+  background: #e8fff4;
+  border-color: #2f8a5b;
+}
+.floor-seat.pose-thinking .floor-bubble {
+  background: #fff6d8;
+}
+.floor-seat.pose-writing .floor-bubble {
+  background: #e8f4ff;
+}
 .floor-seat.pose-thinking .floor-head {
   animation: floor-bob 0.9s ease-in-out infinite;
 }
 .floor-seat.pose-working .floor-char {
   animation: floor-type 0.35s steps(2) infinite;
+}
+.floor-seat.pose-idle .floor-legs {
+  height: 3px;
 }
 @keyframes floor-bob {
   0%, 100% { transform: translateY(0); }

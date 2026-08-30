@@ -188,6 +188,7 @@
                 <span class="floor-body"></span>
                 <span class="floor-legs"></span>
               </span>
+              <span class="floor-tag">You</span>
             </div>
             <div id="floor-desks" class="floor-desks"></div>
             <div id="floor-stuff" class="floor-stuff"></div>
@@ -195,24 +196,51 @@
           </div>
           <p id="floor-hint" class="floor-hint">Click carpet to walk · a person to DM</p>
           <div id="floor-look" class="floor-look">
-            <label>Skin <select id="look-skin">
-              <option value="light">light</option>
-              <option value="mid">mid</option>
-              <option value="dark">dark</option>
-            </select></label>
-            <label>Hair <select id="look-hair">
-              <option value="short">short</option>
-              <option value="ponytail">ponytail</option>
-              <option value="buzz">buzz</option>
-              <option value="curly">curly</option>
-              <option value="none">none</option>
-            </select></label>
-            <label>Top <select id="look-top">
-              <option value="hoodie">hoodie</option>
-              <option value="tee">tee</option>
-              <option value="polo">polo</option>
-              <option value="sweater">sweater</option>
-            </select></label>
+            <div class="look-group">
+              <span>Skin</span>
+              <div class="floor-swatches" data-look="skin">
+                <button type="button" class="floor-swatch skin-light" data-value="light" aria-label="light"></button>
+                <button type="button" class="floor-swatch skin-mid" data-value="mid" aria-label="mid"></button>
+                <button type="button" class="floor-swatch skin-dark" data-value="dark" aria-label="dark"></button>
+              </div>
+              <select id="look-skin" class="floor-look-select" aria-hidden="true" tabindex="-1">
+                <option value="light">light</option>
+                <option value="mid">mid</option>
+                <option value="dark">dark</option>
+              </select>
+            </div>
+            <div class="look-group">
+              <span>Hair</span>
+              <div class="floor-swatches" data-look="hair">
+                <button type="button" class="floor-swatch hair-short" data-value="short" aria-label="short"></button>
+                <button type="button" class="floor-swatch hair-ponytail" data-value="ponytail" aria-label="ponytail"></button>
+                <button type="button" class="floor-swatch hair-buzz" data-value="buzz" aria-label="buzz"></button>
+                <button type="button" class="floor-swatch hair-curly" data-value="curly" aria-label="curly"></button>
+                <button type="button" class="floor-swatch hair-none" data-value="none" aria-label="none"></button>
+              </div>
+              <select id="look-hair" class="floor-look-select" aria-hidden="true" tabindex="-1">
+                <option value="short">short</option>
+                <option value="ponytail">ponytail</option>
+                <option value="buzz">buzz</option>
+                <option value="curly">curly</option>
+                <option value="none">none</option>
+              </select>
+            </div>
+            <div class="look-group">
+              <span>Top</span>
+              <div class="floor-swatches" data-look="top">
+                <button type="button" class="floor-swatch top-hoodie" data-value="hoodie" aria-label="hoodie"></button>
+                <button type="button" class="floor-swatch top-tee" data-value="tee" aria-label="tee"></button>
+                <button type="button" class="floor-swatch top-polo" data-value="polo" aria-label="polo"></button>
+                <button type="button" class="floor-swatch top-sweater" data-value="sweater" aria-label="sweater"></button>
+              </div>
+              <select id="look-top" class="floor-look-select" aria-hidden="true" tabindex="-1">
+                <option value="hoodie">hoodie</option>
+                <option value="tee">tee</option>
+                <option value="polo">polo</option>
+                <option value="sweater">sweater</option>
+              </select>
+            </div>
           </div>
           <div id="floor-kit" class="floor-kit" hidden>
             <button type="button" class="floor-kind" data-kind="plant">Plant</button>

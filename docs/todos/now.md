@@ -3,7 +3,7 @@
 Date: 2026-08-29  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.9.0**. Unreleased: (empty). Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
+Current release: **0.9.0**. Unreleased: cubicle grid left of glass, working chatboxes, 10+ member scroll. Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
 
 ---
 

@@ -16,6 +16,8 @@ See `docs/versioning.md`.
 
 ### Changed
 
+- 2.5D floor: cubicles stay left of the glass, You in the aisle, no overlap stagger. Working chatbox. 10+ members scroll. Doors show member count.
+- 2.5D floor: walk into a door to enter that room, click a desk to sit, furniture snaps to a grid, look swatches, You nametag.
 - 2.5D floor: enclosed room (left wall), 3-face glass bay, legs, hoodie/polo silhouette, name tags no longer clip, isometric desks.
 - 2.5D floor: window and ceiling, diamond carpet, ground shadows, walk facing + step, isometric sofa/plant/lamp, richer glass bay and PCs.
 - 2.5D floor: stationary PC desks, chunkier characters, glass/carpet depth, door plaques, compact member list.
