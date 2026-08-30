@@ -4,6 +4,8 @@ Local multi-bot **office**. You own the channels and the people. `@coder` wakes 
 
 Loopback only. Not a Discord.js bot, not Electron, not a cloud VM.
 
+Vibecoded with Grok 4.6.
+
 ## Download (Windows)
 
 | | |
@@ -92,6 +94,34 @@ Agents start at [`AGENTS.md`](./AGENTS.md). Humans: [wiki](docs/wiki/Home.md) fi
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 Stack: TypeScript + Bun. Hexagonal core (`packages/core` has no fetch/UI). Logs: `.crew/logs/*.jsonl` (append-only). License: MIT.
+
+## Inspired by
+
+Crew is **not a fork**. We looked at these products and copied specific patterns. Links, then what we took, then what we left.
+
+### Grok Bot (xAI + Cursor)
+
+- Product: [x.ai/bot](https://x.ai/bot)
+- Launch: [Introducing Grok Bot](https://x.ai/news/introducing-grok-bot)
+
+Grok Bot is the **office shape**: named teammates, group channels, `@` to wake, unmentioned people wait, they work then come back with an account, they stop when they need a human, they DM each other, skills are how a person knows a job.
+
+Crew is that office **on your machine**. Channels and people live in `.crew/`. The brain is OpenRouter (or a harness CLI you already have). Not their cloud computer, not their always-on VM, not their routines catalog.
+
+### T3 Code (Theo / pingdotgg)
+
+- Repo: [github.com/pingdotgg/t3code](https://github.com/pingdotgg/t3code) (MIT)
+- Site: [t3.codes](https://t3.codes)
+
+T3 Code is the **control-surface shape**: four permission modes (`supervised` / `auto-accept` / `auto` / `full-access`), Settings → Providers cards, one implementation picker, optional spawn of Claude / Codex / Grok / OpenCode CLIs.
+
+Crew copied those labels and the Settings/picker idea. Window is **Tauri 2 + WebView2**, not Electron. MCP is the integration; T3’s plugin marketplace stays out. Crew is the engine, not a wrapper that only drives foreign CLIs.
+
+### Built with
+
+Vibecoded with **Grok 4.6**.
+
+Detail and remaining work: [`docs/todos/now.md`](docs/todos/now.md).
 
 ## Not this
 

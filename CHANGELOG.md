@@ -15,6 +15,7 @@ See `docs/versioning.md`.
 - Channel header shows the first CONTEXT.md line, or **No About — bots will ask, not invent.** Empty CONTEXT / RULES / folders still inject `(not set)` so bots ask instead of inventing the product.
 - Channel Files store workspace-relative paths. Absolute picks are stripped to the project folder; `..` / `.env` / `.ssh` are dropped. Wiki Office documents About / Rules / Files.
 - Public GitHub: `ArdaDDemir/crew`. Windows NSIS/MSI/portable on Releases. MIT license. Wiki for install / office / Discord.
+- README credits [Grok Bot](https://x.ai/bot) and [T3 Code](https://github.com/pingdotgg/t3code); vibecoded with Grok 4.6. `docs/todos/now.md` lists remaining work (evidence in the account, person = specialist).
 
 ### Changed
 

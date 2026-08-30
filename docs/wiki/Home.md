@@ -14,3 +14,5 @@ Local multi-bot **office**. You own channels and people. `@coder` wakes that per
 Repo law for coding agents: [`AGENTS.md`](https://github.com/ArdaDDemir/crew/blob/master/AGENTS.md). Specs: [`docs/`](https://github.com/ArdaDDemir/crew/tree/master/docs).
 
 Loopback only (`127.0.0.1`). Not `0.0.0.0`. Not Electron. Not a cloud VM.
+
+Looked at [Grok Bot](https://x.ai/bot) (people, `@` wake, DMs, skills) and [T3 Code](https://github.com/pingdotgg/t3code) (permission modes, Providers, picker). Not a fork of either. Vibecoded with Grok 4.6. Remaining work: [now.md](https://github.com/ArdaDDemir/crew/blob/master/docs/todos/now.md).
