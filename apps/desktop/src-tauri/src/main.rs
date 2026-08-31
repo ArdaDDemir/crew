@@ -312,6 +312,14 @@ fn webview2_missing(err: &str) -> bool {
 
 fn main() {
     log_line("main:start");
+    // keep the office webview alive even when the window is occluded or
+    // backgrounded — Chromium otherwise pauses rAF and timers, freezing the
+    // whole floor game (frames stop, clicks appear dead).
+    let extra = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
+    std::env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        format!("{extra} --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding"),
+    );
     let built = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())

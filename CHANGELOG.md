@@ -18,6 +18,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -25,6 +31,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -42,6 +54,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -49,6 +67,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -66,6 +90,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -73,6 +103,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -90,6 +126,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -97,6 +139,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -118,6 +166,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -125,6 +179,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -142,6 +202,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -149,6 +215,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -166,6 +238,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -173,6 +251,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
@@ -190,6 +274,12 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
+
+## [Unreleased]
+
+### Fixed
+
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
@@ -197,6 +287,12 @@ See `docs/versioning.md`.
 ### Changed
 
 - **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
+### Fixed
+
+- **Crew.exe WebView2 occlusion fix.** When Windows considered the office window occluded, WebView2 paused rAF AND all timers — the floor froze mid-animation and every click appeared dead. Crew now launches its webview with occlusion-backgrounding disabled and a 32ms watchdog keeps the scene alive even when throttled.
 
 ## [Unreleased]
 
