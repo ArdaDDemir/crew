@@ -1,4 +1,4 @@
-﻿# Crew
+# Crew
 
 Local multi-bot **office**. You own the channels and the people. `@coder` wakes that person; everyone else waits. They work at their desk (tools + thinking), then **give an account** in the channel. If they need you, they stop. They may DM. You can read every DM.
 
