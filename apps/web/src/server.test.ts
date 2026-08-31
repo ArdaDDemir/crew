@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+﻿import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -314,7 +314,7 @@ test("PATCH channel and bot persist customization", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: "Landing",
-        icon: "Ã¢Å’â€š",
+        icon: "ÃƒÂ¢Ã…â€™Ã¢â‚¬Å¡",
         folders: "src\npublic",
         context: "Ship the marketing page.",
       }),
@@ -322,14 +322,14 @@ test("PATCH channel and bot persist customization", async () => {
     expect(ch.ok).toBe(true);
     const got = await (await fetch(`${url}/api/channel/landing`)).json();
     expect(got.title).toBe("Landing");
-    expect(got.icon).toBe("Ã¢Å’â€š");
+    expect(got.icon).toBe("ÃƒÂ¢Ã…â€™Ã¢â‚¬Å¡");
     expect(got.folders).toEqual(["src", "public"]);
     const bot = await fetch(`${url}/api/bot/coder`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Frontend",
-        icon: "ÃŽÂ»",
+        icon: "ÃƒÅ½Ã‚Â»",
         soul: "Write HTML.",
         titleModel: "z-ai/glm-5.3-flash",
       }),
@@ -1051,6 +1051,17 @@ test("shell output that mentions a shot path does not render an image", async ()
     });
     const body = await res.text();
     expect(body).not.toContain('"shot"');
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("floor-game schedules exactly one rAF per frame (exponential rAF froze the office)", async () => {
+  const { server, url } = await setup();
+  try {
+    const game = await (await fetch(`${url}/floor-game.js`)).text();
+    const count = (game.match(/requestAnimationFrame\(tick\)/g) || []).length;
+    expect(count).toBe(2);
   } finally {
     server.stop(true);
   }

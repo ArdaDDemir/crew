@@ -951,7 +951,15 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
   if (!safe.startsWith(root)) return json({ error: "nope" }, 403);
   const bunFile = Bun.file(safe);
   return bunFile.exists().then((ok) =>
-    ok ? new Response(bunFile) : new Response("not found", { status: 404 }),
+    ok
+      ? new Response(bunFile, {
+          headers: {
+            // the office is local and versioned by the executable — never let the
+            // webview pin a stale app.js / floor-game.js after an update
+            "Cache-Control": "no-cache",
+          },
+        })
+      : new Response("not found", { status: 404 }),
   );
 }
 

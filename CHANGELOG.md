@@ -12,7 +12,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
 - **Giant blank white box in tool rows.** Shell output that merely mentioned an old .crew/browser/shots/â€¦png path was rendered as a screenshot image. Shots now attach only to the real rowser_screenshot tool (server + client), broken images remove themselves, and the screenshot frame is size-capped.
+
+## [Unreleased]
+
+### Fixed
+
+- **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
 
 ## [Unreleased]
 
@@ -28,7 +40,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
 - **Giant blank white box in tool rows.** Shell output that merely mentioned an old .crew/browser/shots/â€¦png path was rendered as a screenshot image. Shots now attach only to the real rowser_screenshot tool (server + client), broken images remove themselves, and the screenshot frame is size-capped.
+
+## [Unreleased]
+
+### Fixed
+
+- **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
 
 ## [Unreleased]
 

@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod last_project;
 mod listen_url;
@@ -243,7 +243,7 @@ fn show_main(app: &AppHandle) {
 
 fn install_tray(app: &AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Show Crew", true, None::<&str>)?;
-    let open = MenuItem::with_id(app, "open", "Open project…", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open projectâ€¦", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &open, &quit])?;
     let mut builder = TrayIconBuilder::new()
@@ -311,6 +311,7 @@ fn webview2_missing(err: &str) -> bool {
 }
 
 fn main() {
+    log_line("main:start");
     let built = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
@@ -326,6 +327,7 @@ fn main() {
             cwd: Mutex::new(None),
         })
         .setup(|app| {
+            log_line("setup:start");
             let handle = app.handle().clone();
             let _ = app.listen("crew-open-project", move |_| {
                 open_or_switch(&handle, false);
@@ -333,6 +335,7 @@ fn main() {
             if let Err(err) = install_tray(app.handle()) {
                 log_line(&format!("tray failed: {err}"));
             }
+            log_line("setup:done");
             Ok(())
         })
         .on_window_event(|window, event| match event {
@@ -356,6 +359,7 @@ fn main() {
         })
         .build(tauri::generate_context!());
 
+    log_line("built ok");
     match built {
         Err(err) => {
             let msg = err.to_string();

@@ -877,8 +877,6 @@ export function createFloor(canvas, handlers = {}) {
     g.fillStyle = "#9fd1ff";
     g.fillText("you", yp.x, yp.y + 21);
     g.restore();
-
-    requestAnimationFrame(tick);
   }
 
   canvas.addEventListener("pointerdown", (e) => {
