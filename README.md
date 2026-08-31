@@ -1,4 +1,4 @@
-﻿# Crew
+# Crew
 
 Local multi-bot **office**. You own the channels and the people. `@coder` wakes that person; everyone else waits. They work at their desk (tools + thinking), then **give an account** in the channel. If they need you, they stop. They may DM. You can read every DM.
 
@@ -32,6 +32,7 @@ WebView2 is Windows 11 / current Edge. Open a project folder. Settings â†’ 
 | Split panes | Drag a chat to the right. Max two in-page panes. |
 | Jobs | Settings â†’ Title / Compact / Vision / Read (not extra People). |
 | Providers | OpenRouter, plus optional Claude / Codex / Grok / OpenCode CLI spawn. Reasoning effort per person (Default to Max). |
+| Auto-update | GitHub Releases feed, on by default. Crew.exe updates itself silently — download is signature-verified before install. |
 | Composer | One button: Send becomes Stop while a turn runs; typing during a run queues the draft and it auto-sends after. |
 | MCP | Stdio or HTTP servers. Tools, resources, prompts on OpenRouter turns. |
 | Browser tools | Isolated Playwright profile under `.crew/browser/`. Not your mouse. |
@@ -48,7 +49,7 @@ Default permission is **auto-accept** (workspace file writes + workspace shell).
 
 ## Install
 
-1. Download **Crew_0.9.0_x64-setup.exe** from the table above.
+1. Download **Crew_0.11.0_x64-setup.exe** from the table above.
 2. Install and launch Crew. Pick a **project folder** (Crew writes `.crew/` there).
 3. Settings â†’ Providers â†’ paste your API key.
 

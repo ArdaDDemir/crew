@@ -16,9 +16,9 @@ Breaking: `feat!:` or a `BREAKING CHANGE:` footer. In 0.x that is a **minor** bu
 
 ## Architecture decisions
 
-Irreversible choices go in `docs/adr/` as the next `NNNN-kebab.md` (index: `docs/adr/README.md`, currently **0062**). Accepted ADRs are not rewritten; supersede or qualify them.
+Irreversible choices go in `docs/adr/` as the next `NNNN-kebab.md` (index: `docs/adr/README.md`, currently **0063**). Accepted ADRs are not rewritten; supersede or qualify them.
 
-User-visible change: a bullet under `CHANGELOG.md` `[Unreleased]`. Current version is root `package.json` (**0.9.0**). Release ritual: `docs/versioning.md`.
+User-visible change: a bullet under `CHANGELOG.md` `[Unreleased]`. Current version is root `package.json` (**0.11.0**). Release ritual: `docs/versioning.md`.
 
 ## Tests
 

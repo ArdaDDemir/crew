@@ -2,7 +2,7 @@
 
 Local multi-bot **office**. You own channels and people. `@coder` wakes that person; unmentioned people wait. They work at the desk, then **account** in the channel. Need-you is a stop. They may DM. You can read every DM.
 
-**Windows:** [Crew_0.9.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64-setup.exe) · [all files](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0)
+**Windows:** [Crew_0.11.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64-setup.exe) · [all files](https://github.com/ArdaDDemir/crew/releases/tag/v0.11.0)
 
 | Page | |
 |---|---|

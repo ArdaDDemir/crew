@@ -15,7 +15,7 @@ Law: repo-root [`AGENTS.md`](../AGENTS.md). If a file here disagrees, AGENTS + `
 | [specs/discord.md](specs/discord.md) | Discord adapter (`ADR-0049`) |
 | [specs/provider.md](specs/provider.md) | `complete()` port + harness spawn |
 | [specs/edge-cases.md](specs/edge-cases.md) | Catalog; fixed items point at ADRs |
-| [versioning.md](versioning.md) | 0.x semver. Current **0.9.0**; newer work is `[Unreleased]` |
+| [versioning.md](versioning.md) | 0.x semver. Current **0.11.0**; newer work is `[Unreleased]` |
 | [todos/now.md](todos/now.md) | **Current snapshot + gaps** |
 | [todos/multi-human-remote.md](todos/multi-human-remote.md) | Parked: public bind. Loopback `crew serve` is in (`ADR-0048`) |
 | [todos/computer-use-and-browser.md](todos/computer-use-and-browser.md) | Parked: computer-use + in-app browser |

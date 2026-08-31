@@ -3,4 +3,4 @@
 * [Office](Office)
 * [Discord](Discord)
 * [Permissions](Permissions)
-* [Releases](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0)
+* [Releases](https://github.com/ArdaDDemir/crew/releases/tag/v0.11.0)

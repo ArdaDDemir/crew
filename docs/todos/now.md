@@ -3,7 +3,7 @@
 Date: 2026-08-31  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.9.0**. Unreleased (on `master`, not tagged): channel = project room (header brief + empty CONTEXT `(not set)`); workspace-relative Files; cubicle grid; wiki office; README credits; harness turn fixes (OpenCode argv/default model/stderr); turn-stream heartbeat; reasoning effort per person; composer Stop/Queue + working chip; Welcome onboarding + intro tour. Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
+Current release: **0.11.0** (tagged; see `CHANGELOG.md` `[0.10.0]` + `[0.11.0]`). In those: channel = project room, workspace-relative Files, harness turn fixes, turn-stream heartbeat, reasoning effort, composer Stop/Queue, Welcome onboarding + tour, GitHub-native updates with a signed silent updater. Parks: public `0.0.0.0`, live desktop mouse, macOS/Linux, delta updates.
 
 ---
 
@@ -53,9 +53,9 @@ Human ids (`ADR-0047`). Loopback `crew serve` (`ADR-0048`). Discord adapter (`AD
 
 See `CHANGELOG.md` `[0.9.0]`.
 
-## In (unreleased, on master)
+## In (0.10.0 + 0.11.0)
 
-Channel is a **project room**, not a chat toy. Harness turns and the office UI got a reliability + control pass (2026-08-31).
+Channel is a **project room**, not a chat toy. Harness turns and the office UI got a reliability + control pass (2026-08-31), then updates went GitHub-native (ADR-0062).
 
 | Piece | What |
 |---|---|
@@ -70,8 +70,9 @@ Channel is a **project room**, not a chat toy. Harness turns and the office UI g
 | Composer one-button | Send → Stop while running; typing during a run queues the draft; queue auto-sends after the run. |
 | Working chip | Pulsing dot + live status label until the first account/tool/error. |
 | Welcome + tour | Empty workspace onboarding (channel + lead + teammate + mode) and a five-step intro tour; replay in Settings → About. |
+| Auto-update | GitHub Releases feed default-on (opt-out in About), boot check 24h-throttled; Crew.exe silent signed updater; web office assisted install. |
 
-See `CHANGELOG.md` `[Unreleased]`.
+See `CHANGELOG.md` `[0.10.0]` and `[0.11.0]`.
 
 ## In (0.8.0)
 
@@ -188,4 +189,4 @@ Edge catalog case 3: human DMs coder “use red”, channel tells designer “us
 | Extra harnesses (Cursor, Amp) | Out |
 | Skill on-demand / catalog-only | Out. Full body stays in the prompt (`ADR-0021`) |
 
-NSIS/MSI/portable under `dist/` are rebuilt by `bun run desktop:build`. This machine has `Crew_0.9.0_x64-setup.exe`, `Crew_0.9.0_x64_en-US.msi`, and `dist/crew-windows/`.
+NSIS/MSI/portable under `dist/` are rebuilt by `bun run desktop:build`. This machine has `Crew_0.11.0_x64-setup.exe`, `Crew_0.11.0_x64_en-US.msi`, and `dist/crew-windows/`.
