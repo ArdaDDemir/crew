@@ -1,4 +1,4 @@
-# Crew
+﻿# Crew
 
 Local multi-bot **office**. You own the channels and the people. `@coder` wakes that person; everyone else waits. They work at their desk (tools + thinking), then **give an account** in the channel. If they need you, they stop. They may DM. You can read every DM.
 
@@ -10,13 +10,13 @@ Vibecoded with Grok 4.6.
 
 | | |
 |---|---|
-| **Installer** | [Crew_0.10.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew_0.10.0_x64-setup.exe) |
-| MSI | [Crew_0.10.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew_0.10.0_x64_en-US.msi) |
-| Portable zip | [Crew-0.10.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew-0.10.0-windows-portable.zip) |
+| **Installer** | [Crew_0.11.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64-setup.exe) |
+| MSI | [Crew_0.11.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64_en-US.msi) |
+| Portable zip | [Crew-0.11.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew-0.11.0-windows-portable.zip) |
 
-All files: [github.com/ArdaDDemir/crew/releases/tag/v0.10.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.10.0)
+All files: [github.com/ArdaDDemir/crew/releases/tag/v0.11.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.11.0)
 
-WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Providers: [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
+WebView2 is Windows 11 / current Edge. Open a project folder. Settings â†’ Providers: [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
 
 ![Crew office](docs/assets/office.png)
 
@@ -30,7 +30,7 @@ WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Provi
 | 2.5D floor | Glass room, PCs, walk, doors, furniture, looks. Click a person to DM. |
 | Crew.exe | Tauri + WebView2 window. Same office as `bun run ui`. |
 | Split panes | Drag a chat to the right. Max two in-page panes. |
-| Jobs | Settings → Title / Compact / Vision / Read (not extra People). |
+| Jobs | Settings â†’ Title / Compact / Vision / Read (not extra People). |
 | Providers | OpenRouter, plus optional Claude / Codex / Grok / OpenCode CLI spawn. Reasoning effort per person (Default to Max). |
 | Composer | One button: Send becomes Stop while a turn runs; typing during a run queues the draft and it auto-sends after. |
 | MCP | Stdio or HTTP servers. Tools, resources, prompts on OpenRouter turns. |
@@ -50,11 +50,11 @@ Default permission is **auto-accept** (workspace file writes + workspace shell).
 
 1. Download **Crew_0.9.0_x64-setup.exe** from the table above.
 2. Install and launch Crew. Pick a **project folder** (Crew writes `.crew/` there).
-3. Settings → Providers → paste your API key.
+3. Settings â†’ Providers â†’ paste your API key.
 
 Portable: unzip so `Crew.exe`, `crew-server.exe`, and `public/` sit together.
 
-Wiki: [Home](docs/wiki/Home.md) · [Install](docs/wiki/Install.md) · [Office](docs/wiki/Office.md) · [Discord](docs/wiki/Discord.md) · [GitHub wiki](https://github.com/ArdaDDemir/crew/wiki)
+Wiki: [Home](docs/wiki/Home.md) Â· [Install](docs/wiki/Install.md) Â· [Office](docs/wiki/Office.md) Â· [Discord](docs/wiki/Discord.md) Â· [GitHub wiki](https://github.com/ArdaDDemir/crew/wiki)
 
 ## Run from source
 
@@ -70,7 +70,7 @@ bun run crew -- config set key $env:OPENROUTER_API_KEY
 bun run ui
 ```
 
-Office: [http://127.0.0.1:7734](http://127.0.0.1:7734). Window: `bun run desktop`. Installers: `bun run desktop:build` → `dist/`. Hard-refresh (**Ctrl+F5**) after UI pulls.
+Office: [http://127.0.0.1:7734](http://127.0.0.1:7734). Window: `bun run desktop`. Installers: `bun run desktop:build` â†’ `dist/`. Hard-refresh (**Ctrl+F5**) after UI pulls.
 
 CLI `crew` is tests and scripts on the same engine, not a TUI product.
 
@@ -89,7 +89,7 @@ Agents start at [`AGENTS.md`](./AGENTS.md). Humans: [wiki](docs/wiki/Home.md) fi
 | | |
 |---|---|
 | Map | [`docs/README.md`](docs/README.md) |
-| Decisions | [`docs/adr/`](docs/adr/) (0001–0060) |
+| Decisions | [`docs/adr/`](docs/adr/) (0001â€“0060) |
 | Now / gaps | [`docs/todos/now.md`](docs/todos/now.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
@@ -114,9 +114,9 @@ Crew is that office **on your machine**. Channels and people live in `.crew/`. T
 - Repo: [github.com/pingdotgg/t3code](https://github.com/pingdotgg/t3code) (MIT)
 - Site: [t3.codes](https://t3.codes)
 
-T3 Code is the **control-surface shape**: four permission modes (`supervised` / `auto-accept` / `auto` / `full-access`), Settings → Providers cards, one implementation picker, optional spawn of Claude / Codex / Grok / OpenCode CLIs.
+T3 Code is the **control-surface shape**: four permission modes (`supervised` / `auto-accept` / `auto` / `full-access`), Settings â†’ Providers cards, one implementation picker, optional spawn of Claude / Codex / Grok / OpenCode CLIs.
 
-Crew copied those labels and the Settings/picker idea. Window is **Tauri 2 + WebView2**, not Electron. MCP is the integration; T3’s plugin marketplace stays out. Crew is the engine, not a wrapper that only drives foreign CLIs.
+Crew copied those labels and the Settings/picker idea. Window is **Tauri 2 + WebView2**, not Electron. MCP is the integration; T3â€™s plugin marketplace stays out. Crew is the engine, not a wrapper that only drives foreign CLIs.
 
 ### Built with
 
