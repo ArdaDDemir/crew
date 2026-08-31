@@ -12,11 +12,23 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Giant blank white box in tool rows.** Shell output that merely mentioned an old .crew/browser/shots/â€¦png path was rendered as a screenshot image. Shots now attach only to the real rowser_screenshot tool (server + client), broken images remove themselves, and the screenshot frame is size-capped.
+
+## [Unreleased]
+
+### Fixed
+
 - Floor hardening: negative frame-time could crash the walk animation forever (laptop sleep/resume); the engine now clamps it, guards its start position, and boot failures in the floor can no longer take the whole office down.
 
 ### Changed
 
 - The canvas floor reads as a **warm wooden meeting room**: plank floor, cream walls with terracotta wainscot, whiteboard + wall clock + window with a light shaft, bookshelf / water cooler / plant props, and the team sits around a real wooden meeting table with chairs and open laptops when busy.
+
+## [Unreleased]
+
+### Fixed
+
+- **Giant blank white box in tool rows.** Shell output that merely mentioned an old .crew/browser/shots/â€¦png path was rendered as a screenshot image. Shots now attach only to the real rowser_screenshot tool (server + client), broken images remove themselves, and the screenshot frame is size-capped.
 
 ## [Unreleased]
 

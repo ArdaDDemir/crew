@@ -2171,7 +2171,7 @@ function appendTool(botId, name, args, output, shot) {
   if (!name && !shot) return;
   if (state.running) setActivity(botId, activityLabel(name, args));
   const turn = ensureTurn(botId);
-  const path = shot || (String(output ?? "").match(/\.crew\/browser\/shots\/[A-Za-z0-9._-]+\.png/) || [])[0];
+  const path = shot; // only real browser-tool shots attach an image — never scan output text
   const last = turn.toolList.lastElementChild;
   const merge =
     last &&
@@ -2190,6 +2190,7 @@ function appendTool(botId, name, args, output, shot) {
     const img = document.createElement("img");
     img.className = "desk-shot";
     img.alt = "Browser screenshot";
+    img.onerror = () => img.remove();
     img.src = `/api/shot?path=${encodeURIComponent(path)}`;
     li.append(img);
   }

@@ -419,8 +419,9 @@ export function readThread(
         };
       }
       if (event.type === "tool.completed" && flags.verbose) {
+        const name = String(event.payload.name ?? "");
         const output = String(event.payload.output ?? "");
-        const shot = shotPathFromOutput(output);
+        const shot = /browser_screenshot/i.test(name) ? shotPathFromOutput(output) : undefined;
         if (!shot) return null;
         return {
           type: "tool" as const,

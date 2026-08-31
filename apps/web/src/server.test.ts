@@ -1,4 +1,4 @@
-﻿import { expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -1036,6 +1036,21 @@ test("floor doors open channels through the canvas engine", async () => {
     expect(js).toMatch(/paneOpen\(state\.activePane, ["']channel["']/);
     const game = await (await fetch(url + "/floor-game.js")).text();
     expect(game).toContain("onDoorClick");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("shell output that mentions a shot path does not render an image", async () => {
+  const { server, url } = await setup();
+  try {
+    const res = await fetch(`${url}/api/say`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId: "landing", text: "run a tool that mentions .crew/browser/shots/old.png in its output", verbose: true }),
+    });
+    const body = await res.text();
+    expect(body).not.toContain('"shot"');
   } finally {
     server.stop(true);
   }

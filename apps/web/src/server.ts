@@ -842,7 +842,7 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
         };
       const onToolDone = (row: { botId: string; name: string; output: string }) => {
         if (!body.verbose) return;
-        const shot = shotPathFromOutput(row.output);
+        const shot = /browser_screenshot/i.test(row.name) ? shotPathFromOutput(row.output) : undefined;
         push({
           type: "tool",
           botId: row.botId,
