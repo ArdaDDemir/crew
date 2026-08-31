@@ -1,4 +1,4 @@
-// Crew office floor — a small isometric canvas game.
+// Crew office floor â€” a small isometric canvas game.
 // Rendering + input only. Pure math lives in floor-iso.js.
 
 import {
@@ -84,7 +84,7 @@ export function createFloor(canvas, handlers = {}) {
     members: [],
     doors: [],
     furniture: [],
-    you: { id: "you", look: {}, tile: { x: 5, y: 3 }, path: null, t0: 0, from: null },
+    you: { id: "you", look: {}, at: { x: 5, y: 3 }, path: null, t0: 0, from: null, face: "front", dirX: 0, dirY: 0 },
     roomLabel: "",
     hold: "",
     hover: null,
@@ -95,6 +95,32 @@ export function createFloor(canvas, handlers = {}) {
     mouse: { x: 0, y: 0, over: null },
   };
   const sprites = new Map();
+  let userMoved = false;
+
+  function roomBounds() {
+    const tl = iso(0, 0);
+    const tr = iso(COLS, 0);
+    const bl = iso(0, ROWS);
+    const br = iso(COLS, ROWS);
+    return {
+      left: bl.x - TILE_W / 2,
+      right: tr.x + TILE_W / 2,
+      top: tl.y - 74,
+      bottom: br.y + TILE_H + 16,
+    };
+  }
+
+  function fitFloor(force) {
+    if (!force && userMoved) return;
+    if (canvas.clientWidth < 40) return;
+    const b = roomBounds();
+    const z = clampZoom(
+      Math.min(canvas.clientWidth / (b.right - b.left), canvas.clientHeight / (b.bottom - b.top)),
+    );
+    S.cam.z = z;
+    S.cam.x = (b.left + b.right) / 2;
+    S.cam.y = (b.top + b.bottom) / 2;
+  }
 
   function resize() {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -165,12 +191,6 @@ export function createFloor(canvas, handlers = {}) {
       px(4, legY + 4, 2, 1, SHOES);
       px(6, legY + 4, 2, 1, SHOES);
     }
-    // outline pass: dark rim around silhouette
-    g.globalCompositeOperation = "source-atop";
-    g.strokeStyle = OUTLINE;
-    g.lineWidth = 1;
-    g.strokeRect(0.5, 0.5, cv.width - 1, cv.height - 1);
-    g.globalCompositeOperation = "source-over";
     sprites.set(key, cv);
     return cv;
   }
@@ -197,7 +217,7 @@ export function createFloor(canvas, handlers = {}) {
       for (let y = 0; y < ROWS; y++) {
         const { x: sx, y: sy } = iso(x, y);
         const even = (x + y) % 2 === 0;
-        g.fillStyle = even ? "#232833" : "#1f242e";
+        g.fillStyle = even ? "#2b3242" : "#252b38";
         g.beginPath();
         g.moveTo(sx, sy);
         g.lineTo(sx + TILE_W / 2, sy + TILE_H / 2);
@@ -217,7 +237,7 @@ export function createFloor(canvas, handlers = {}) {
     const base0 = iso(0, 0);
     // back wall (to the right)
     const rightEnd = iso(COLS, 0);
-    g.fillStyle = "#141720";
+    g.fillStyle = "#1b2230";
     g.beginPath();
     g.moveTo(base0.x - TILE_W / 2, base0.y - 6);
     g.lineTo(rightEnd.x + TILE_W / 2, rightEnd.y - 6);
@@ -225,11 +245,11 @@ export function createFloor(canvas, handlers = {}) {
     g.lineTo(base0.x - TILE_W / 2, base0.y - wallH);
     g.closePath();
     g.fill();
-    g.fillStyle = "#1a1f2b";
+    g.fillStyle = "#242d40";
     g.fillRect(base0.x - TILE_W / 2, base0.y - wallH, rightEnd.x - base0.x + TILE_W, 5);
     // left wall (down-left)
     const leftEnd = iso(0, ROWS);
-    g.fillStyle = "#10131b";
+    g.fillStyle = "#161c29";
     g.beginPath();
     g.moveTo(base0.x - TILE_W / 2, base0.y - 6);
     g.lineTo(leftEnd.x - TILE_W / 2, leftEnd.y + 10);
@@ -420,7 +440,7 @@ export function createFloor(canvas, handlers = {}) {
   }
 
   function entityAt(px, py) {
-    // screen px (already camera-space) → nearest member/door hit
+    // screen px (already camera-space) â†’ nearest member/door hit
     let best = null;
     let bestD = 26 * 26;
     for (const m of S.members) {
@@ -464,7 +484,38 @@ export function createFloor(canvas, handlers = {}) {
     return { x: (px - canvas.clientWidth / 2) / S.cam.z + S.cam.x, y: (py - canvas.clientHeight / 2) / S.cam.z + S.cam.y };
   }
 
+  let lastW = -1;
+  let lastH = -1;
+  function resizeIfNeeded() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (w !== lastW || h !== lastH) {
+      lastW = w;
+      lastH = h;
+      resize();
+      fitFloor(false);
+    }
+  }
+
   function tick(now) {
+    try {
+      tickInner(now);
+    } catch (err) {
+      console.error("floor game error", err);
+      try {
+        const g = ctx;
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = "#0d0f15";
+        g.fillRect(0, 0, canvas.width, canvas.height);
+        g.fillStyle = "#ff9a7a";
+        g.font = "12px monospace";
+        g.fillText("floor error: " + (err && err.message ? err.message : err), 12, 20);
+      } catch {}
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function tickInner(now) {
     S.t = now;
     resizeIfNeeded();
     const g = ctx;
@@ -537,7 +588,7 @@ export function createFloor(canvas, handlers = {}) {
       g.font = "9px ui-monospace, monospace";
       g.textAlign = "center";
       g.fillStyle = m.lead ? "#ffd9a0" : "rgba(200,208,224,0.75)";
-      g.fillText(`${m.lead ? "\u2605 " : "@${m.name}"}`, p.x, p.y + 6);
+      g.fillText(m.lead ? "\u2605 " + m.name : "@" + m.name, p.x, p.y + 6);
     }
     const yp = iso(S.you.at.x, S.you.at.y);
     g.font = "9px ui-monospace, monospace";
@@ -624,13 +675,6 @@ export function createFloor(canvas, handlers = {}) {
     }
   }
 
-  function resizeIfNeeded() {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (canvas.width !== Math.round(w * Math.min(2, window.devicePixelRatio || 1))) resize();
-    else if (canvas.height !== Math.round(h * Math.min(2, window.devicePixelRatio || 1))) resize();
-  }
-
   // ---------- input ----------
   canvas.addEventListener("pointerdown", (e) => {
     const pt = toCanvas(e);
@@ -645,6 +689,7 @@ export function createFloor(canvas, handlers = {}) {
       const dy = pt.y - S.dragging.y0;
       if (Math.abs(dx) + Math.abs(dy) > 6) S.dragging.moved = true;
       if (S.dragging.moved) {
+        userMoved = true;
         S.cam.x = S.dragging.camx - dx / S.cam.z;
         S.cam.y = S.dragging.camy - dy / S.cam.z;
       }
@@ -683,6 +728,7 @@ export function createFloor(canvas, handlers = {}) {
   });
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
+    userMoved = true;
     const before = worldFromScreen(e.offsetX, e.offsetY);
     S.cam.z = clampZoom(S.cam.z * (e.deltaY < 0 ? 1.12 : 0.89));
     const after = worldFromScreen(e.offsetX, e.offsetY);
@@ -694,6 +740,7 @@ export function createFloor(canvas, handlers = {}) {
   });
 
   resize();
+  fitFloor(true);
   requestAnimationFrame(tick);
   window.addEventListener("resize", resizeIfNeeded);
 
@@ -717,7 +764,7 @@ export function createFloor(canvas, handlers = {}) {
             const p = iso(desk.x, desk.y);
             return { x: p.x + 14, y: p.y - 2 };
           })(),
-          activityShort: (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}…` : m.activity || "",
+          activityShort: (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}â€¦` : m.activity || "",
         };
       });
       S.doors = (next.doors ?? []).map((d, i) => ({ ...d, slot: doorSlots(next.doors.length)[i] }));
@@ -765,9 +812,8 @@ export function createFloor(canvas, handlers = {}) {
       S.hold = kind || "";
     },
     focus() {
-      S.cam.x = iso(COLS / 2, ROWS / 2).x;
-      S.cam.y = iso(COLS / 2, ROWS / 2).y - 30;
-      S.cam.z = 1;
+      userMoved = false;
+      fitFloor(true);
     },
   };
 }

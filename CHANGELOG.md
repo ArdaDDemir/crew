@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -9,6 +9,12 @@ with a 0.x policy: breaking changes bump the **minor** number until 1.0.
 See `docs/versioning.md`.
 
 ## [Unreleased]
+
+### Fixed
+
+- **0.12.0 shipped a blank floor.** The canvas had no start position (undefined crash on frame one killed the rAF loop silently) and the element was missing its class, so none of the floor CSS applied. Fixed: the room renders, the camera **fits the whole room to the pane** on open (user zoom/pan wins after), and name tags render correctly (they literally said @$m.name before).
+
+## [0.12.0] - 2026-08-31
 
 ### Added
 
@@ -27,11 +33,11 @@ Updates go GitHub-native: feed on by default, signed silent auto-update in Crew.
 
 ### Changed
 
-- About → Updates: checkbox for the GitHub feed, **Install <version>** button with progress, download link kept for browsers.
+- About â†’ Updates: checkbox for the GitHub feed, **Install <version>** button with progress, download link kept for browsers.
 
 ### Fixed
 
-- `parseUpdateManifest` normalizes `v`-prefixed tags (`v0.11.0` → `0.11.0`).
+- `parseUpdateManifest` normalizes `v`-prefixed tags (`v0.11.0` â†’ `0.11.0`).
 
 ## [0.10.0] - 2026-08-31
 
@@ -40,11 +46,11 @@ Harness turns run, turns survive silence, effort control, one-button composer, w
 ### Added
 
 - **Reasoning effort per person.** Person sheet gains Default / Minimal / Low / Medium / High / Max. OpenRouter turns send `reasoning_effort`; OpenCode turns send `--variant`; models without effort support just stay on Default. Persisted on the person and surfaced in bootstrap / bot detail.
-- **Composer is one button.** Send becomes Stop while the turn runs. Typing during a run turns it into Queue — Enter parks the draft as a queued chip that auto-sends when the run finishes; × removes it.
-- **Working indicator.** A pulsing dot with a live label (`Working…` → latest status) shows in the thread while the bot is at its desk, until the first account, tool card, or error.
-- Start screen: a workspace with no channels opens a **Welcome to Crew** dialog — first channel, lead, optional teammate, work mode — and seeds the office in one submit. "Skip for now" stays hidden for the session.
-- Intro tour: a five-step guided tour (office, mentions, the desk, DMs, safety rails) opens after the first setup and can be replayed from Settings → About.
-- Channel header shows the first CONTEXT.md line, or **No About — bots will ask, not invent.** Empty CONTEXT / RULES / folders still inject `(not set)` so bots ask instead of inventing the product.
+- **Composer is one button.** Send becomes Stop while the turn runs. Typing during a run turns it into Queue â€” Enter parks the draft as a queued chip that auto-sends when the run finishes; Ã— removes it.
+- **Working indicator.** A pulsing dot with a live label (`Workingâ€¦` â†’ latest status) shows in the thread while the bot is at its desk, until the first account, tool card, or error.
+- Start screen: a workspace with no channels opens a **Welcome to Crew** dialog â€” first channel, lead, optional teammate, work mode â€” and seeds the office in one submit. "Skip for now" stays hidden for the session.
+- Intro tour: a five-step guided tour (office, mentions, the desk, DMs, safety rails) opens after the first setup and can be replayed from Settings â†’ About.
+- Channel header shows the first CONTEXT.md line, or **No About â€” bots will ask, not invent.** Empty CONTEXT / RULES / folders still inject `(not set)` so bots ask instead of inventing the product.
 - Channel Files store workspace-relative paths. Absolute picks are stripped to the project folder; `..` / `.env` / `.ssh` are dropped. Wiki Office documents About / Rules / Files.
 - Public GitHub: `ArdaDDemir/crew`. Windows NSIS/MSI/portable on Releases. MIT license. Wiki for install / office / Discord.
 - README credits [Grok Bot](https://x.ai/bot) and [T3 Code](https://github.com/pingdotgg/t3code); vibecoded with Grok 4.6. `docs/todos/now.md` lists remaining work (evidence in the account, person = specialist).
@@ -57,13 +63,13 @@ Harness turns run, turns survive silence, effort control, one-button composer, w
 - 2.5D floor: window and ceiling, diamond carpet, ground shadows, walk facing + step, isometric sofa/plant/lamp, richer glass bay and PCs.
 - 2.5D floor: stationary PC desks, chunkier characters, glass/carpet depth, door plaques, compact member list.
 - Floor furniture loads once per room (no GET on every presence tick). You look PUT is debounced.
-- Floor hint: Click carpet to walk · a person to DM. Holding a kind: Click to place · Esc to cancel. Copy cursor while placing.
+- Floor hint: Click carpet to walk Â· a person to DM. Holding a kind: Click to place Â· Esc to cancel. Copy cursor while placing.
 
 ### Fixed
 
-- Turns no longer die mid-run. `/api/say` streams a heartbeat ping every 5s and the office server sets `idleTimeout: 255`, so Bun's default 10s idle timeout can no longer cut the connection during a silent tool phase — the UI saw `TypeError: network error` while the turn actually kept running and finished server-side.
-- OpenCode turns run again. The brief message is the first positional after `opencode run`, so the array-typed `--file` flag can no longer swallow it as a second attachment (`File not found: Follow the attached Crew brief…`). OpenCode gets a known tool-capable default model (`opencode/big-pickle`) like the other harnesses, instead of falling back to provider auto-routing that picked endpoints without tool use. OpenCode errors surface the real provider message (e.g. rate limits) instead of a generic "OpenCode error".
-- Harness exits with no output now show the CLI's last stderr line (e.g. `OpenCode exited 1: Error: Model not found: …`) instead of a bare exit code, and the stderr pipe is drained so chatty CLIs can no longer block.
+- Turns no longer die mid-run. `/api/say` streams a heartbeat ping every 5s and the office server sets `idleTimeout: 255`, so Bun's default 10s idle timeout can no longer cut the connection during a silent tool phase â€” the UI saw `TypeError: network error` while the turn actually kept running and finished server-side.
+- OpenCode turns run again. The brief message is the first positional after `opencode run`, so the array-typed `--file` flag can no longer swallow it as a second attachment (`File not found: Follow the attached Crew briefâ€¦`). OpenCode gets a known tool-capable default model (`opencode/big-pickle`) like the other harnesses, instead of falling back to provider auto-routing that picked endpoints without tool use. OpenCode errors surface the real provider message (e.g. rate limits) instead of a generic "OpenCode error".
+- Harness exits with no output now show the CLI's last stderr line (e.g. `OpenCode exited 1: Error: Model not found: â€¦`) instead of a bare exit code, and the stderr pipe is drained so chatty CLIs can no longer block.
 - A dropped turn stream shows **Connection to the office was lost** with recovery hints instead of a raw `TypeError: network error`.
 - An empty workspace no longer shows a fake `#landing` room; the panes say **No rooms yet** until a channel exists.
 - Floor: guest cannot remove furniture (no 403 toast). Escape cancels a held plant/lamp/sofa. Holding a kind no longer deletes the piece you click.
@@ -78,16 +84,16 @@ Humans, Discord, isolated browser, guest lock, 2.5D floor. Loopback only. Not `0
 
 ### Added
 
-- **Human ids** (`ADR-0047`): a human author may carry `humanId`. Missing id is the owner `"human"`. Owner DMs stay `human__<bot>`; other humans use `user__<id>__<bot>`. Latest-human-wins is per `(botId, humanId)`; other humans’ DMs are unread pointers without their private gist. `.crew/humans.json` stores `{ id, handle, inviteHash }` (SHA-256 hex). `POST /api/humans` shows the raw invite token once; `POST /api/humans/revoke` clears the hash. Loopback `say` still needs no token and posts as owner. `user` is a reserved bot id.
+- **Human ids** (`ADR-0047`): a human author may carry `humanId`. Missing id is the owner `"human"`. Owner DMs stay `human__<bot>`; other humans use `user__<id>__<bot>`. Latest-human-wins is per `(botId, humanId)`; other humansâ€™ DMs are unread pointers without their private gist. `.crew/humans.json` stores `{ id, handle, inviteHash }` (SHA-256 hex). `POST /api/humans` shows the raw invite token once; `POST /api/humans/revoke` clears the hash. Loopback `say` still needs no token and posts as owner. `user` is a reserved bot id.
 - **`crew serve`** (`ADR-0048`): same office as `bun run ui`. `--cwd` `--port` `--hostname` (loopback only) `--cors <origin>`. Invite as `Authorization: Bearer` or JSON `token`. Invalid token is HTTP 401. Still not `0.0.0.0`.
 - **Discord adapter** (`ADR-0049`): `apps/discord`. `.crew/discord.json` maps guild/channel/user. Fail-closed. Incoming `<@id>` becomes `@humanId`. Crew accounts leave as webhook `username` (person name). Engine `handoff.held` / `mention.ignored` post as `Crew`. Token from `DISCORD_BOT_TOKEN`. Core has no Discord.
-- **Discord DMs** (`ADR-0051`): mapped human DMs the receptionist → Crew `user__<id>__<dmBotId>` (owner: `human__<bot>`). Bot account returns as a Discord DM. Missing `dmBotId` ignores DMs. Bot-bot DMs stay JSONL-only.
+- **Discord DMs** (`ADR-0051`): mapped human DMs the receptionist â†’ Crew `user__<id>__<dmBotId>` (owner: `human__<bot>`). Bot account returns as a Discord DM. Missing `dmBotId` ignores DMs. Bot-bot DMs stay JSONL-only.
 - **Discord ask buttons** (`ADR-0052`): supervised / MCP / browser asks on a Discord-originated turn post Allow / Always / Deny. Only the waking Discord user can click. Always writes `.crew/permissions.json`.
 - **Discord `dm_send`** (`ADR-0053`): a channel `dm_send` to the waking human also REST-DMs their Discord user when mapped in `.crew/discord.json`. Unmapped humans stay Crew-only.
-- **Browser tools** (`ADR-0050`): `browser_open` / `_snapshot` / `_click` / `_type` / `_screenshot`. `ToolKind` `browser` — auto-accept **asks**. Always deny `file://`, `chrome://`, `javascript:`, `.env` URLs. Live profile `.crew/browser/` via Playwright when installed. Screenshots are desk paths, not the channel account. The office tools fold shows the PNG via `GET /api/shot`. Not the operator's mouse.
-- **Office leftovers** (`ADR-0054`): top-bar identity chip (`localStorage crew.inviteToken` as Bearer on `api()` and `/api/say`; empty is owner). Settings → General Create invite / list / revoke; token once; hash never in the UI. `POST /api/humans` and revoke are tokensuz owner only (guest Bearer 403). Live `say` NDJSON `tool` includes `shot` after `onToolDone` (not a new LLM event). Discord outbound is queued per destination and honors `retry_after` / `Retry-After` / `X-RateLimit-Reset-After` without blocking JSONL or wake. `playwright` is a `tools-native` dependency; Chromium is still `bunx playwright install chromium` and is not compiled into Crew.exe.
+- **Browser tools** (`ADR-0050`): `browser_open` / `_snapshot` / `_click` / `_type` / `_screenshot`. `ToolKind` `browser` â€” auto-accept **asks**. Always deny `file://`, `chrome://`, `javascript:`, `.env` URLs. Live profile `.crew/browser/` via Playwright when installed. Screenshots are desk paths, not the channel account. The office tools fold shows the PNG via `GET /api/shot`. Not the operator's mouse.
+- **Office leftovers** (`ADR-0054`): top-bar identity chip (`localStorage crew.inviteToken` as Bearer on `api()` and `/api/say`; empty is owner). Settings â†’ General Create invite / list / revoke; token once; hash never in the UI. `POST /api/humans` and revoke are tokensuz owner only (guest Bearer 403). Live `say` NDJSON `tool` includes `shot` after `onToolDone` (not a new LLM event). Discord outbound is queued per destination and honors `retry_after` / `Retry-After` / `X-RateLimit-Reset-After` without blocking JSONL or wake. `playwright` is a `tools-native` dependency; Chromium is still `bunx playwright install chromium` and is not compiled into Crew.exe.
 - **Guest office writes** (`ADR-0055`): a valid invite Bearer may `say` / `dm` / ask / stop and read. Creating bots, channels, attach, compact, Settings, and other POST/PUT/PATCH/DELETE is 403 `owner only`. `GET /api/who` names the chip (`Arda`, not `invite`). Discord outbound that is still 429 after eight attempts warns and drops; Crew JSONL already finished.
-- **Isometric floor** (`ADR-0056`): the Members desk is a 2.5D Habbo-like room for the open channel — glass bay, PC desks, seated people. Activity is a pose. Click a seat opens that DM. Walking, clothes, and furniture editing are later. Core is unchanged.
+- **Isometric floor** (`ADR-0056`): the Members desk is a 2.5D Habbo-like room for the open channel â€” glass bay, PC desks, seated people. Activity is a pose. Click a seat opens that DM. Walking, clothes, and furniture editing are later. Core is unchanged.
 - **Floor walk** (`ADR-0057`): click empty carpet to walk **You**. A writing account walks that person to the glass table. Walking is not a wake. `prefers-reduced-motion` skips the tween.
 - **Floor doors** (`ADR-0058`): other channels are doors on the back wall. Click a door opens that channel, same as the rail. Not a wake. Clothes and furniture editing stay later.
 - **Floor furniture** (`ADR-0059`): owner places plant / lamp / sofa / shelf / rug on the channel floor. `.crew/floor.json`. Click a piece to remove. Guests see it, cannot PUT.
@@ -150,8 +156,8 @@ Honesty pack Wave A (`ADR-0043`) and Wave B/C (`ADR-0044`). MCP initialize repor
 - **`dist/latest.json`** (`ADR-0040`): `bun run desktop:build` writes `{ version, notes, url, platforms }` next to the installers. Relative `url` in that file is resolved against the hosted `latest.json` path. Optional `CREW_RELEASE_BASE` prefixes GitHub-style absolute URLs. Still no silent install.
 - `GET /api/health` includes `version`.
 - **DM permission mode** (`ADR-0041`): new Direct chats use Settings **New room mode**. Mode chip, Shift+Tab, and `/mode` work on a DM. Stored in `.crew/dm-prefs.json` `modes`. Legacy DMs without a row stay auto-accept. DM send streams through `POST /api/say` so supervised can show Allow/Deny cards.
-- **`auto` reviewer** (`ADR-0042`): Settings → Permissions **Reviewer model** is actually used. `auto` rooms one-shot that model (`ALLOW` / `DENY` / else ask the human). Empty reviewer still falls back to supervised. Same bind on `crew say`.
-- `crew mode <dmId>` sets a Direct thread’s mode in `.crew/dm-prefs.json` (`ADR-0041`).
+- **`auto` reviewer** (`ADR-0042`): Settings â†’ Permissions **Reviewer model** is actually used. `auto` rooms one-shot that model (`ALLOW` / `DENY` / else ask the human). Empty reviewer still falls back to supervised. Same bind on `crew say`.
+- `crew mode <dmId>` sets a Direct threadâ€™s mode in `.crew/dm-prefs.json` (`ADR-0041`).
 
 ## [0.5.0] - 2026-08-28
 
@@ -161,8 +167,8 @@ MCP resources/prompts, Windows MSI, opt-in update check, Crew.exe tray.
 
 - **MCP resources and prompts** (`ADR-0038`): when a server advertises them on initialize, Crew-native turns also get `mcp_<server>_resources_list` / `_resources_read` (`uri`) and `mcp_<server>_prompts_list` / `_prompts_get` (`name` plus extra args). `tools/list` failure no longer drops a resources-only server.
 - **Windows MSI** on `bun run desktop:build`: copies `dist/crew-windows-msi/`. NSIS still `dist/crew-windows-nsis/`. Tauri can download WiX/NSIS into the build cache. Portable `dist/crew-windows/` always.
-- **Opt-in updates** (`ADR-0039`): Settings → About stores an HTTPS `updateUrl` in `~/.crew/config.json` (`CREW_UPDATE_URL` overrides). **Check for updates** fetches `{ version, notes, url }` (or Tauri `platforms.windows-x86_64`). Crew never overwrites itself; Download opens the URL. Empty URL = disabled. http only on localhost.
-- **Crew.exe tray** (`ADR-0039`): × / Close hides to the notification area. Tray menu: Show Crew, Open project, Quit (stops the sidecar). Left-click restores.
+- **Opt-in updates** (`ADR-0039`): Settings â†’ About stores an HTTPS `updateUrl` in `~/.crew/config.json` (`CREW_UPDATE_URL` overrides). **Check for updates** fetches `{ version, notes, url }` (or Tauri `platforms.windows-x86_64`). Crew never overwrites itself; Download opens the URL. Empty URL = disabled. http only on localhost.
+- **Crew.exe tray** (`ADR-0039`): Ã— / Close hides to the notification area. Tray menu: Show Crew, Open project, Quit (stops the sidecar). Left-click restores.
 
 ## [0.4.0] - 2026-08-28
 
@@ -170,12 +176,12 @@ Crew.exe, Providers picker, harness spawn, MCP, CLI parity, harness permission m
 
 ### Added
 
-- **MCP tab** (`ADR-0036`, `ADR-0037`): Settings → MCP lists stdio **or HTTP** servers in `.crew/mcp.json` (env KEY=value, URL). Tools attach to Crew-native turns as `mcp_<server>_<tool>`. Enabled servers are written to `.crew/harness-mcp.json` and passed as `--mcp-config` on Grok/Claude. Dead servers are skipped. Not a plugin marketplace.
-- **Harness spawn** (`ADR-0034`, `ADR-0035`, `ADR-0037`): enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI. **`crew say` / `crew dm` use the same bind.** Supervised does **not** spawn (Crew cards). auto-accept → `acceptEdits` / workspace-write. full-access → bypass/always-approve. `.env` / `.ssh` denied on every CLI. Jobs stay OpenRouter.
+- **MCP tab** (`ADR-0036`, `ADR-0037`): Settings â†’ MCP lists stdio **or HTTP** servers in `.crew/mcp.json` (env KEY=value, URL). Tools attach to Crew-native turns as `mcp_<server>_<tool>`. Enabled servers are written to `.crew/harness-mcp.json` and passed as `--mcp-config` on Grok/Claude. Dead servers are skipped. Not a plugin marketplace.
+- **Harness spawn** (`ADR-0034`, `ADR-0035`, `ADR-0037`): enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI. **`crew say` / `crew dm` use the same bind.** Supervised does **not** spawn (Crew cards). auto-accept â†’ `acceptEdits` / workspace-write. full-access â†’ bypass/always-approve. `.env` / `.ssh` denied on every CLI. Jobs stay OpenRouter.
 - **Crew.exe** desktop shell (`ADR-0032`, `ADR-0037`): native WebView2 window. Portable `dist/crew-windows/`. `bun run desktop:build` also tries a **NSIS** installer into `dist/crew-windows-nsis/` (needs NSIS on PATH). No auto-update, no macOS/Linux bundle.
 - Office **custom top bar**: Crew + project path, **Members** toggle, desktop window buttons and Open project when running as Crew.exe. Split by dragging the handle on the **right edge of the left chat** (no split buttons). Drop a chat into the empty pane. Ctrl+\\ still splits; Ctrl+Shift+W closes the extra pane.
-- People accordion (`ADR-0033`): click a person to expand their chats (about three visible, rest scroll, newest first). `+` new chat. Right-click a chat to Archive or Delete (log stays). Direct lists only bot↔bot. Drag a chat onto the right half of the stage to open a second pane.
-- Settings → **Providers** (replaces Models): OpenRouter card (key, base URL, whitelist + catalog) plus Claude / Codex / Grok / OpenCode cards. Enable, optional binary path, **custom model** ids. Stored in `.crew/providers.json` so a config PATCH cannot wipe it (`ADR-0030`).
+- People accordion (`ADR-0033`): click a person to expand their chats (about three visible, rest scroll, newest first). `+` new chat. Right-click a chat to Archive or Delete (log stays). Direct lists only botâ†”bot. Drag a chat onto the right half of the stage to open a second pane.
+- Settings â†’ **Providers** (replaces Models): OpenRouter card (key, base URL, whitelist + catalog) plus Claude / Codex / Grok / OpenCode cards. Enable, optional binary path, **custom model** ids. Stored in `.crew/providers.json` so a config PATCH cannot wipe it (`ADR-0030`).
 - `GET` / `PUT /api/providers`. `GET /api/providers/health` (PATH + `--version`, extra dirs for native Claude / npm / WinGet / scoop). `GET /api/providers/models` (OpenRouter whitelist; harness CLI lists + cache + custom; 60s cache).
 - Person `harness` / `harnessModel` on `bot.json`. General default can store `defaultHarness` / `defaultHarnessModel`.
 - Grouped searchable implementation picker (All + provider logos) on Person Model, Settings Default, and Jobs Title / Compact / Vision / Read (`ADR-0031`).
@@ -187,7 +193,7 @@ Crew.exe, Providers picker, harness spawn, MCP, CLI parity, harness permission m
 
 ### Changed
 
-- Docs match the Unreleased office: README / `docs/README.md` / specs no longer say “MCP later” or “spawn later”. Snapshot + gaps: `docs/todos/now.md`.
+- Docs match the Unreleased office: README / `docs/README.md` / specs no longer say â€œMCP laterâ€ or â€œspawn laterâ€. Snapshot + gaps: `docs/todos/now.md`.
 - Office chrome polish: one Crew wordmark (top bar only), People edit/delete on hover, chat header grid, green Send, stronger empty split pane, icon-only header chips when split or on a phone.
 - Settings tabs: General, Providers, Jobs, **MCP**, Permissions, About (`ADR-0030`, `ADR-0036`).
 - Jobs Title, Compact, Vision, and Read use the **same** implementation picker as Default model. Empty Title/Compact = Default. Empty Vision/Read = Off. Compact/Vision/Read no longer pick a rail person (`ADR-0031`). Person **Chat titles** is still that person's title model (empty = Jobs Title).
@@ -195,8 +201,8 @@ Crew.exe, Providers picker, harness spawn, MCP, CLI parity, harness permission m
 
 ### Fixed
 
-- Implementation picker painted behind the Settings `<dialog>` top layer or clipped by sheet overflow; the menu now lives inside the open dialog. Switching tabs closes it. Native `<select>` no longer shows a second “Default”.
-- Claude “Not installed” when the binary is `%USERPROFILE%\.local\bin\claude.exe` and that folder is not on PATH.
+- Implementation picker painted behind the Settings `<dialog>` top layer or clipped by sheet overflow; the menu now lives inside the open dialog. Switching tabs closes it. Native `<select>` no longer shows a second â€œDefaultâ€.
+- Claude â€œNot installedâ€ when the binary is `%USERPROFILE%\.local\bin\claude.exe` and that folder is not on PATH.
 - Codex / Claude picker lists were `--help` leftovers; Codex reads `~/.codex/models_cache.json`, Claude lists current aliases (4.6 / Fable 5).
 
 ## [0.3.0] - 2026-08-28
@@ -218,7 +224,7 @@ Office chrome: jump, menus, split panes, `@path`, slash, compact layers, Setting
 - In-page split panes (Open to the right / below, drag from the rail; max two).
 - Composer `/` palette: `/help` `/clear` `/compact` `/stop` `/mode` `/model` `/status` `/diff` `/export` `/new` (office `/retry` `/new-person` `/new-channel` `/settings` stay).
 - LLM compact: `POST /api/compact` appends `thread.summary`; JSONL stays (`ADR-0028`). `/compact` toasts `Compacted.` Header `#context-chip` shows `{posted}/80` (and `compacted` after a summary). Auto-compact once when posted > 56.
-- Settings Jobs (title, compact, vision, read) in `.crew/jobs.json` — not People (`ADR-0029`). `GET`/`PUT /api/jobs`. First human DM post appends `thread.titled`; Direct list uses it. **Regenerate title** in the chat header. Vision captions attached images when a model is set.
+- Settings Jobs (title, compact, vision, read) in `.crew/jobs.json` â€” not People (`ADR-0029`). `GET`/`PUT /api/jobs`. First human DM post appends `thread.titled`; Direct list uses it. **Regenerate title** in the chat header. Vision captions attached images when a model is set.
 
 ### Fixed
 
@@ -255,7 +261,7 @@ Office release: local web UI is a real adapter, skills are SKILL.md, Always pers
 ### Fixed
 
 - Modal Close / Cancel / backdrop actually close the dialog.
-- Replay no longer leaves everyone “working”; activity is `Thinking` / `Reading index.html` / `Online`.
+- Replay no longer leaves everyone â€œworkingâ€; activity is `Thinking` / `Reading index.html` / `Online`.
 - Phone: Menu drawer; desk hidden.
 - Old 429 JSON in the thread is shortened (no `user_id`).
 - Files chip: paths, not `cat` dumps.
