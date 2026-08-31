@@ -10,9 +10,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -22,9 +34,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -34,9 +58,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -46,9 +82,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -62,9 +110,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -74,9 +134,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -86,9 +158,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 
@@ -98,9 +182,21 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
+
+## [Unreleased]
+
 ### Fixed
 
 - **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Changed
+
+- **Wall decorations now mount in the wall plane.** The whiteboard, clock, window and doors are drawn skewed into the isometric wall (affine transform per wall) instead of flat axis-aligned rectangles floating on a diagonal slab. Walls gained a top cap, gradient face, wainscot with bead lines and a baseboard.
 
 ## [Unreleased]
 

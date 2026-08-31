@@ -310,122 +310,234 @@ export function createFloor(canvas, handlers = {}) {
     g.fill();
   }
 
-  function drawWalls(g, doors) {
-    const wallH = 78;
-    const base0 = iso(0, 0);
-    const rightEnd = iso(COLS, 0);
-    const leftEnd = iso(0, ROWS);
-    // back wall: upper paint + wainscot + baseboard
-    g.fillStyle = WALL_UPPER;
-    g.beginPath();
-    g.moveTo(base0.x - TILE_W / 2, base0.y - 4);
-    g.lineTo(rightEnd.x + TILE_W / 2, rightEnd.y - 4);
-    g.lineTo(rightEnd.x + TILE_W / 2, rightEnd.y - wallH);
-    g.lineTo(base0.x - TILE_W / 2, base0.y - wallH);
-    g.closePath();
-    g.fill();
-    g.fillStyle = WALL_UPPER_D;
-    g.fillRect(base0.x - TILE_W / 2, base0.y - wallH, rightEnd.x - base0.x + TILE_W, 7);
-    const wainTop = base0.y - 30;
-    g.fillStyle = WAINSCOT;
-    g.fillRect(base0.x - TILE_W / 2, wainTop, rightEnd.x - base0.x + TILE_W, wainTop === base0.y - 30 ? 26 : 26);
-    g.fillStyle = BASEBOARD;
-    g.fillRect(base0.x - TILE_W / 2, base0.y - 8, rightEnd.x - base0.x + TILE_W, 5);
-    g.strokeStyle = "rgba(74,46,28,0.7)";
-    g.lineWidth = 1;
-    for (let i = 0; i < 12; i++) {
-      const x = base0.x - TILE_W / 2 + i * 42;
-      g.beginPath();
-      g.moveTo(x, wainTop + 4);
-      g.lineTo(x, wainTop + 22);
-      g.stroke();
-    }
-    // side wall
-    g.fillStyle = WALL_SIDE;
-    g.beginPath();
-    g.moveTo(base0.x - TILE_W / 2, base0.y - 4);
-    g.lineTo(leftEnd.x - TILE_W / 2, leftEnd.y + 12);
-    g.lineTo(leftEnd.x - TILE_W / 2, leftEnd.y + 12 - wallH);
-    g.lineTo(base0.x - TILE_W / 2, base0.y - wallH);
-    g.closePath();
-    g.fill();
-    g.fillStyle = WAINSCOT;
-    g.beginPath();
-    g.moveTo(base0.x - TILE_W / 2, base0.y - 26);
-    g.lineTo(leftEnd.x - TILE_W / 2, leftEnd.y - 8);
-    g.lineTo(leftEnd.x - TILE_W / 2, leftEnd.y + 8);
-    g.lineTo(base0.x - TILE_W / 2, base0.y - 4);
-    g.closePath();
-    g.fill();
-    // window with sky on side wall
-    const wy = base0.y - 56;
-    const wx0 = base0.x - TILE_W / 2 + 16;
+  // ---------- wall decorations, mounted IN the wall plane (skewed) ----------
+  function backWallTransform(g, tileX, widthUnits, imgW, bottomOffset) {
+    const base = iso(tileX, 0);
+    const a = (widthUnits * (TILE_W / 2)) / 100;
+    const b = (widthUnits * (TILE_H / 2)) / 100;
+    g.transform(a, b, 0, 1, base.x, base.y - bottomOffset);
+  }
+
+  function sideWallTransform(g, tileY, widthUnits, imgW, bottomOffset) {
+    const base = iso(0, tileY);
+    const a = -(widthUnits * (TILE_W / 2)) / 100;
+    const b = (widthUnits * (TILE_H / 2)) / 100;
+    g.transform(a, b, 0, 1, base.x, base.y - bottomOffset);
+  }
+
+  function makeBoard() {
+    const cv = document.createElement("canvas");
+    cv.width = 150;
+    cv.height = 74;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#4a2e1c";
+    g.fillRect(0, 0, 150, 74);
+    g.fillStyle = "#f2f0e4";
+    g.fillRect(4, 4, 142, 66);
+    g.fillStyle = "#c45c5c";
+    g.fillRect(14, 14, 56, 7);
+    g.fillStyle = "#5b84c2";
+    g.fillRect(14, 32, 88, 7);
+    g.fillStyle = "#6aa668";
+    g.fillRect(20, 50, 44, 7);
+    g.fillStyle = "#e0a458";
+    g.fillRect(90, 50, 46, 7);
+    return cv;
+  }
+
+  function makeWindow() {
+    const cv = document.createElement("canvas");
+    cv.width = 120;
+    cv.height = 78;
+    const g = cv.getContext("2d");
     g.fillStyle = "#3d2e20";
-    g.fillRect(wx0 - 3, wy - 3, 64, 46);
-    const sky = g.createLinearGradient(wx0, wy, wx0, wy + 40);
+    g.fillRect(0, 0, 120, 78);
+    const sky = g.createLinearGradient(0, 0, 0, 78);
     sky.addColorStop(0, "#8ecdee");
     sky.addColorStop(1, "#d9eef8");
     g.fillStyle = sky;
-    g.fillRect(wx0, wy, 58, 40);
+    g.fillRect(5, 5, 110, 68);
     g.fillStyle = "#ffffff";
-    g.fillRect(wx0 + 8, wy + 6, 16, 5);
-    g.fillRect(wx0 + 32, wy + 16, 20, 6);
+    g.fillRect(16, 14, 30, 10);
+    g.fillRect(64, 40, 38, 12);
     g.fillStyle = "#3d2e20";
-    g.fillRect(wx0 + 27, wy, 4, 40);
-    g.fillRect(wx0, wy + 19, 58, 3);
-    // whiteboard on the back wall (left half)
-    const bx = base0.x + 26;
-    const by = base0.y - wallH + 14;
-    g.fillStyle = "#3d2e20";
-    g.fillRect(bx - 3, by - 3, 128, 62);
-    g.fillStyle = "#f2f0e4";
-    g.fillRect(bx, by, 122, 56);
-    g.fillStyle = "#c45c5c";
-    g.fillRect(bx + 10, by + 10, 30, 4);
-    g.fillStyle = "#5b84c2";
-    g.fillRect(bx + 10, by + 22, 46, 4);
-    g.fillStyle = "#6aa668";
-    g.fillRect(bx + 14, by + 34, 24, 4);
-    g.fillStyle = "#e0a458";
-    g.fillRect(bx + 66, by + 30, 38, 4);
-    // wall clock
-    const ckx = rightEnd.x - 90;
-    const cky = base0.y - wallH + 22;
+    g.fillRect(56, 0, 7, 78);
+    g.fillRect(0, 36, 120, 6);
+    return cv;
+  }
+
+  function makeClock() {
+    const cv = document.createElement("canvas");
+    cv.width = 38;
+    cv.height = 38;
+    const g = cv.getContext("2d");
     g.fillStyle = "#f2f0e4";
     g.beginPath();
-    g.arc(ckx, cky, 13, 0, Math.PI * 2);
+    g.arc(19, 19, 15, 0, Math.PI * 2);
     g.fill();
+    g.lineWidth = 4;
     g.strokeStyle = "#4a2e1c";
-    g.lineWidth = 3;
     g.stroke();
     g.strokeStyle = "#22252e";
-    g.lineWidth = 2;
+    g.lineWidth = 2.5;
     g.beginPath();
-    g.moveTo(ckx, cky);
-    g.lineTo(ckx, cky - 8);
-    g.moveTo(ckx, cky);
-    g.lineTo(ckx + 5, cky + 3);
+    g.moveTo(19, 19);
+    g.lineTo(19, 10);
+    g.moveTo(19, 19);
+    g.lineTo(26, 22);
     g.stroke();
-    // doors
+    return cv;
+  }
+
+  function drawWalls(g, doors) {
+    const wallH = 84;
+    const base0 = iso(0, 0);
+    const rightEnd = iso(COLS, 0);
+    const leftEnd = iso(0, ROWS);
+
+    // ---- back wall face (parallelogram in the iso plane) ----
+    const wallGrad = g.createLinearGradient(base0.x - 4, base0.y - wallH, base0.x - 4, base0.y);
+    wallGrad.addColorStop(0, "#d8c49a");
+    wallGrad.addColorStop(1, "#c4a878");
+    g.fillStyle = wallGrad;
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - wallH);
+    g.lineTo(rightEnd.x + 4, rightEnd.y - wallH);
+    g.lineTo(rightEnd.x + 4, rightEnd.y - 2);
+    g.lineTo(base0.x - 4, base0.y - 2);
+    g.closePath();
+    g.fill();
+    // wall top cap (thickness)
+    g.fillStyle = "#e8d5ae";
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - wallH);
+    g.lineTo(rightEnd.x + 4, rightEnd.y - wallH);
+    g.lineTo(rightEnd.x + 12, rightEnd.y - wallH - 8);
+    g.lineTo(base0.x - 4 + 12 - TILE_H, base0.y - wallH - 8 + TILE_H / 2);
+    g.closePath();
+    g.fill();
+    // wainscot
+    g.fillStyle = "#a86e3e";
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - 30);
+    g.lineTo(rightEnd.x + 4, rightEnd.y - 30);
+    g.lineTo(rightEnd.x + 4, rightEnd.y - 2);
+    g.lineTo(base0.x - 4, base0.y - 2);
+    g.closePath();
+    g.fill();
+    g.fillStyle = "#8a5a34";
+    g.fillRect(base0.x - 4, base0.y - 34, rightEnd.x - base0.x + TILE_W / 2, 5);
+    // wainscot bead lines
+    for (let i = 1; i < COLS * 2; i++) {
+      const p = iso(i / 2, 0);
+      g.strokeStyle = "rgba(74,46,28,0.4)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(p.x - 4, p.y - 32);
+      g.lineTo(p.x - 4, p.y - 4);
+      g.stroke();
+    }
+    // baseboard
+    g.fillStyle = BASEBOARD;
+    g.fillRect(base0.x - 4, base0.y - 8, rightEnd.x - base0.x + TILE_W / 2, 6);
+
+    // ---- decorations mounted IN the back wall plane (skewed) ----
+    const board = makeBoard();
+    g.save();
+    backWallTransform(g, 1.6, 3.4, 100, board.height, 30);
+    g.drawImage(board, 0, 0);
+    g.restore();
+    const clock = makeClock();
+    g.save();
+    backWallTransform(g, 5.8, 0.9, 100, clock.height, 44);
+    g.drawImage(clock, 0, 0);
+    g.restore();
+
+    // ---- side wall face ----
+    const sideGrad = g.createLinearGradient(base0.x - 4, base0.y - wallH, leftEnd.x - 4, leftEnd.y + 12 - wallH);
+    sideGrad.addColorStop(0, "#c9b28a");
+    sideGrad.addColorStop(1, "#b2966a");
+    g.fillStyle = sideGrad;
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - wallH);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 12 - wallH);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 10);
+    g.lineTo(base0.x - 4, base0.y - 2);
+    g.closePath();
+    g.fill();
+    g.fillStyle = "#d8c49a";
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - wallH);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 12 - wallH);
+    g.lineTo(leftEnd.x - 12, leftEnd.y + 12 - wallH - 8);
+    g.lineTo(base0.x - 12 - TILE_H, base0.y - wallH - 8 + TILE_H / 2);
+    g.closePath();
+    g.fill();
+    g.fillStyle = "#a86e3e";
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - 30);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 8);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 10);
+    g.lineTo(base0.x - 4, base0.y - 6);
+    g.closePath();
+    g.fill();
+    g.fillStyle = BASEBOARD;
+    g.beginPath();
+    g.moveTo(base0.x - 4, base0.y - 8);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 10);
+    g.lineTo(leftEnd.x - 4, leftEnd.y + 4);
+    g.lineTo(base0.x - 4, base0.y - 12);
+    g.closePath();
+    g.fill();
+    // window mounted in the side wall plane (skewed)
+    const win = makeWindow();
+    g.save();
+    sideWallTransform(g, 3.2, 2.4, 100, win.height, 36);
+    g.drawImage(win, 0, 0);
+    g.restore();
+    // window light shaft on the floor
+    const shaftBase = iso(2, 4);
+    g.fillStyle = "rgba(255,236,180,0.20)";
+    g.beginPath();
+    g.moveTo(base0.x + 18, base0.y + 6);
+    g.lineTo(base0.x + 66, base0.y - 12);
+    g.lineTo(shaftBase.x + 60, shaftBase.y + 66);
+    g.lineTo(shaftBase.x - 30, shaftBase.y + 92);
+    g.closePath();
+    g.fill();
+
+    // ---- doors on the back wall, skewed into the plane ----
     doors.forEach((d, i) => {
       const slot = doorSlots(doors.length)[i] || { x: 2 + i * 2 };
-      const p = iso(slot.x, 0);
-      const dx = p.x - 4;
+      const base = iso(slot.x, 0);
+      const w = 46;
+      const h = 58;
       const hover = S.hover?.kind === "door" && S.hover.id === d.id;
+      g.save();
+      const a = w / w;
+      const b = TILE_H / 2 / w;
+      g.transform(a, b, 0, 1, base.x - w / 2, base.y - h - 2);
       g.fillStyle = hover ? "#6e4a2e" : "#5d3d24";
-      g.fillRect(dx, p.y - wallH + 14, 48, wallH - 20);
+      g.fillRect(0, 0, w, h);
       g.strokeStyle = hover ? "#ffd9a0" : "#3d2412";
-      g.lineWidth = 2;
-      g.strokeRect(dx + 1, p.y - wallH + 15, 46, wallH - 21);
+      g.lineWidth = 3;
+      g.strokeRect(1.5, 1.5, w - 3, h - 3);
       g.fillStyle = "#e8c87a";
       g.beginPath();
-      g.arc(dx + 38, p.y - wallH / 2 + 10, 3.5, 0, Math.PI * 2);
+      g.arc(w - 9, h / 2, 3.5, 0, Math.PI * 2);
       g.fill();
+      g.restore();
+      g.save();
+      g.transform(1, TILE_H / TILE_W / 2, 0, 1, base.x - 24, base.y - h - 16);
       g.fillStyle = hover ? "#fff3d9" : "#f2e6c8";
-      g.font = "bold 10px ui-monospace, monospace";
-      g.textAlign = "center";
-      g.fillText(`#${d.label}`, dx + 24, p.y - wallH + 30);
+      g.fillRect(0, 0, 48, 14);
+      g.fillStyle = "#4a2e1c";
+      g.font = "bold 9px ui-monospace, monospace";
+      g.textAlign = "left";
+      g.fillText(`#${d.label}`, 3, 10);
+      g.restore();
     });
+
     // corner plant (fixed decor)
     const corner = iso(COLS - 1, 0);
     drawPlant(g, corner.x + 8, corner.y - 6, 1.1);
