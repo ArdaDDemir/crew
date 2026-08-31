@@ -1,4 +1,4 @@
-// Crew office floor â€” a small isometric canvas game.
+// Crew office floor Ã¢â‚¬â€ a small isometric canvas game.
 // Rendering + input only. Pure math lives in floor-iso.js.
 
 import {
@@ -440,7 +440,7 @@ export function createFloor(canvas, handlers = {}) {
   }
 
   function entityAt(px, py) {
-    // screen px (already camera-space) â†’ nearest member/door hit
+    // screen px (already camera-space) Ã¢â€ â€™ nearest member/door hit
     let best = null;
     let bestD = 26 * 26;
     for (const m of S.members) {
@@ -516,6 +516,7 @@ export function createFloor(canvas, handlers = {}) {
   }
 
   function tickInner(now) {
+    const __t0 = performance.now();
     S.t = now;
     resizeIfNeeded();
     const g = ctx;
@@ -567,6 +568,11 @@ export function createFloor(canvas, handlers = {}) {
     drawables.sort((a, b) => a.depth - b.depth);
     for (const d of drawables) d.draw();
 
+    const __dt = performance.now() - __t0;
+    if (__dt > 80) {
+      (S.slowFrames = S.slowFrames || []).push(Math.round(__dt));
+      if (S.slowFrames.length > 20) S.slowFrames.shift();
+    }
     g.restore();
 
     // bubbles + tags in screen space (crisp)
@@ -596,8 +602,6 @@ export function createFloor(canvas, handlers = {}) {
     g.textAlign = "center";
     g.fillText("you", yp.x, yp.y + 6);
     g.restore();
-
-    requestAnimationFrame(tick);
   }
 
   function drawMember(g, m, now) {
@@ -764,7 +768,7 @@ export function createFloor(canvas, handlers = {}) {
             const p = iso(desk.x, desk.y);
             return { x: p.x + 14, y: p.y - 2 };
           })(),
-          activityShort: (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}â€¦` : m.activity || "",
+          activityShort: (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}Ã¢â‚¬Â¦` : m.activity || "",
         };
       });
       S.doors = (next.doors ?? []).map((d, i) => ({ ...d, slot: doorSlots(next.doors.length)[i] }));
@@ -810,6 +814,17 @@ export function createFloor(canvas, handlers = {}) {
     },
     setHold(kind) {
       S.hold = kind || "";
+    },
+    debugBubble(id) {
+      const b = S.bubbles.get(id);
+      return b ? b.text : "";
+    },
+    debugState() {
+      return { slowFrames: S.slowFrames || [], members: S.members.map((m) => ({ id: m.id, at: m.at, pose: m.pose })), you: { at: S.you.at, path: Boolean(S.you.path) }, furniture: S.furniture, doors: S.doors };
+    },
+    debugWorldToScreen(wx, wy) {
+      const p = iso(wx, wy);
+      return { x: (p.x - S.cam.x) * S.cam.z + canvas.clientWidth / 2, y: (p.y - S.cam.y) * S.cam.z + canvas.clientHeight / 2 };
     },
     focus() {
       userMoved = false;
