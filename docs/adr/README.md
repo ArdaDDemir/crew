@@ -1,22 +1,22 @@
 # Architecture Decision Records
 
-Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. Accepted files are immutable except `status` and a “superseded by” / “qualified by” link.
+Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. Accepted files are immutable except `status` and a â€œsuperseded byâ€ / â€œqualified byâ€ link.
 
 ## How to read
 
-| If you are changing… | Read |
+| If you are changingâ€¦ | Read |
 |---|---|
-| Mention wake / who runs | 0005 → 0013 → 0014 → **0043** (fence skip) → **0045** (held handoff) → **0046** (unknown `@`) |
+| Mention wake / who runs | 0005 â†’ 0013 â†’ 0014 â†’ **0043** (fence skip) â†’ **0045** (held handoff) â†’ **0046** (unknown `@`) |
 | Desk vs channel chat | 0012, 0011 |
-| DMs / conflicting human orders | 0015, 0016, 0025 → **0033** → **0044** (unread pointer) → **0047** (`humanId`) |
-| Skills / SKILL.md | 0008 → 0021 → 0023 |
-| JSONL / compact / delete | 0004 → 0018, 0019 → **0028**; titled/jobs → **0029** → 0031 |
-| Permissions / Always | 0007 → 0011, 0018 (Settings Add → 0030) → **0041** (DM mode) → **0042** (`auto` reviewer) → **0043** (honesty A) → **0044** (mcp / reviewer / shell lock) → **0050** (`browser`) |
-| Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** → **0041** → **0048** (`crew serve`) → **0054** (invite chip, live shot) → **0055** (guest writes) → **0056** (isometric floor) → **0057** (walk) → **0058** (doors) → **0059** (furniture) → **0060** (looks) → **0062** (GitHub feed + signed updater) |
-| Discord adapter | **0049** → **0051** (DMs) → **0052** (ask buttons) → **0053** (`dm_send`) → **0054** (outbound queue) |
-| Desktop window | **0032** → **0039** (tray + opt-in updates) → **0040** (`latest.json`) |
-| Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) → **0061** (spawn contract fixes, effort, stream keepalive) |
-| Org tools / reserved ids | 0022 → **0047** (`user`) |
+| DMs / conflicting human orders | 0015, 0016, 0025 â†’ **0033** â†’ **0044** (unread pointer) â†’ **0047** (`humanId`) |
+| Skills / SKILL.md | 0008 â†’ 0021 â†’ 0023 |
+| JSONL / compact / delete | 0004 â†’ 0018, 0019 â†’ **0028**; titled/jobs â†’ **0029** â†’ 0031 |
+| Permissions / Always | 0007 â†’ 0011, 0018 (Settings Add â†’ 0030) â†’ **0041** (DM mode) â†’ **0042** (`auto` reviewer) â†’ **0043** (honesty A) â†’ **0044** (mcp / reviewer / shell lock) â†’ **0050** (`browser`) |
+| Local UI | 0017 â†’ 0020 â†’ 0023 â†’ 0024 â†’ 0026 â†’ 0027 â†’ 0028 â†’ 0029 â†’ 0030 â†’ 0031 â†’ **0032** â†’ **0033** â†’ **0036** â†’ **0038** â†’ **0039** â†’ **0040** â†’ **0041** â†’ **0048** (`crew serve`) â†’ **0054** (invite chip, live shot) â†’ **0055** (guest writes) â†’ **0056** (isometric floor) â†’ **0057** (walk) â†’ **0058** (doors) â†’ **0059** (furniture) â†’ **0060** (looks) â†’ **0062** (GitHub feed + signed updater) |
+| Discord adapter | **0049** â†’ **0051** (DMs) â†’ **0052** (ask buttons) â†’ **0053** (`dm_send`) â†’ **0054** (outbound queue) |
+| Desktop window | **0032** â†’ **0039** (tray + opt-in updates) â†’ **0040** (`latest.json`) |
+| Providers / Person picker / Jobs impl | **0030** â†’ **0031** â†’ **0034** / **0035** (harness spawn) â†’ **0036** (MCP) â†’ **0037** â†’ **0038** (resources/prompts) â†’ **0061** (spawn contract fixes, effort, stream keepalive) |
+| Org tools / reserved ids | 0022 â†’ **0047** (`user`) |
 | Version / law file | 0006, 0010 |
 
 ## Index
@@ -24,13 +24,13 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | ID | Title | Status |
 |---|---|---|
 | 0001 | Record architecture decisions | accepted |
-| 0002 | Hexagonal core; CLI is an adapter | accepted; HTTP UI → 0017 |
+| 0002 | Hexagonal core; CLI is an adapter | accepted; HTTP UI â†’ 0017 |
 | 0003 | OpenAI-compatible provider (OpenRouter default) | accepted |
-| 0004 | Append-only JSONL event log | accepted; compact event → 0019; summary → 0028 |
+| 0004 | Append-only JSONL event log | accepted; compact event â†’ 0019; summary â†’ 0028 |
 | 0005 | Bots, channels, mentions, DMs | accepted; qualified by 0013/0014 |
 | 0006 | SemVer 0.x until 1.0 | accepted |
-| 0007 | Four permission modes (T3-shaped) | accepted; shell row → 0011 |
-| 0008 | Skills + channel rules/context as markdown | accepted; loader → 0021 |
+| 0007 | Four permission modes (T3-shaped) | accepted; shell row â†’ 0011 |
+| 0008 | Skills + channel rules/context as markdown | accepted; loader â†’ 0021 |
 | 0009 | TypeScript + Bun | accepted |
 | 0010 | AGENTS.md is the agent-facing law | accepted |
 | 0011 | Auto-accept shell + thinking log | accepted |
@@ -39,13 +39,13 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0014 | Human-tagged `say` does not hand off | accepted |
 | 0015 | `dm_send` + human can read every DM | accepted |
 | 0016 | Latest human message wins across channel/DM | accepted |
-| 0017 | Local web UI adapter | accepted; live office → 0020 |
+| 0017 | Local web UI adapter | accepted; live office â†’ 0020 |
 | 0018 | Office delete + persistent Always | accepted |
 | 0019 | Prompt history window + thread.compacted | accepted; qualified by 0028 |
-| 0020 | Live office UI (watch, members, settings) | accepted; sheet chrome → 0023 |
-| 0021 | SKILL.md slug + full file in the prompt | accepted; skill sheet → 0023 |
+| 0020 | Live office UI (watch, members, settings) | accepted; sheet chrome â†’ 0023 |
+| 0021 | SKILL.md slug + full file in the prompt | accepted; skill sheet â†’ 0023 |
 | 0022 | Org tools + reserved bot ids | accepted |
-| 0023 | Office sheets: hover help, skill editor, closed dialogs | accepted; attach/chrome → 0024 |
+| 0023 | Office sheets: hover help, skill editor, closed dialogs | accepted; attach/chrome â†’ 0024 |
 | 0024 | Office attach, locked ids, semantic buttons | accepted |
 | 0025 | Several private chats with the same person | accepted |
 | 0026 | Office jump palette and context actions | accepted; qualified by 0027 |
@@ -61,7 +61,7 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0036 | MCP stdio servers add tools on Crew-native turns | accepted; qualified by **0037**, **0038** |
 | 0037 | CLI parity, harness permission map, MCP URL/env, Windows NSIS | accepted |
 | 0038 | MCP resources and prompts become Crew tools | accepted |
-| 0039 | Opt-in update check and Crew.exe tray | accepted; updates default → **0062** |
+| 0039 | Opt-in update check and Crew.exe tray | accepted; updates default â†’ **0062** |
 | 0040 | `desktop:build` writes `dist/latest.json`; relative download URLs | accepted |
 | 0041 | DM threads honor permission mode | accepted |
 | 0042 | `auto` uses Settings reviewerModel | accepted |
@@ -85,3 +85,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0060 | Floor looks: skin, hair, top | accepted |
 | 0061 | Harness spawn contract fixes and turn-stream keepalive | accepted; amends 0034/0035 |
 | 0062 | Updates: GitHub Releases feed, assisted install, signed silent updater | accepted; amends 0039 |
+| 0063 | The floor is a canvas-rendered game scene | accepted; qualifies 0056-0060 |

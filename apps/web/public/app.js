@@ -1,4 +1,5 @@
-import { deskLayout, deskSlot, youHome, tableSlot } from "./floor-layout.js";
+import { createFloor } from "./floor-game.js";
+import { youHome as isoYouHome } from "./floor-iso.js";
 import { workspaceRelPath, resolveWorkspaceHint } from "./workspace-path.js";
 
 const THREAD_MIME = "application/x-crew-thread";
@@ -131,11 +132,7 @@ const els = {
   desk: document.getElementById("desk"),
   hereList: document.getElementById("here-list"),
   deskLabel: document.getElementById("desk-label"),
-  floorSeats: document.getElementById("floor-seats"),
-  floorDesks: document.getElementById("floor-desks"),
   floorPlaque: document.getElementById("floor-plaque"),
-  floorDoors: document.getElementById("floor-doors"),
-  floorStuff: document.getElementById("floor-stuff"),
   floorKit: document.getElementById("floor-kit"),
 };
 
@@ -1753,32 +1750,6 @@ function lookFor(id) {
   return looks.bots?.[id];
 }
 
-function applyFloorLook(root, id) {
-  if (!root) return;
-  const look = lookFor(id);
-  const head = root.querySelector(".floor-head");
-  const body = root.querySelector(".floor-body");
-  const holder = root.querySelector(".floor-char") || root;
-  let hair = holder.querySelector(".floor-hair");
-  if (!hair) {
-    hair = document.createElement("span");
-    hair.className = "floor-hair hair-none";
-    holder.prepend(hair);
-  }
-  holder.classList.remove("top-hoodie", "top-tee", "top-polo", "top-sweater");
-  if (!look) {
-    hair.className = "floor-hair hair-none";
-    return;
-  }
-  if (head) {
-    head.style.background = LOOK_SKIN[look.skin] || LOOK_SKIN.mid;
-    head.style.color = "transparent";
-  }
-  if (body) body.style.background = LOOK_TOP[look.top] || LOOK_TOP.tee;
-  hair.className = `floor-hair hair-${look.hair || "none"}`;
-  holder.classList.add(`top-${look.top || "tee"}`);
-}
-
 function paintLookSwatches() {
   for (const group of document.querySelectorAll("[data-look]")) {
     const sel = document.getElementById(`look-${group.dataset.look}`);
@@ -1827,7 +1798,7 @@ async function flushYouLook() {
         }),
       })
     ).json();
-    applyFloorLook(document.getElementById("floor-you"), "you");
+    renderPresence();
   } catch (err) {
     addMessage({ who: "error", text: String(err), kind: "error" });
   }
@@ -1842,7 +1813,7 @@ function saveYouLook() {
   state.looks = state.looks || { bots: {}, humans: {} };
   state.looks.humans = state.looks.humans || {};
   state.looks.humans[state.whoId || "human"] = look;
-  applyFloorLook(document.getElementById("floor-you"), "you");
+  renderPresence();
   clearTimeout(lookTimer);
   lookTimer = setTimeout(() => {
     flushYouLook();
@@ -1874,112 +1845,33 @@ function floorPose(id) {
   return "working";
 }
 
-function clampFloor(x, y) {
-  const maxX = y < 76 ? 268 : 188;
-  return {
-    x: Math.max(16, Math.min(maxX, x)),
-    y: Math.max(56, Math.min(260, y)),
-  };
-}
+let floorGame = null;
 
-function snapFloor(x, y) {
-  return { x: Math.round(x / 8) * 8, y: Math.round(y / 8) * 8 };
-}
-
-function doorAt(x, y) {
-  if (y > 70) return "";
-  const row = document.getElementById("floor-doors");
-  if (!row || row.hidden) return "";
-  let best = "";
-  let bestD = 36;
-  for (const btn of row.querySelectorAll(".floor-door")) {
-    const cx = (btn.offsetLeft || 0) + (btn.offsetWidth || 0) / 2 + (row.offsetLeft || 0);
-    const d = Math.abs(cx - x);
-    if (d < bestD) {
-      bestD = d;
-      best = btn.dataset.channelId || "";
-    }
-  }
-  return best;
-}
-
-function walkYou(x, y) {
-  const you = document.getElementById("floor-you");
-  if (!you) return;
-  const at = clampFloor(x, y);
-  const prevX = parseFloat(you.style.left) || 36;
-  you.classList.remove("sitting");
-  you.classList.toggle("face-left", at.x < prevX - 2);
-  you.classList.toggle("face-right", at.x > prevX + 2);
-  you.classList.add("walking");
-  clearTimeout(you._walkTimer);
-  you._walkTimer = setTimeout(() => you.classList.remove("walking"), 480);
-  you.style.left = `${at.x}px`;
-  you.style.top = `${at.y}px`;
-  you.style.zIndex = String(8 + Math.round(at.y / 12));
-  const door = !state.floorHold && doorAt(at.x, at.y);
-  if (door) {
-    clearTimeout(you._doorTimer);
-    you._doorTimer = setTimeout(() => {
-      if (state.kind === "channel") paneOpen(state.activePane, "channel", door);
-    }, 460);
-  }
-}
-
-function sitYou(x, y) {
-  walkYou(x, y);
-  const you = document.getElementById("floor-you");
-  if (!you) return;
-  clearTimeout(you._doorTimer);
-  clearTimeout(you._sitTimer);
-  you._sitTimer = setTimeout(() => {
-    you.classList.remove("walking");
-    you.classList.add("sitting");
-  }, 450);
-}
-
-function bindFloorWalk() {
-  const scene = document.querySelector(".floor-scene");
-  if (!scene || scene.dataset.boundWalk) return;
-  scene.dataset.boundWalk = "1";
-  scene.addEventListener("click", (ev) => {
-    if (ev.target.closest(".floor-seat")) return;
-    if (ev.target.closest(".floor-door")) return;
-    if (ev.target.closest(".floor-kit")) return;
-    const rect = scene.getBoundingClientRect();
-    const x = ev.clientX - rect.left - 8;
-    const y = ev.clientY - rect.top - 24;
-    if (state.floorHold) {
-      if (ev.target.closest(".floor-furn")) return;
-      placeFurniture(x, y);
-      return;
-    }
-    if (ev.target.closest(".floor-furn")) return;
-    walkYou(x, y);
+function ensureFloorGame() {
+  if (floorGame) return floorGame;
+  const canvas = document.getElementById("floor-canvas");
+  if (!canvas) return null;
+  floorGame = createFloor(canvas, {
+    onPersonClick: (id) => paneOpen(state.activePane, "dm", "human__" + id),
+    onDoorClick: (id) => paneOpen(state.activePane, "channel", id),
+    onTileClick: (tile) => floorGame.walkTo(tile),
+    onFurnitureClick: (id) => removeFurniture(id),
+    onPlace: (tile) => placeFurnitureAt(tile),
   });
+  return floorGame;
+}
+
+function floorLookOf(id) {
+  return lookFor(id) || { skin: "mid", hair: "short", top: "tee" };
+}
+
+function toTileFurniture(items) {
+  return (items ?? []).map((f) => ({ id: f.id, kind: f.kind, x: Math.round(Number(f.x) / 8), y: Math.round(Number(f.y) / 8) }));
 }
 
 function renderFloorFurniture(items) {
-  const box = els.floorStuff;
-  if (!box) return;
-  box.replaceChildren();
-  for (const item of items ?? []) {
-    const el = document.createElement("button");
-    el.type = "button";
-    el.className = `floor-furn kind-${item.kind}`;
-    el.dataset.id = item.id;
-    el.style.left = `${item.x}px`;
-    el.style.top = `${item.y}px`;
-    el.style.zIndex = String(6 + Math.round(Number(item.y) / 12));
-    el.title = inviteToken() ? item.kind : `${item.kind} · click to remove`;
-    el.setAttribute("aria-label", item.kind);
-    el.onclick = (ev) => {
-      ev.stopPropagation();
-      if (state.floorHold || inviteToken()) return;
-      removeFurniture(item.id);
-    };
-    box.append(el);
-  }
+  state.floorItems = items ?? [];
+  ensureFloorGame()?.setState({ furniture: toTileFurniture(state.floorItems) });
 }
 
 async function refreshFloorFurniture() {
@@ -1995,7 +1887,7 @@ async function refreshFloorFurniture() {
   renderFloorFurniture([]);
   const seq = (state.floorFetchSeq = (state.floorFetchSeq || 0) + 1);
   try {
-    const data = await (await api(`/api/floor?id=${encodeURIComponent(room)}`)).json();
+    const data = await (await api("/api/floor?id=" + encodeURIComponent(room))).json();
     if (seq !== state.floorFetchSeq) return;
     if (state.kind !== "channel" || state.id !== room) return;
     state.floorFurnRoom = room;
@@ -2011,16 +1903,16 @@ async function refreshFloorFurniture() {
 
 function paintFloorHint() {
   const hint = document.getElementById("floor-hint");
-  const scene = document.querySelector(".floor-scene");
+  const box = document.getElementById("floor");
   const hold = state.floorHold;
   if (hint) {
     hint.textContent = hold
-      ? `Click to place ${hold} · Esc to cancel`
+      ? "Click to place " + hold + " · Esc to cancel"
       : state.kind === "channel"
-        ? "Click carpet to walk · a desk to sit · a person to DM"
+        ? "Click carpet to walk · a person to DM · drag to pan, wheel to zoom"
         : "Click carpet to walk · a door to enter";
   }
-  scene?.classList.toggle("holding", Boolean(hold));
+  box?.classList.toggle("holding", Boolean(hold));
 }
 
 function clearFloorHold() {
@@ -2029,16 +1921,16 @@ function clearFloorHold() {
   if (kit) {
     for (const el of kit.querySelectorAll("[data-kind]")) el.classList.remove("on");
   }
+  ensureFloorGame()?.setHold("");
   paintFloorHint();
 }
 
-async function placeFurniture(x, y) {
+async function placeFurnitureAt(tile) {
   const kind = state.floorHold;
   if (!kind || inviteToken() || state.kind !== "channel" || !state.id) return;
-  const at = snapFloor(clampFloor(x, y).x, clampFloor(x, y).y);
   const furniture = [
     ...(state.floorItems ?? []),
-    { id: `f${Date.now().toString(36)}`, kind, x: at.x, y: at.y },
+    { id: "f" + Date.now().toString(36), kind, x: tile.x * 8, y: tile.y * 8 },
   ];
   try {
     const saved = await (
@@ -2088,6 +1980,7 @@ function bindFloorKit() {
     for (const el of kit.querySelectorAll("[data-kind]")) {
       el.classList.toggle("on", el.dataset.kind === state.floorHold);
     }
+    ensureFloorGame()?.setHold(state.floorHold);
     paintFloorHint();
   });
   if (!kit.dataset.boundEsc) {
@@ -2102,158 +1995,40 @@ function bindFloorKit() {
 }
 
 function renderFloorDoors() {
-  const row = els.floorDoors;
-  if (!row) return;
   const channels = state.bootstrap?.channels ?? [];
   const here = state.kind === "channel" ? state.id : "";
   const others = channels.filter((ch) => ch.id !== here);
-  row.replaceChildren();
-  for (const ch of others) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "floor-door";
-    btn.dataset.channelId = ch.id;
-    const icon = ch.icon && ch.icon !== "#" ? ch.icon : "#";
-    const n = ch.memberBotIds.length;
-    btn.title = n ? `${icon} ${ch.title || ch.id} · ${n}` : `${icon} ${ch.title || ch.id}`;
-    btn.setAttribute("aria-label", `Enter ${ch.title || ch.id}`);
-    const slab = document.createElement("span");
-    slab.className = "floor-door-slab";
-    const label = document.createElement("span");
-    label.className = "floor-door-label";
-    label.textContent = `#${ch.id}`;
-    btn.append(slab, label);
-    btn.onclick = (ev) => {
-      ev.stopPropagation();
-      paneOpen(state.activePane, "channel", ch.id);
-    };
-    row.append(btn);
-  }
-  row.hidden = others.length === 0;
-}
-
-function ensureFloorDesk(id) {
-  const box = els.floorDesks;
-  if (!box) return null;
-  let desk = box.querySelector(`[data-desk-id="${id}"]`);
-  if (desk) return desk;
-  desk = document.createElement("div");
-  desk.className = "floor-desk";
-  desk.dataset.deskId = id;
-  desk.title = "Sit here";
-  const back = document.createElement("span");
-  back.className = "floor-cubicle-back";
-  const side = document.createElement("span");
-  side.className = "floor-cubicle-side";
-  const pc = document.createElement("span");
-  pc.className = "floor-pc";
-  const screen = document.createElement("span");
-  screen.className = "floor-screen";
-  pc.append(screen);
-  desk.append(back, side, pc);
-  desk.onclick = (ev) => {
-    ev.stopPropagation();
-    sitYou((parseFloat(desk.style.left) || 0) + 10, (parseFloat(desk.style.top) || 0) - 16);
-  };
-  box.append(desk);
-  return desk;
-}
-
-function ensureFloorSeat(id, leadId) {
-  let btn = els.floorSeats?.querySelector(`[data-bot-id="${id}"]`);
-  if (btn) return btn;
-  const face = faceFor(id);
-  btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "floor-seat";
-  btn.dataset.botId = id;
-  const char = document.createElement("span");
-  char.className = "floor-char";
-  const head = document.createElement("span");
-  head.className = "floor-head";
-  head.style.background = face.bg;
-  const body = document.createElement("span");
-  body.className = "floor-body";
-  body.style.background = face.fg;
-  const legs = document.createElement("span");
-  legs.className = "floor-legs";
-  char.append(head, body, legs);
-  const tag = document.createElement("span");
-  tag.className = "floor-tag";
-  const bubble = document.createElement("span");
-  bubble.className = "floor-bubble";
-  const shadow = document.createElement("span");
-  shadow.className = "floor-shadow";
-  btn.append(shadow, char, tag, bubble);
-  btn.onclick = (ev) => {
-    ev.stopPropagation();
-    paneOpen(state.activePane, "dm", `human__${id}`);
-  };
-  els.floorSeats.append(btn);
-  return btn;
+  ensureFloorGame()?.setState({
+    doors: others.map((ch) => ({ id: ch.id, label: ch.id, title: ch.title || ch.id })),
+  });
 }
 
 function renderFloor(hereIds, leadId) {
-  const seats = els.floorSeats;
-  const plaque = els.floorPlaque;
-  if (!seats) return;
-  bindFloorWalk();
+  const game = ensureFloorGame();
   bindFloorKit();
   renderFloorDoors();
   if (els.floorKit) els.floorKit.hidden = Boolean(inviteToken()) || state.kind !== "channel";
   paintFloorHint();
   refreshFloorFurniture();
-  const roomKey = `${state.kind}:${state.id}`;
-  if (state.floorRoom !== roomKey) {
-    state.floorRoom = roomKey;
-    const home = youHome(hereIds.length);
-    walkYou(home.x, home.y);
-    if (state.floorHold) clearFloorHold();
-  }
+  const plaque = els.floorPlaque;
   if (plaque) {
     plaque.textContent =
-      state.kind === "channel" && state.id ? `#${state.id}` : "desk";
+      state.kind === "channel" && state.id ? "#" + state.id : "desk";
   }
-  const keep = new Set(hereIds);
-  for (const el of [...seats.querySelectorAll(".floor-seat")]) {
-    if (!keep.has(el.dataset.botId)) el.remove();
-  }
-  for (const el of [...(els.floorDesks?.querySelectorAll(".floor-desk") ?? [])]) {
-    if (!keep.has(el.dataset.deskId)) el.remove();
-  }
-  let atTable = 0;
-  hereIds.forEach((id, i) => {
-    const home = deskSlot(i, hereIds.length);
-    const desk = ensureFloorDesk(id);
-    if (desk) {
-      desk.style.left = `${home.x}px`;
-      desk.style.top = `${home.y + 26}px`;
-      desk.style.zIndex = String(home.z);
-    }
-    const btn = ensureFloorSeat(id, leadId);
-    const doing = state.activity[id] || "Online";
-    const pose = floorPose(id);
-    const slot = pose === "writing" ? tableSlot(atTable++) : { x: home.x + 4, y: home.y + 4, z: home.z + 1 };
-    btn.className = `floor-seat pose-${pose}${pose !== "idle" ? " busy" : ""}`;
-    btn.style.left = `${slot.x}px`;
-    btn.style.top = `${slot.y}px`;
-    btn.style.zIndex = String(slot.z);
-    btn.title = `${displayName(id)} · ${doing}`;
-    btn.setAttribute("aria-label", `${displayName(id)}, ${doing}`);
-    const tag = btn.querySelector(".floor-tag");
-    if (tag) {
-      tag.textContent = displayName(id);
-    }
-    const bubble = btn.querySelector(".floor-bubble");
-    if (bubble) {
-      const short = doing.length > 28 ? `${doing.slice(0, 26)}…` : doing;
-      bubble.textContent = pose === "idle" ? "" : short;
-    }
-    if (desk) desk.classList.toggle("lit", pose === "working" || pose === "thinking");
-    applyFloorLook(btn, id);
+  if (!game) return;
+  const members = hereIds.map((id) => ({
+    id,
+    name: displayName(id),
+    look: floorLookOf(id),
+    activity: state.activity[id] || "",
+    pose: floorPose(id),
+    lead: id === leadId,
+  }));
+  game.setState({
+    members,
+    furniture: toTileFurniture(state.floorItems),
+    you: { look: floorLookOf("you"), home: isoYouHome(hereIds.length) },
   });
-  applyFloorLook(document.getElementById("floor-you"), "you");
-  bindFloorLook();
 }
 
 function renderPresence() {
@@ -2364,6 +2139,7 @@ function ensureTurn(botId) {
 }
 
 function appendAccount(botId, text, seal) {
+  floorGame?.say(botId, text);
   const turn = ensureTurn(botId);
   setCopy(turn.copy, (turn.copy.dataset.raw || "") + text);
   if (seal) {

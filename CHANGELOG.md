@@ -10,6 +10,10 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Added
+
+- **The floor is a game now** (`ADR-0063`). The 2.5D office is rendered on canvas from scratch: isometric room with checker carpet, walls and a window, doors with `#signs`, a glass meeting table, desks with monitors that light up while their person works, and procedural pixel people built from each person's look (skin/hair/top) with walk, sit, and type animations. A bot's **live account types out as a speech bubble** above its head; a status dot colors the pose (thinking / working / writing). Click carpet to walk (path-finding around desks and furniture), click a person to DM, click a door to enter that channel, drag to pan, wheel to zoom. Layout and pathing live in a pure, bun-tested module (`floor-iso.js`); the renderer is `floor-game.js`. Furniture kit, `floor.json`, and `looks.json` contracts unchanged.
+
 ## [0.11.0] - 2026-08-31
 
 Updates go GitHub-native: feed on by default, signed silent auto-update in Crew.exe.

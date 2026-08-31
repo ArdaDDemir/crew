@@ -168,34 +168,8 @@
       <aside class="desk" id="desk">
         <p class="rail-label" id="desk-label">Members</p>
         <div id="floor" class="floor" aria-label="Channel floor">
-          <div class="floor-scene">
-            <div class="floor-ceiling"></div>
-            <div class="floor-wall-back">
-              <div class="floor-window" aria-hidden="true"></div>
-            </div>
-            <div class="floor-wall-left"></div>
-            <div class="floor-wall-side"></div>
-            <div id="floor-doors" class="floor-doors" aria-label="Other rooms"></div>
-            <div class="floor-carpet"></div>
-            <div class="floor-glass" title="Channel table">
-              <span class="floor-glass-roof"></span>
-              <span class="floor-glass-side"></span>
-              <span class="floor-plaque" id="floor-plaque">#landing</span>
-              <div class="floor-table"></div>
-            </div>
-            <div id="floor-you" class="floor-you" title="You" aria-label="You">
-              <span class="floor-shadow"></span>
-              <span class="floor-char you">
-                <span class="floor-head"></span>
-                <span class="floor-body"></span>
-                <span class="floor-legs"></span>
-              </span>
-              <span class="floor-tag">You</span>
-            </div>
-            <div id="floor-desks" class="floor-desks"></div>
-            <div id="floor-stuff" class="floor-stuff"></div>
-            <div id="floor-seats" class="floor-seats"></div>
-          </div>
+          <canvas id="floor-canvas"></canvas>
+          <span class="floor-plaque" id="floor-plaque">#landing</span>
           <p id="floor-hint" class="floor-hint">Click carpet to walk · a person to DM</p>
           <div id="floor-look" class="floor-look">
             <div class="look-group">

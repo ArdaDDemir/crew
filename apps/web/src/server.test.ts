@@ -314,7 +314,7 @@ test("PATCH channel and bot persist customization", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: "Landing",
-        icon: "⌂",
+        icon: "âŒ‚",
         folders: "src\npublic",
         context: "Ship the marketing page.",
       }),
@@ -322,14 +322,14 @@ test("PATCH channel and bot persist customization", async () => {
     expect(ch.ok).toBe(true);
     const got = await (await fetch(`${url}/api/channel/landing`)).json();
     expect(got.title).toBe("Landing");
-    expect(got.icon).toBe("⌂");
+    expect(got.icon).toBe("âŒ‚");
     expect(got.folders).toEqual(["src", "public"]);
     const bot = await fetch(`${url}/api/bot/coder`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Frontend",
-        icon: "λ",
+        icon: "Î»",
         soul: "Write HTML.",
         titleModel: "z-ai/glm-5.3-flash",
       }),
@@ -971,7 +971,7 @@ test("GET/PUT /api/looks: owner sets bots; guest may only set self", async () =>
     const page = await (await fetch(`${url}/`)).text();
     expect(page).toContain('id="floor-look"');
     const js = await (await fetch(`${url}/app.js`)).text();
-    expect(js).toContain("applyFloorLook");
+    expect(js).toContain("floorLookOf");
   } finally {
     server.stop(true);
   }
@@ -1021,42 +1021,43 @@ test("GET/PUT /api/floor roundtrips furniture; guest cannot place", async () => 
     expect(page).toContain('id="floor-kit"');
     const js = await (await fetch(`${url}/app.js`)).text();
     expect(js).toContain("placeFurniture");
-    expect(js).toContain("floor-furn");
+    expect(js).toContain("toTileFurniture");
   } finally {
     server.stop(true);
   }
 });
 
-test("floor doors switch channel", async () => {
+test("floor doors open channels through the canvas engine", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
-    expect(page).toContain('id="floor-doors"');
-    const js = await (await fetch(`${url}/app.js`)).text();
+    const js = await (await fetch(url + "/app.js")).text();
     expect(js).toContain("renderFloorDoors");
-    expect(js).toContain("floor-door");
+    expect(js).toContain("onDoorClick");
     expect(js).toMatch(/paneOpen\(state\.activePane, ["']channel["']/);
-    expect(js).toContain("closest(\".floor-door\")");
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-door");
+    const game = await (await fetch(url + "/floor-game.js")).text();
+    expect(game).toContain("onDoorClick");
   } finally {
     server.stop(true);
   }
 });
 
-test("floor click-to-walk and writing walks to the table", async () => {
+test("floor is a canvas game: walk, tables, poses", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
-    expect(page).toContain('id="floor-you"');
-    const js = await (await fetch(`${url}/app.js`)).text();
-    expect(js).toContain("walkYou");
-    expect(js).toContain("bindFloorWalk");
-    expect(js).toContain("tableSlot");
-    expect(js).toMatch(/pose === ["']writing["']/);
-    expect(js).toContain("closest(\".floor-seat\")");
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toMatch(/\.floor-you[\s\S]{0,200}transition/);
+    const page = await (await fetch(url + "/")).text();
+    expect(page).toContain('id="floor-canvas"');
+    const js = await (await fetch(url + "/app.js")).text();
+    expect(js).toContain("ensureFloorGame");
+    expect(js).toContain("createFloor");
+    expect(js).toContain("walkTo");
+    expect(js).toContain("floorPose");
+    const game = await (await fetch(url + "/floor-game.js")).text();
+    expect(game).toContain("findPath");
+    expect(game).toContain("drawBubble");
+    expect(game).toContain("drawDesk");
+    expect(game).toContain('"type"');
+    const iso = await (await fetch(url + "/floor-iso.js")).text();
+    expect(iso).toContain("export function tableSlot");
   } finally {
     server.stop(true);
   }
@@ -1085,15 +1086,15 @@ test("office A-Z polish: invalid chip, json error parse, channel-only kit, Esc h
 test("floor hint and holding cursor are in the office", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
+    const page = await (await fetch(url + "/")).text();
     expect(page).toContain('id="floor-hint"');
-    const js = await (await fetch(`${url}/app.js`)).text();
+    const js = await (await fetch(url + "/app.js")).text();
     expect(js).toContain("paintFloorHint");
     expect(js).toContain("Click carpet to walk");
-    expect(js).toContain("a desk to sit");
+    expect(js).toContain("drag to pan, wheel to zoom");
     expect(js).toContain("Esc to cancel");
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-scene.holding");
+    const css = await (await fetch(url + "/app.css")).text();
+    expect(css).toContain(".floor.holding");
   } finally {
     server.stop(true);
   }
@@ -1125,73 +1126,50 @@ test("floor furniture fetch is keyed by room and look save is debounced", async 
   }
 });
 
-test("floor cubicles, chatboxes, and layout for many members", async () => {
+test("floor layout is pure and stable for many members", async () => {
   const { server, url } = await setup();
   try {
-    const js = await (await fetch(`${url}/app.js`)).text();
-    const layout = await (await fetch(`${url}/floor-layout.js`)).text();
-    expect(layout).toContain("function deskLayout");
-    expect(js).toMatch(/deskSlot\(i,\s*hereIds\.length\)/);
-    expect(js).toContain("floor-cubicle");
-    expect(js).toContain("youHome");
-    expect(js).toMatch(/memberBotIds\.length/);
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-cubicle-back");
-    expect(css).toContain(".floor-bubble");
-    expect(css).toMatch(/\.floor-scene[\s\S]{0,200}overflow-y:\s*auto/);
-    expect(css).toContain(".floor-seat.pose-working .floor-bubble");
+    const js = await (await fetch(url + "/app.js")).text();
+    expect(js).toContain("isoYouHome");
+    expect(js).toMatch(/memberBotIds \?\? \[\]/);
+    const iso = await (await fetch(url + "/floor-iso.js")).text();
+    expect(iso).toContain("export function assignDesks");
+    expect(iso).toContain("export function deskSlot");
+    expect(iso).toContain("export function findPath");
   } finally {
     server.stop(true);
   }
 });
 
-test("floor sit, door walk, furniture snap, and look swatches", async () => {
+test("floor furniture placement and look swatches", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
+    const page = await (await fetch(url + "/")).text();
     expect(page).toContain("floor-swatch");
     expect(page).toContain('data-look="skin"');
-    const js = await (await fetch(`${url}/app.js`)).text();
-    expect(js).toContain("function doorAt");
-    expect(js).toContain("function sitYou");
-    expect(js).toContain("function snapFloor");
-    expect(js).toMatch(/function walkYou[\s\S]{0,900}doorAt/);
-    expect(js).toMatch(/function placeFurniture[\s\S]{0,500}snapFloor/);
-    expect(js).toContain("sitting");
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-you.sitting");
+    const js = await (await fetch(url + "/app.js")).text();
+    expect(js).toContain("function placeFurnitureAt");
+    expect(js).toContain("toTileFurniture");
+    expect(js).toContain("setHold");
+    const css = await (await fetch(url + "/app.css")).text();
     expect(css).toContain(".floor-swatch");
-    expect(css).toContain(".floor-desk");
+    expect(css).toContain(".floor-canvas");
   } finally {
     server.stop(true);
   }
 });
 
-test("floor visual depth: window, ground shadow, walk facing", async () => {
+test("floor visual depth: shadows, glass bay, name tags", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
-    expect(page).toContain("floor-window");
-    expect(page).toContain("floor-shadow");
-    expect(page).toContain("floor-ceiling");
-    const js = await (await fetch(`${url}/app.js`)).text();
-    expect(js).toContain("walking");
-    expect(js).toContain("face-left");
-    expect(js).toMatch(/function walkYou[\s\S]{0,400}classList\.add\(["']walking["']/);
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-window");
-    expect(css).toContain(".floor-shadow");
-    expect(css).toContain(".floor-you.walking");
-    expect(css).toContain(".floor-you.face-left");
-    expect(css).toContain(".floor-furn.kind-sofa::before");
-    expect(page).toContain("floor-wall-left");
-    expect(page).toContain("floor-glass-roof");
-    expect(page).toContain("floor-legs");
-    expect(js).toContain("top-hoodie");
-    expect(js).toMatch(/tag\.textContent = displayName\(id\)/);
-    expect(css).toContain(".floor-char.top-hoodie .floor-body::before");
-    expect(css).toContain(".floor-glass-roof");
-    expect(css).toContain(".floor-wall-left");
+    const page = await (await fetch(url + "/")).text();
+    expect(page).toContain("floor-plaque");
+    const game = await (await fetch(url + "/floor-game.js")).text();
+    expect(game).toContain("drawShadow");
+    expect(game).toContain("drawTable");
+    expect(game).toContain("charSprite");
+    expect(game).toContain("walkDuration");
+    expect(game).toContain("name tag");
   } finally {
     server.stop(true);
   }
@@ -1200,17 +1178,14 @@ test("floor visual depth: window, ground shadow, walk facing", async () => {
 test("isometric floor is in the office desk", async () => {
   const { server, url } = await setup();
   try {
-    const page = await (await fetch(`${url}/`)).text();
+    const page = await (await fetch(url + "/")).text();
     expect(page).toContain('id="floor"');
-    expect(page).toContain("floor-glass");
-    expect(page).toContain("floor-seats");
-    expect(page).toContain("floor-desks");
-    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(page).toContain("floor-canvas");
+    const js = await (await fetch(url + "/app.js")).text();
     expect(js).toContain("renderFloor");
-    expect(js).toContain("floor-seat");
     expect(js).toContain("human__");
-    const css = await (await fetch(`${url}/app.css`)).text();
-    expect(css).toContain(".floor-scene");
+    const css = await (await fetch(url + "/app.css")).text();
+    expect(css).toContain(".floor-canvas");
     expect(css).toContain("prefers-reduced-motion");
   } finally {
     server.stop(true);

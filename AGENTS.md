@@ -1,8 +1,8 @@
-# AGENTS.md — read this before writing any code
+# AGENTS.md â€” read this before writing any code
 
 This is the source of truth for every coding agent (Claude, Cursor, Codex, Gemini, Grok, Copilot, OpenCode, Aider, humans).
 
-Türkçe özet: Discord API botu değil. Yerelde Grok Bot takımı: kanal + kişi, `@id` uyanır, diğerleri bekler, masada işler kanalda hesap verir, insana ihtiyaç varsa dururlar, DM’leşirler. Yüzey: `bun run ui` veya Crew.exe. `crew` CLI test/script, TUI değil. TDD, ADR, `packages/core` I/O’suz.
+TÃ¼rkÃ§e Ã¶zet: Discord API botu deÄŸil. Yerelde Grok Bot takÄ±mÄ±: kanal + kiÅŸi, `@id` uyanÄ±r, diÄŸerleri bekler, masada iÅŸler kanalda hesap verir, insana ihtiyaÃ§ varsa dururlar, DMâ€™leÅŸirler. YÃ¼zey: `bun run ui` veya Crew.exe. `crew` CLI test/script, TUI deÄŸil. TDD, ADR, `packages/core` I/Oâ€™suz.
 
 If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update them in the same PR as the code.
 
@@ -10,9 +10,9 @@ If this file disagrees with chat lore, **this file + `docs/adr/` win**. Update t
 
 Local multi-bot runtime. Working name: `crew`. Repo: `aibuildingapp`. Version: **0.11.0**.
 
-Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message → those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
+Human creates **bots** (soul, skills) and **channels** (members, lead, `RULES.md`, `CONTEXT.md`, folders). A lead assigns work with `@coder`. **Mention = wake.** Unmentioned bots wait. Several `@` in one message â†’ those bots may run in parallel. Bots work at their desk (tools + thinking), then **give an account** in the channel. They may **DM**. Human can read every DM.
 
-Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`–`0042`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings → Providers feeds the Person / Default implementation picker (`ADR-0030`, `ADR-0031`). Jobs pickers are OpenRouter-only (`ADR-0043`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio/HTTP tools, resources, and prompts attach to OpenRouter turns (`ADR-0036`, `ADR-0038`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
+Surface: **local web UI** `bun run ui` **or Crew.exe** (`ADR-0017`, `ADR-0020`, `ADR-0023`â€“`0042`). CLI `crew` is for **tests and scripts**, not a TUI product (`docs/todos/cli-is-script.md`). Jobs (title, compact, vision, read) are Settings slots, not People (`ADR-0029`, `ADR-0031`). Compact is three append-only layers: window, trim, LLM summary (`ADR-0019`, `ADR-0028`). Settings â†’ Providers feeds the Person / Default implementation picker (`ADR-0030`, `ADR-0031`). Jobs pickers are OpenRouter-only (`ADR-0043`). Enabled Grok / Claude / Codex / OpenCode Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). MCP stdio/HTTP tools, resources, and prompts attach to OpenRouter turns (`ADR-0036`, `ADR-0038`). Same `packages/core`. Snapshot + gaps: `docs/todos/now.md`.
 
 ## What this is NOT
 
@@ -24,7 +24,7 @@ Do **not** start building any of these unless the human asked in this session:
 | Wrapper around Claude Code, Codex, OpenCode, Grok CLI | We are the engine. T3 is Settings / picker / permission inspiration. Enabled harness Person turns spawn that CLI (`ADR-0034`, `ADR-0035`). |
 | Electron / T3 desktop | Local UI is `apps/web`. Window is **Tauri 2 + WebView2** (`ADR-0032`), not Electron. |
 | Single ChatGPT REPL | Product is bots + channels + mentions + DMs. |
-| Cloud VM / computer-use | Work is the human’s machine. |
+| Cloud VM / computer-use | Work is the humanâ€™s machine. |
 | New YAML skill format | Agent Skills `SKILL.md` only (`ADR-0021`). |
 | Python, Rust, or Go rewrite | TypeScript + Bun (`ADR-0009`). |
 | `crew serve` / multi-human | Loopback daemon is in (`ADR-0048`). Public `0.0.0.0` still parked: `docs/todos/multi-human-remote.md`. |
@@ -49,7 +49,7 @@ Bun is required. On this Windows machine the npm shim may live at `%APPDATA%\npm
 |---|---|
 | `bun test` | All tests |
 | `bun test packages/core` | Domain tests |
-| `bun run crew -- …` | CLI (cwd gets `.crew/`) |
+| `bun run crew -- â€¦` | CLI (cwd gets `.crew/`) |
 | `bun run ui` | Local office `http://127.0.0.1:7734` |
 | `bun run desktop` | Crew.exe window (Tauri dev; same office) |
 | `bun run desktop:build` | Compile sidecar + Tauri `Crew.exe`; try NSIS + MSI |
@@ -70,7 +70,7 @@ apps/cli               `crew` argv adapter
 apps/web               local UI adapter (Bun.serve); providers, jobs, mcp json
 apps/discord           Discord Gateway in / webhook out (`ADR-0049`)
 apps/desktop           Crew.exe (Tauri + WebView2); sidecar is compiled `apps/web`
-docs/adr               decisions (immutable once accepted; next is 0063)
+docs/adr               decisions (immutable once accepted; next is 0064)
 docs/specs             wire contracts
 ```
 
@@ -79,22 +79,22 @@ docs/specs             wire contracts
 ## Hard rules
 
 1. **TDD.** Failing test first. Watch it fail for the right reason. Then minimal code.
-2. **Architecture change → ADR.** Next number in `docs/adr/`. Do not rewrite an accepted ADR; supersede it. Touch `docs/adr/README.md`.
-3. **User-visible change → `CHANGELOG.md` `[Unreleased]`.** Keep a Changelog headings.
-4. **Mention routing is the scheduler.** No tag → no turn (except human post with no `@` wakes the **lead**). `@everyone` wakes every **bot** member except the author. Unknown `@foo` is ignored for routing and announced (`ADR-0046`). `@` inside fenced or inline code is not a wake (`ADR-0043`). **One turn per bot per `say`** (`ADR-0013`). If the human already `@` named bots, no handoff wave (`ADR-0014`); held `@` becomes `handoff.held` (`ADR-0045`).
+2. **Architecture change â†’ ADR.** Next number in `docs/adr/`. Do not rewrite an accepted ADR; supersede it. Touch `docs/adr/README.md`.
+3. **User-visible change â†’ `CHANGELOG.md` `[Unreleased]`.** Keep a Changelog headings.
+4. **Mention routing is the scheduler.** No tag â†’ no turn (except human post with no `@` wakes the **lead**). `@everyone` wakes every **bot** member except the author. Unknown `@foo` is ignored for routing and announced (`ADR-0046`). `@` inside fenced or inline code is not a wake (`ADR-0043`). **One turn per bot per `say`** (`ADR-0013`). If the human already `@` named bots, no handoff wave (`ADR-0014`); held `@` becomes `handoff.held` (`ADR-0045`).
 5. **Permissions.** `supervised` \| `auto-accept` (default) \| `auto` \| `full-access`. Auto-accept = workspace file writes **and** workspace `shell`. `mcp_*` and `browser_*` tools **ask** on auto-accept (`ADR-0044`, `ADR-0050`). `auto` without a reviewer **falls back to supervised**. Reviewer first token is `ALLOW`/`DENY`/`ASK` only. Always deny `.env` and `~/.ssh`. Hard-deny shell: `.env`, `.ssh`, `rm -rf /`, `irm`, `curl|iex`. Hard-deny browser: `file://`, `chrome://`, `javascript:`, `.env` URLs. Always-allow fingerprints live in `.crew/permissions.json` (`ADR-0018`). Settings can **Add** / remove one row (`POST` / `DELETE /api/permissions`). New rooms use `defaultPermissionMode`.
 6. **Sessions are append-only JSONL** `"v": 1`. Never rewrite a line. Compact is three layers: 80-message **window** (`thread.compacted`, `ADR-0019`), **trim** (posted-only prompt), **LLM summary** (`thread.summary`, `ADR-0028`). Titles append `thread.titled` (`ADR-0029`).
 7. **Provider is a port.** `complete(req) -> AsyncIterable<ChatEvent>`. Core does not import `@openrouter/*` or spawn CLIs. Enabled Grok/Claude/Codex/OpenCode Person turns spawn that CLI in adapter packages (`ADR-0034`, `ADR-0035`). Jobs stay OpenRouter.
 8. **Skills = Agent Skills `SKILL.md`.** Slug name, YAML frontmatter, body in the prompt (`ADR-0021`). Channel `RULES.md` + `CONTEXT.md` every turn. `SOUL.md` is voice.
 9. **0.x semver.** Public API breaks bump **minor** until 1.0. We are **0.11.0**.
-10. **Scope.** Do not add Electron, git-PR, public `0.0.0.0` bind, or a plugin marketplace unless asked this session. Discord is `apps/discord` (`ADR-0049`). Loopback `crew serve` is the office daemon (`ADR-0048`). MCP is Settings → MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
+10. **Scope.** Do not add Electron, git-PR, public `0.0.0.0` bind, or a plugin marketplace unless asked this session. Discord is `apps/discord` (`ADR-0049`). Loopback `crew serve` is the office daemon (`ADR-0048`). MCP is Settings â†’ MCP (`ADR-0036`, `ADR-0038`). Local UI is `apps/web`; the window is `apps/desktop` (`ADR-0032`).
 11. **Reserved bot ids:** `human`, `you`, `everyone`, `engine`, `user` (`ADR-0022`, `ADR-0047`). Max 16 bots, 16 channels. Extra humans live in `.crew/humans.json`; missing `author.humanId` is the owner `"human"`.
 12. **UI copy is English.** The human may write Turkish; bots account in English.
 
 ## Testing
 
 - Domain tests: real functions, temp dirs for tools, **scripted fake LLM**.
-- Assert on `woken` lists, events, files on disk — not mock internals.
+- Assert on `woken` lists, events, files on disk â€” not mock internals.
 - A test that needs the network is not a unit test.
 
 ## Code style
