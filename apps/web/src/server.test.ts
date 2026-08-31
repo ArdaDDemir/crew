@@ -31,7 +31,7 @@ async function setup() {
   });
   writeFileSync(
     join(cwd, ".crew", "config.json"),
-    `${JSON.stringify({ apiKey: "sk-test" })}\n`,
+    `${JSON.stringify({ apiKey: "sk-test", autoUpdate: true })}\n`,
   );
   const provider = new ScriptedProvider([
     [{ type: "text-delta", text: "ack from lead" }, { type: "done" }],
@@ -55,8 +55,14 @@ test("bootstrap lists channels and health is ok", async () => {
     const boot = await (await fetch(`${url}/api/bootstrap`)).json();
     expect(boot.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(boot.updateUrl).toBe("");
-    const upd = await (await fetch(`${url}/api/update-check`, { method: "POST" })).json();
-    expect(upd.status).toBe("disabled");
+    const upd = await fetch(`${url}/api/update-auto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ autoUpdate: false }),
+    });
+    expect(upd.ok).toBe(true);
+    const updCheck = await (await fetch(`${url}/api/update-check`, { method: "POST" })).json();
+    expect(updCheck.status).toBe("disabled");
     expect(boot.channels[0].id).toBe("landing");
     expect(boot.bots.map((b: { id: string }) => b.id)).toContain("coder");
     expect(Array.isArray(boot.models)).toBe(true);
@@ -1906,6 +1912,32 @@ test("bot effort roundtrips through PATCH /api/bot", async () => {
     expect(res.status).toBe(200);
     const detail = await (await fetch(`${url}/api/bot/coder`)).json();
     expect(detail.effort).toBe("high");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("update feed defaults to GitHub, opt-out persists, install endpoint gates and installs", async () => {
+  const { server, url } = await setup();
+  try {
+    const boot0 = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot0.autoUpdate).toBe(true);
+    const off = await fetch(`${url}/api/update-auto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ autoUpdate: false }),
+    });
+    expect(off.ok).toBe(true);
+    const after = await (await fetch(`${url}/api/update-check`, { method: "POST" })).json();
+    expect(after).toEqual({ status: "disabled" });
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.autoUpdate).toBe(false);
+    const bad = await fetch(`${url}/api/update-install`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "http://evil.example/x.exe" }),
+    });
+    expect(bad.status).toBe(400);
   } finally {
     server.stop(true);
   }

@@ -15,6 +15,7 @@ export type CrewConfig = {
   defaultHarness?: string | null;
   defaultHarnessModel?: string | null;
   updateUrl?: string;
+  autoUpdate?: boolean;
 };
 
 export function userConfigPath(home: string): string {
@@ -62,6 +63,7 @@ export function mergeConfig(input: {
     defaultHarness: (project.defaultHarness || user.defaultHarness || "") || null,
     defaultHarnessModel: (project.defaultHarnessModel || user.defaultHarnessModel || "") || null,
     updateUrl: asUpdateUrl(input.env.CREW_UPDATE_URL) || asUpdateUrl(user.updateUrl),
+    autoUpdate: project.autoUpdate ?? user.autoUpdate ?? true,
   };
 }
 

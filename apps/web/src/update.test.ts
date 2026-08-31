@@ -4,11 +4,14 @@ import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  DEFAULT_UPDATE_FEED,
   asUpdateUrl,
   buildReleaseManifest,
+  buildUpdaterManifest,
   changelogNotesForVersion,
   checkCrewUpdate,
   cmpCrewVersion,
+  effectiveUpdateFeed,
   parseUpdateManifest,
   writeReleaseManifest,
 } from "./update";
@@ -115,4 +118,79 @@ test("checkCrewUpdate reports current when versions match", async () => {
     status: "current",
     version: "0.4.0",
   });
+});
+
+test("parseUpdateManifest reads the GitHub Releases API shape and prefers NSIS", () => {
+  const got = parseUpdateManifest({
+    tag_name: "v0.11.0",
+    name: "0.11.0",
+    body: "- signed updater",
+    assets: [
+      { name: "latest.json", browser_download_url: "https://example.com/latest.json" },
+      { name: "Crew_0.11.0_x64_en-US.msi", browser_download_url: "https://example.com/Crew.msi" },
+      { name: "Crew_0.11.0_x64-setup.exe", browser_download_url: "https://example.com/Crew-setup.exe" },
+      { name: "Crew-0.11.0-windows-portable.zip", browser_download_url: "https://example.com/portable.zip" },
+    ],
+  });
+  expect(got).toEqual({
+    version: "0.11.0",
+    notes: "- signed updater",
+    url: "https://example.com/Crew-setup.exe",
+  });
+});
+
+test("parseUpdateManifest falls back to msi then portable then first asset", () => {
+  const msi = parseUpdateManifest({
+    tag_name: "v0.11.0",
+    assets: [
+      { name: "a.txt", browser_download_url: "https://example.com/a.txt" },
+      { name: "Crew.msi", browser_download_url: "https://example.com/Crew.msi" },
+    ],
+  });
+  expect(msi?.url).toBe("https://example.com/Crew.msi");
+  const zip = parseUpdateManifest({
+    tag_name: "v0.11.0",
+    assets: [
+      { name: "a.txt", browser_download_url: "https://example.com/a.txt" },
+      { name: "Crew-portable.zip", browser_download_url: "https://example.com/p.zip" },
+    ],
+  });
+  expect(zip?.url).toBe("https://example.com/p.zip");
+});
+
+test("effectiveUpdateFeed: custom url wins, empty + auto uses GitHub, opt-out disables", () => {
+  expect(effectiveUpdateFeed(true, "https://example.com/latest.json")).toBe("https://example.com/latest.json");
+  expect(effectiveUpdateFeed(undefined, "")).toBe(DEFAULT_UPDATE_FEED);
+  expect(effectiveUpdateFeed(true, "")).toBe(DEFAULT_UPDATE_FEED);
+  expect(effectiveUpdateFeed(false, "")).toBe("");
+});
+
+test("checkCrewUpdate reads the GitHub feed", async () => {
+  const fetchImpl: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        tag_name: "v0.11.0",
+        body: "notes",
+        assets: [{ name: "Crew_0.11.0_x64-setup.exe", browser_download_url: "https://example.com/setup.exe" }],
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  expect(
+    await checkCrewUpdate({ current: "0.10.0", updateUrl: DEFAULT_UPDATE_FEED, fetchImpl }),
+  ).toEqual({ status: "available", version: "0.11.0", notes: "notes", url: "https://example.com/setup.exe" });
+});
+
+test("buildUpdaterManifest embeds the signature with an absolute GitHub url", () => {
+  const got = buildUpdaterManifest({
+    version: "0.11.0",
+    notes: "signed",
+    signature: "SIGDATA",
+    repo: "ArdaDDemir/crew",
+  });
+  expect(got.version).toBe("0.11.0");
+  expect(got.platforms["windows-x86_64"].signature).toBe("SIGDATA");
+  expect(got.platforms["windows-x86_64"].url).toBe(
+    "https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64-setup.exe",
+  );
+  expect(typeof got.pub_date).toBe("string");
 });

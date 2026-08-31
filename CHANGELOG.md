@@ -10,6 +10,25 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-31
+
+Updates go GitHub-native: feed on by default, signed silent auto-update in Crew.exe.
+
+### Added
+
+- **Auto-update via GitHub Releases** (`ADR-0062`). The feed defaults to this repo's `releases/latest` API (opt-out checkbox in About); custom feed URLs still win. Update check runs once per boot, throttled to 24h.
+- **Signed silent updater in Crew.exe.** Tauri updater plugin + minisign key (private key stays outside the repo). Crew downloads, verifies, installs, and relaunches itself. The web office (`bun run ui`) gets an assisted flow: `POST /api/update-install` streams the installer to Temp and launches it (UAC/SmartScreen still gate).
+- `parseUpdateManifest` understands the GitHub Releases API shape (`tag_name`, `body`, assets; NSIS preferred, then MSI, then portable zip) alongside the existing `latest.json` formats.
+- `desktop:build` signs bundles (`createUpdaterArtifacts`) and writes a Tauri-format `dist/latest.json` (signature embedded) plus the `.sig` file for the release.
+
+### Changed
+
+- About → Updates: checkbox for the GitHub feed, **Install <version>** button with progress, download link kept for browsers.
+
+### Fixed
+
+- `parseUpdateManifest` normalizes `v`-prefixed tags (`v0.11.0` → `0.11.0`).
+
 ## [0.10.0] - 2026-08-31
 
 Harness turns run, turns survive silence, effort control, one-button composer, welcome office.

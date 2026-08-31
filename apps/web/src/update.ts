@@ -7,6 +7,17 @@ export type UpdateManifest = {
   url: string;
 };
 
+export const DEFAULT_UPDATE_FEED = "https://api.github.com/repos/ArdaDDemir/crew/releases/latest";
+
+export function effectiveUpdateFeed(
+  autoUpdate: boolean | undefined,
+  updateUrl: string | undefined,
+): string {
+  const url = asUpdateUrl(updateUrl);
+  if (url) return url;
+  return autoUpdate === false ? "" : DEFAULT_UPDATE_FEED;
+}
+
 export type UpdateCheck =
   | { status: "disabled" }
   | { status: "current"; version: string }
@@ -60,6 +71,21 @@ function resolveDownloadUrl(raw: string, source?: string): string {
 
 export function parseUpdateManifest(raw: unknown, source?: string): UpdateManifest | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const gh = raw as { tag_name?: unknown; body?: unknown; assets?: unknown };
+  if (typeof gh.tag_name === "string") {
+    const version = gh.tag_name.trim().replace(/^v/i, "");
+    if (!parseCrewVersion(version)) return null;
+    const rows = (Array.isArray(gh.assets) ? gh.assets : [])
+      .map((a) => {
+        const row = a as { name?: unknown; browser_download_url?: unknown } | null;
+        return { name: String(row?.name ?? ""), url: String(row?.browser_download_url ?? "").trim() };
+      })
+      .filter((a) => a.url && /^https?:\/\//i.test(a.url));
+    const pick = (re: RegExp) => rows.find((a) => re.test(a.name));
+    const chosen = pick(/-setup\.exe$/i) ?? pick(/\.msi$/i) ?? pick(/portable\.zip$/i) ?? rows[0];
+    if (!chosen) return null;
+    return { version, notes: String(gh.body ?? "").trim(), url: chosen.url };
+  }
   const row = raw as { version?: unknown; notes?: unknown; url?: unknown; platforms?: unknown };
   const version = String(row.version ?? "").trim();
   if (!parseCrewVersion(version)) return null;
@@ -155,5 +181,42 @@ export function writeReleaseManifest(dir: string, input: ReleaseManifestInput): 
   mkdirSync(dir, { recursive: true });
   const path = join(dir, "latest.json");
   writeFileSync(path, `${JSON.stringify(buildReleaseManifest(input), null, 2)}\n`, "utf8");
+  return path;
+}
+
+export type UpdaterManifestInput = {
+  version: string;
+  notes: string;
+  signature: string;
+  url?: string;
+  repo?: string;
+  now?: () => string;
+};
+
+export function buildUpdaterManifest(input: UpdaterManifestInput): {
+  version: string;
+  notes: string;
+  pub_date: string;
+  platforms: Record<string, { signature: string; url: string }>;
+} {
+  const version = input.version.trim();
+  const url =
+    input.url?.trim() ||
+    `https://github.com/${(input.repo || "ArdaDDemir/crew").trim()}/releases/download/v${version}/Crew_${version}_x64-setup.exe`;
+  return {
+    version,
+    notes: input.notes,
+    pub_date: input.now ? input.now() : new Date().toUTCString(),
+    platforms: { "windows-x86_64": { signature: input.signature, url } },
+  };
+}
+
+export function writeUpdaterManifest(
+  dir: string,
+  input: UpdaterManifestInput,
+): string {
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "latest.json");
+  writeFileSync(path, `${JSON.stringify(buildUpdaterManifest(input), null, 2)}\n`, "utf8");
   return path;
 }

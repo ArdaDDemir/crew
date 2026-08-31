@@ -3486,6 +3486,7 @@ async function boot() {
   }
   await restoreSplit();
   startWatch();
+  void checkForUpdateQuietly();
 }
 
 document.getElementById("tour-next")?.addEventListener("click", () => {
@@ -3653,6 +3654,8 @@ function fillSettingsSelects() {
   if (ver) ver.textContent = state.bootstrap.version || "";
   const upd = document.getElementById("app-update-url");
   if (upd) upd.value = state.bootstrap.updateUrl || "";
+  const auto = document.getElementById("app-update-auto");
+  if (auto) auto.checked = state.bootstrap.autoUpdate !== false;
 }
 
 function providerFileFromCards() {
@@ -5973,15 +5976,77 @@ document.getElementById("app-update-url")?.addEventListener("change", async (ev)
   }
   state.bootstrap.updateUrl = res.updateUrl || "";
 });
+document.getElementById("app-update-auto")?.addEventListener("change", async (ev) => {
+  const on = Boolean(ev.target.checked);
+  const res = await (
+    await api("/api/update-auto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ autoUpdate: on }),
+    })
+  ).json();
+  if (res.error) {
+    toast(String(res.error));
+    return;
+  }
+  state.bootstrap.autoUpdate = res.autoUpdate;
+});
+
+async function installCrewUpdate(row) {
+  const btn = document.getElementById("app-update-install");
+  const meta = document.getElementById("app-update-meta");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Downloading…";
+  }
+  try {
+    if (window.__CREW_DESKTOP__ && window.__TAURI__?.updater) {
+      if (meta) meta.textContent = "Downloading (signed updater)…";
+      const rel = await window.__TAURI__.updater.check();
+      if (rel && rel.available) {
+        await rel.downloadAndInstall();
+        if (meta) meta.textContent = "Installed. Relaunching…";
+        await window.__TAURI__.process.relaunch();
+        return;
+      }
+      if (meta) meta.textContent = "No update via the signed feed.";
+      return;
+    }
+    if (meta) meta.textContent = "Downloading installer…";
+    const res = await (
+      await api("/api/update-install", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: row.url }),
+      })
+    ).json();
+    if (res.error) {
+      if (meta) meta.textContent = String(res.error);
+      return;
+    }
+    if (meta) meta.textContent = "Installer launched — finish it and reopen Crew.";
+    toast("Installer launched.");
+  } catch (err) {
+    if (meta) meta.textContent = String(err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Install update";
+    }
+  }
+}
+
 document.getElementById("app-update-check")?.addEventListener("click", async () => {
   const meta = document.getElementById("app-update-meta");
   const open = document.getElementById("app-update-open");
+  const install = document.getElementById("app-update-install");
   if (meta) meta.textContent = "Checking…";
   if (open) open.hidden = true;
+  if (install) install.hidden = true;
   try {
     const res = await (await api("/api/update-check", { method: "POST" })).json();
     if (res.status === "disabled") {
-      if (meta) meta.textContent = "No update server configured.";
+      if (meta) meta.textContent = "Update check is off.";
       return;
     }
     if (res.status === "current") {
@@ -5990,6 +6055,11 @@ document.getElementById("app-update-check")?.addEventListener("click", async () 
     }
     if (res.status === "available") {
       if (meta) meta.textContent = [res.version, "available", res.notes].filter(Boolean).join(" · ");
+      state.updateAvailable = res;
+      if (install) {
+        install.hidden = false;
+        install.textContent = `Install ${res.version}`;
+      }
       if (open && res.url) {
         open.href = res.url;
         open.hidden = false;
@@ -6001,6 +6071,30 @@ document.getElementById("app-update-check")?.addEventListener("click", async () 
     if (meta) meta.textContent = String(err);
   }
 });
+document.getElementById("app-update-install")?.addEventListener("click", () => {
+  const row = state.updateAvailable;
+  if (row?.url || window.__CREW_DESKTOP__) installCrewUpdate(row || {});
+});
+
+async function checkForUpdateQuietly() {
+  try {
+    const last = Number(localStorage.getItem("crew.updateAt") || 0);
+    if (Date.now() - last < 24 * 60 * 60 * 1000) return;
+    localStorage.setItem("crew.updateAt", String(Date.now()));
+    const res = await (await api("/api/update-check", { method: "POST" })).json();
+    if (res?.status === "available") {
+      state.updateAvailable = res;
+      toast(`Crew ${res.version} is available — Settings → About → Install.`);
+      const install = document.getElementById("app-update-install");
+      if (install) {
+        install.hidden = false;
+        install.textContent = `Install ${res.version}`;
+      }
+    }
+  } catch {
+    /* silent */
+  }
+}
 document.querySelector("[data-settings-panel='providers']")?.addEventListener("keydown", (ev) => {
   if (ev.key !== "Enter" || !ev.target.matches("[data-prov-custom]")) return;
   ev.preventDefault();

@@ -41,7 +41,9 @@ import {
   setMode,
   setModel,
   setReviewerModel,
-  setUpdateUrl,
+    setUpdateUrl,
+    setAutoUpdate,
+    updateInstall,
   checkHostUpdate,
   snapshot,
   stopRun,
@@ -542,8 +544,23 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
       }
     });
   }
+  if (req.method === "POST" && path === "/api/update-auto") {
+    const gate = ownerGate(req, host);
+    if (gate) return gate;
+    return readBody(req).then((body) => json(setAutoUpdate(host, body.autoUpdate)));
+  }
   if (req.method === "POST" && path === "/api/update-check") {
     return checkHostUpdate(host).then((body) => json(body));
+  }
+  if (req.method === "POST" && path === "/api/update-install") {
+    const gate = ownerGate(req, host);
+    if (gate) return gate;
+    return readBody(req).then((body) =>
+      updateInstall(host, { url: String(body.url ?? "") }).then(
+        (row) => json(row),
+        (err) => json({ error: err instanceof Error ? err.message : String(err) }, 400),
+      ),
+    );
   }
   if (req.method === "GET" && path === "/api/providers") {
     return json(getProviders(host));

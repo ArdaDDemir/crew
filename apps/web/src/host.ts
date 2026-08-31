@@ -1,4 +1,5 @@
 import { lstatSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { sanitizeFolderHints } from "../public/workspace-path.js";
 import {
@@ -68,7 +69,7 @@ import {
   saveProviders,
   whichBinary,
 } from "./providers";
-import { asUpdateUrl, checkCrewUpdate } from "./update";
+import { asUpdateUrl, checkCrewUpdate, effectiveUpdateFeed } from "./update";
 import { CREW_VERSION } from "./version";
 
 const MODES = new Set<PermissionMode>([
@@ -293,6 +294,7 @@ export function snapshot(host: Host) {
   return {
     version: CREW_VERSION,
     updateUrl: host.cfg.updateUrl ?? "",
+    autoUpdate: host.cfg.autoUpdate !== false,
     model: host.model,
     keep: HISTORY_KEEP,
     fallbackModel: host.fallbackModel ?? "",
@@ -1171,10 +1173,49 @@ export function setUpdateUrl(host: Host, raw: string) {
   return { updateUrl: url };
 }
 
+export function setAutoUpdate(host: Host, raw: unknown) {
+  const on = raw !== false;
+  host.cfg.autoUpdate = on;
+  writeConfigFile(userConfigPath(host.home), { autoUpdate: on });
+  return { autoUpdate: on };
+}
+
+export async function updateInstall(
+  host: Host,
+  input: { url?: string },
+  deps?: { fetchImpl?: typeof fetch; launch?: (file: string) => void },
+): Promise<{ ok: boolean; path: string; bytes: number }> {
+  const url = asUpdateUrl(String(input.url ?? ""));
+  if (!url) throw new Error("https url required");
+  const fetchImpl = deps?.fetchImpl ?? fetch;
+  const res = await fetchImpl(url);
+  if (!res.ok) throw new Error(`download failed: ${res.status}`);
+  let name = "Crew-setup.exe";
+  try {
+    const fromPath = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+    if (/^[\w.-]+$/.test(fromPath)) name = fromPath;
+  } catch {
+    /* keep default name */
+  }
+  const dir = join(tmpdir(), "crew-update");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, name);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  writeFileSync(file, buf);
+  const launch =
+    deps?.launch ??
+    ((f: string) => {
+      const proc = Bun.spawn([f], { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+      void proc.exited;
+    });
+  launch(file);
+  return { ok: true, path: file, bytes: buf.byteLength };
+}
+
 export function checkHostUpdate(host: Host, fetchImpl: typeof fetch = fetch) {
   return checkCrewUpdate({
     current: CREW_VERSION,
-    updateUrl: host.cfg.updateUrl ?? "",
+    updateUrl: effectiveUpdateFeed(host.cfg.autoUpdate, host.cfg.updateUrl),
     fetchImpl,
   });
 }
