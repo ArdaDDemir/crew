@@ -1,4 +1,4 @@
-// Crew office floor — a warm isometric canvas diorama (meeting-room edition).
+﻿// Crew office floor â€” a warm isometric canvas diorama (meeting-room edition).
 // Rendering + input only. Pure math lives in floor-iso.js.
 
 import {
@@ -705,9 +705,9 @@ export function createFloor(canvas, handlers = {}) {
     if (y.path && y.path.length) {
       const total = y.path.length;
       const dur = walkDuration(total);
-      const k = Math.min(1, (now - y.t0) / dur);
+      const k = Math.max(0, Math.min(1, (now - y.t0) / dur));
       const seg = k * total;
-      const i = Math.min(total - 1, Math.floor(seg));
+      const i = Math.min(total - 1, Math.max(0, Math.floor(seg)));
       const f = seg - i;
       const a = i === 0 ? y.from : y.path[i - 1];
       const b2 = y.path[i];
@@ -745,6 +745,7 @@ export function createFloor(canvas, handlers = {}) {
   }
 
   function tick(now) {
+    S.frames = (S.frames || 0) + 1;
     try {
       tickInner(now);
     } catch (err) {
@@ -858,7 +859,7 @@ export function createFloor(canvas, handlers = {}) {
       }
       g.font = "bold 10px ui-monospace, monospace";
       g.textAlign = "center";
-      const label = (m.lead ? "★ " : "@") + m.name;
+      const label = (m.lead ? "â˜… " : "@") + m.name;
       const tw = g.measureText(label).width;
       g.fillStyle = "rgba(20,14,8,0.72)";
       roundRect(g, p.x - tw / 2 - 5, p.y + 10, tw + 10, 15, 7);
@@ -883,9 +884,6 @@ export function createFloor(canvas, handlers = {}) {
   canvas.addEventListener("pointerdown", (e) => {
     const pt = toCanvas(e);
     S.dragging = { x0: pt.x, y0: pt.y, camx: S.cam.x, camy: S.cam.y, moved: false };
-    try {
-      canvas.setPointerCapture(e.pointerId);
-    } catch {}
   });
   canvas.addEventListener("pointermove", (e) => {
     const pt = toCanvas(e);
@@ -962,7 +960,7 @@ export function createFloor(canvas, handlers = {}) {
           dir: seat.dir,
           pose: m.pose || "idle",
           activityShort:
-            (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}…` : m.activity || "",
+            (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}â€¦` : m.activity || "",
         };
       });
       S.doors = (next.doors ?? []).map((d, i) => ({ ...d, slot: doorSlots(next.doors.length)[i] }));
@@ -1013,6 +1011,11 @@ export function createFloor(canvas, handlers = {}) {
     },
     setHold(kind) {
       S.hold = kind || "";
+    },
+    debugTick(t) {
+      try {
+        tickInner(t);
+      } catch {}
     },
     debugState() {
       return {

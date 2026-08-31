@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #0a0a0b;
   --rail: #0e0e10;
   --lift: #161618;
@@ -800,7 +800,7 @@ svg.ico {
 }
 .fold summary::-webkit-details-marker { display: none; }
 .fold summary::before {
-  content: "▾";
+  content: "â–¾";
   color: var(--faint);
   display: inline-block;
   transform: rotate(-90deg);
@@ -2082,7 +2082,7 @@ dialog.modal:not([open]) {
   text-align: left;
 }
 .icon-dd-btn::after {
-  content: "▾";
+  content: "â–¾";
   color: var(--faint);
   font-size: 11px;
 }
@@ -3055,19 +3055,27 @@ pre.diff {
 /* canvas floor (overrides the legacy wooden theme) */
 .floor {
   position: relative;
-  height: 300px;
+  display: flex;
+  flex-direction: column;
+  height: 340px;
   background: #0d0f15;
   border-color: #1f242e;
   box-shadow: inset 0 1px 0 #161a22;
 }
 .floor.holding { cursor: copy; }
 .floor-canvas {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
   display: block;
   touch-action: none;
+}
+.floor-hint,
+.floor-look,
+.floor-kit {
+  position: relative;
+  z-index: 2;
 }
 .floor .floor-plaque {
   left: 10px;

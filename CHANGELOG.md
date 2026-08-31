@@ -10,6 +10,10 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Floor hardening: negative frame-time could crash the walk animation forever (laptop sleep/resume); the engine now clamps it, guards its start position, and boot failures in the floor can no longer take the whole office down.
+
 ### Changed
 
 - The canvas floor reads as a **warm wooden meeting room**: plank floor, cream walls with terracotta wainscot, whiteboard + wall clock + window with a light shaft, bookshelf / water cooler / plant props, and the team sits around a real wooden meeting table with chairs and open laptops when busy.
