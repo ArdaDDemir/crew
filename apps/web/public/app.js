@@ -1,4 +1,4 @@
-﻿import { createFloor } from "./floor-game.js";
+import { createFloor } from "./floor-game.js";
 import { youHome as isoYouHome } from "./floor-iso.js";
 import { workspaceRelPath, resolveWorkspaceHint } from "./workspace-path.js";
 
@@ -43,7 +43,7 @@ function decorateEl(el, icon) {
     .trim();
   el.textContent = "";
   el.append(ico(icon));
-  if (label && label !== "+" && label !== "Ãƒâ€”") {
+  if (label && label !== "+" && label !== "×") {
     const s = document.createElement("span");
     s.textContent = label;
     el.append(s);
@@ -771,7 +771,7 @@ function bindModelPicker(select) {
   const q = document.createElement("input");
   q.type = "search";
   q.className = "model-picker-q";
-  q.placeholder = "Search modelsÃ¢â‚¬Â¦";
+  q.placeholder = "Search models…";
   q.autocomplete = "off";
   const body = document.createElement("div");
   body.className = "model-picker-body";
@@ -1020,7 +1020,7 @@ function setDraftPlaceholder() {
 function paintEmptyWorkspace() {
   for (const el of document.querySelectorAll(".room-title")) el.textContent = "No rooms yet";
   for (const el of document.querySelectorAll(".draft")) {
-    el.placeholder = "Create a channel from the rail Ã¢â‚¬â€ @ wakes bots.";
+    el.placeholder = "Create a channel from the rail — @ wakes bots.";
   }
   const plaque = document.getElementById("floor-plaque");
   if (plaque) plaque.textContent = "No rooms yet";
@@ -1029,15 +1029,15 @@ function paintEmptyWorkspace() {
 const TOUR_STEPS = [
   {
     title: "The office",
-    body: "Channels are rooms you own. Bots sit at desks inside them. Everything runs on this machine Ã¢â‚¬â€ no cloud, no server.",
+    body: "Channels are rooms you own. Bots sit at desks inside them. Everything runs on this machine — no cloud, no server.",
   },
   {
     title: "Mentions are the engine",
-    body: "A post with @coder wakes only coder. A post with no @ wakes the room's lead. Unmentioned bots wait Ã¢â‚¬â€ one turn per bot per post.",
+    body: "A post with @coder wakes only coder. A post with no @ wakes the room's lead. Unmentioned bots wait — one turn per bot per post.",
   },
   {
     title: "The desk",
-    body: "A woken bot works at its desk with its own tools Ã¢â‚¬â€ files, shell, patches Ã¢â‚¬â€ then posts a first-person account in the room. If it needs a human, it stops and asks.",
+    body: "A woken bot works at its desk with its own tools — files, shell, patches — then posts a first-person account in the room. If it needs a human, it stops and asks.",
   },
   {
     title: "Direct messages",
@@ -1118,7 +1118,7 @@ function renderRail() {
     const label = document.createElement("span");
     label.className = "label";
     label.textContent = `${icon}  ${ch.title || ch.id}`;
-    btn.title = ch.brief || "No About Ã¢â‚¬â€ set CONTEXT.md";
+    btn.title = ch.brief || "No About — set CONTEXT.md";
     btn.append(label);
     const unread = unreadOf("channel", ch.id);
     const badge = badgeEl(unread);
@@ -1159,7 +1159,7 @@ function parseDm(id) {
 function dmHeadline(id) {
   const p = parseDm(id);
   if (p.withHuman) return displayName(p.b);
-  return `${displayName(p.a)} Ã‚Â· ${displayName(p.b)}`;
+  return `${displayName(p.a)} · ${displayName(p.b)}`;
 }
 
 function dmWhen(iso) {
@@ -1249,7 +1249,7 @@ function dmChatButton(row) {
   sub.className = "dm-sub";
   const when = dmWhen(row.lastTs);
   const gist = row.lastText ? String(row.lastText).replace(/\s+/g, " ").slice(0, 40) : "New chat";
-  sub.textContent = when ? `${when} Ã‚Â· ${gist}` : gist;
+  sub.textContent = when ? `${when} · ${gist}` : gist;
   const col = document.createElement("span");
   col.className = "dm-col";
   col.append(title, sub);
@@ -1318,7 +1318,7 @@ function renderPeople() {
     const label = document.createElement("span");
     label.className = "person-name";
     label.textContent = displayName(id);
-    label.title = `${displayName(id)} Ã‚Â· @${id}`;
+    label.title = `${displayName(id)} · @${id}`;
     row.append(av, label);
     const live = humanChatsFor(id).filter((d) => !d.archived);
     const unread = live.reduce((n, d) => n + unreadOf("dm", d.id), 0);
@@ -1392,12 +1392,12 @@ function renderPeople() {
 }
 
 const FACES = {
-  you: { glyph: "Ã¢â€”Â", bg: "#2c313a", fg: "#d7dbe2" },
-  lead: { glyph: "Ã¢â€”â€ ", bg: "#24344f", fg: "#9bb6e3" },
-  designer: { glyph: "Ã¢Å“Â¦", bg: "#3f2a38", fg: "#e2b0c8" },
-  coder: { glyph: "ÃŽÂ»", bg: "#1d3a36", fg: "#8fd0c1" },
-  tester: { glyph: "Ã¢â€“Â£", bg: "#3a311c", fg: "#ddc07a" },
-  researcher: { glyph: "Ã¢â‚¬Â»", bg: "#2a382c", fg: "#a9c9a0" },
+  you: { glyph: "●", bg: "#2c313a", fg: "#d7dbe2" },
+  lead: { glyph: "◆", bg: "#24344f", fg: "#9bb6e3" },
+  designer: { glyph: "✦", bg: "#3f2a38", fg: "#e2b0c8" },
+  coder: { glyph: "λ", bg: "#1d3a36", fg: "#8fd0c1" },
+  tester: { glyph: "▣", bg: "#3a311c", fg: "#ddc07a" },
+  researcher: { glyph: "※", bg: "#2a382c", fg: "#a9c9a0" },
 };
 
 function botIdFromWho(who, botId) {
@@ -1443,7 +1443,7 @@ function formatCopy(text) {
   let html = escapeHtml(text);
   html = html.replace(/```[\w-]*\n([\s\S]*?)```/g, (_m, code) => `<pre class="codeblock">${code}</pre>`);
   html = html.replace(/^#{1,3} (.+)$/gm, "<strong>$1</strong>");
-  html = html.replace(/^[-*] (.+)$/gm, "Ã¢â‚¬Â¢ $1");
+  html = html.replace(/^[-*] (.+)$/gm, "• $1");
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   html = html.replace(
@@ -1452,7 +1452,7 @@ function formatCopy(text) {
       const id = raw.toLowerCase();
       if (!knownPing(id)) return full;
       const name = id === "everyone" ? "everyone" : displayName(id);
-      const tip = `${name} Ã‚Â· @${id}`;
+      const tip = `${name} · @${id}`;
       return `${pre}<span class="mention" data-id="${id}" data-tip="${escapeHtml(tip)}" role="link">@${id}</span>`;
     },
   );
@@ -1531,10 +1531,10 @@ function renderQueue(idx) {
     const li = document.createElement("li");
     li.className = "queue-chip";
     const span = document.createElement("span");
-    span.textContent = `Queued: ${q.length > 60 ? `${q.slice(0, 58)}Ã¢â‚¬Â¦` : q}`;
+    span.textContent = `Queued: ${q.length > 60 ? `${q.slice(0, 58)}…` : q}`;
     const x = document.createElement("button");
     x.type = "button";
-    x.textContent = "Ãƒâ€”";
+    x.textContent = "×";
     x.title = "Remove from queue";
     x.onclick = () => {
       paneQueue[idx]?.splice(i, 1);
@@ -1567,7 +1567,7 @@ function addWorkingChip(label) {
   dot.className = "working-dot";
   const text = document.createElement("span");
   text.className = "working-label";
-  text.textContent = label || "WorkingÃ¢â‚¬Â¦";
+  text.textContent = label || "Working…";
   li.append(dot, text);
   els.log?.append(li);
   pinBottom();
@@ -1602,9 +1602,9 @@ function renderWorkChip() {
   const parts = [];
   for (const [id, text] of Object.entries(state.activity ?? {})) {
     if (!text) continue;
-    parts.push(`${displayName(id)} Ã‚Â· ${text}`);
+    parts.push(`${displayName(id)} · ${text}`);
   }
-  const text = parts.join(" Ã‚Â· ");
+  const text = parts.join(" · ");
   for (const i of [0, 1]) {
     const el = paneRoot(i)?.querySelector(".work-chip");
     if (!el) continue;
@@ -1637,7 +1637,7 @@ async function renderContextChip() {
       const meta = await (await fetch(`/api/compact-status?${q}`)).json();
       const posted = Number(meta.posted) || postedOf(pane.kind, pane.id);
       const k = Number(meta.keep) || keep;
-      el.textContent = meta.hasSummary ? `${posted}/${k} Ã‚Â· compacted` : `${posted}/${k}`;
+      el.textContent = meta.hasSummary ? `${posted}/${k} · compacted` : `${posted}/${k}`;
     } catch {
       el.textContent = `${postedOf(pane.kind, pane.id)}/${keep}`;
     }
@@ -1679,7 +1679,7 @@ async function maybeAutoCompact(kind, id) {
 
 function shortPath(p) {
   const cut = String(p).replace(/\\/g, "/").split("/").pop() || String(p);
-  return cut.length > 22 ? `${cut.slice(0, 20)}Ã¢â‚¬Â¦` : cut;
+  return cut.length > 22 ? `${cut.slice(0, 20)}…` : cut;
 }
 
 function activityLabel(name, args) {
@@ -1913,10 +1913,10 @@ function paintFloorHint() {
   const hold = state.floorHold;
   if (hint) {
     hint.textContent = hold
-      ? "Click to place " + hold + " Ã‚Â· Esc to cancel"
+      ? "Click to place " + hold + " · Esc to cancel"
       : state.kind === "channel"
-        ? "Click carpet to walk Ã‚Â· a person to DM Ã‚Â· drag to pan, wheel to zoom"
-        : "Click carpet to walk Ã‚Â· a door to enter";
+        ? "Click carpet to walk · a person to DM · drag to pan, wheel to zoom"
+        : "Click carpet to walk · a door to enter";
   }
   box?.classList.toggle("holding", Boolean(hold));
 }
@@ -2046,7 +2046,7 @@ function renderPresence() {
     const ch = currentChannel();
     hereIds = ch?.memberBotIds ?? [];
     leadId = ch?.leadBotId ?? null;
-    if (els.deskLabel) els.deskLabel.textContent = `Members Ã¢â‚¬â€ ${hereIds.length}`;
+    if (els.deskLabel) els.deskLabel.textContent = `Members — ${hereIds.length}`;
   } else {
     const dm = parseDm(state.id);
     hereIds = dm.withHuman ? [dm.b] : [dm.a, dm.b].filter(Boolean);
@@ -2078,7 +2078,7 @@ function startTurn(id, kind) {
   avatar.textContent = face.glyph;
   avatar.style.background = face.bg;
   avatar.style.color = face.fg;
-  avatar.title = isYou ? "You" : `${displayName(id)} Ã‚Â· @${id}`;
+  avatar.title = isYou ? "You" : `${displayName(id)} · @${id}`;
 
   const col = document.createElement("div");
   col.className = "col";
@@ -2171,7 +2171,7 @@ function appendTool(botId, name, args, output, shot) {
   if (!name && !shot) return;
   if (state.running) setActivity(botId, activityLabel(name, args));
   const turn = ensureTurn(botId);
-  const path = shot; // only real browser-tool shots attach an image — never scan output text
+  const path = shot; // only real browser-tool shots attach an image  never scan output text
   const last = turn.toolList.lastElementChild;
   const merge =
     last &&
@@ -2206,7 +2206,7 @@ function shortenChatError(text) {
       const parsed = JSON.parse(raw.slice(jsonAt));
       const who = parsed.error?.metadata?.provider_name;
       if (parsed.error?.code === 429 || /rate-limit/i.test(raw)) {
-        return `429 rate-limited${who ? ` via ${who}` : ""}. Free shared pool is full. Wait 30Ã¢â‚¬â€œ60s, tag one bot, or switch model.`;
+        return `429 rate-limited${who ? ` via ${who}` : ""}. Free shared pool is full. Wait 30–60s, tag one bot, or switch model.`;
       }
       const msg = parsed.error?.message;
       if (typeof msg === "string" && msg.trim()) {
@@ -2217,10 +2217,10 @@ function shortenChatError(text) {
     }
   }
   if (/429|rate-limit/i.test(raw)) {
-    return "429 rate-limited. Free shared pool is full. Wait 30Ã¢â‚¬â€œ60s, tag one bot, or switch model.";
+    return "429 rate-limited. Free shared pool is full. Wait 30–60s, tag one bot, or switch model.";
   }
   if (jsonAt >= 0) return raw.replace(/\s+/g, " ").slice(0, 220);
-  return raw.length > 400 ? `${raw.slice(0, 400)}Ã¢â‚¬Â¦` : raw;
+  return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw;
 }
 
 function addMessage({ who, botId, text, kind }) {
@@ -2330,9 +2330,9 @@ function paintRoomBrief(ch) {
   if (brief) {
     els.brief.textContent = brief;
     els.brief.classList.remove("empty");
-    els.brief.title = "Room About Ã¢â‚¬â€ CONTEXT.md, loaded every turn";
+    els.brief.title = "Room About — CONTEXT.md, loaded every turn";
   } else {
-    els.brief.textContent = "No About Ã¢â‚¬â€ bots will ask, not invent.";
+    els.brief.textContent = "No About — bots will ask, not invent.";
     els.brief.classList.add("empty");
     els.brief.title = "Set About on this room";
   }
@@ -2426,7 +2426,7 @@ function paintFace(el, glyph, id) {
   el.style.color = face.fg;
 }
 
-const ICONS = ["ÃŽÂ»","Ã¢â€”â€ ","Ã¢Å“Â¦","Ã¢â‚¬Â»","Ã¢â€“Â£","Ã¢â€”Â","Ã¢â€“Â²","Ã¢â€“Â ","Ã¢Ëœâ€¦","Ã¢Å¡â„¢","Ã¢Å“Å½","Ã¢Å’â€š","Ã¢Å¡â€˜","Ã¢â€”Å½","Ã¢â€”â€¡","Ã¢â€“Â³","Ã¢â€“Â¶","Ã¢Å’Ëœ","Ã¢Ë†Å¾","#","@","ÃŽÂ£","ÃŽÂ©","ÃŽÂ¼","Ãâ‚¬","Ã¢â€”â€°"];
+const ICONS = ["λ","◆","✦","※","▣","●","▲","■","★","⚙","✎","⌂","⚑","◎","◇","△","▶","⌘","∞","#","@","Σ","Ω","μ","Ã€","◉"];
 const iconPickers = {};
 
 function bindIconPicker(kind, fallback) {
@@ -2492,7 +2492,7 @@ function skillPreview() {
   const desc = document.getElementById("skill-desc").value.trim();
   const body = document.getElementById("skill-body").value.replace(/\s+$/, "");
   document.getElementById("skill-preview").textContent =
-    `---\nname: ${name || "Ã¢â‚¬Â¦"}\ndescription: ${JSON.stringify(desc || "Ã¢â‚¬Â¦")}\n---\n\n${body || "Ã¢â‚¬Â¦ "}\n`;
+    `---\nname: ${name || "…"}\ndescription: ${JSON.stringify(desc || "…")}\n---\n\n${body || "… "}\n`;
 }
 
 function setSkillEdit(name) {
@@ -2519,8 +2519,8 @@ function setSkillOpenEnabled(on) {
 function openSkillSheet(existing) {
   const id = state.editBotId;
   document.getElementById("skill-bot-label").textContent = existing
-    ? `@${id} Ã‚Â· ${existing}`
-    : `@${id} Ã‚Â· new`;
+    ? `@${id} · ${existing}`
+    : `@${id} · new`;
   els.skillModal.showModal();
   skillPreview();
   document.getElementById("skill-name").focus();
@@ -3396,7 +3396,7 @@ function renderAllowedChips() {
   for (const id of allowedModels()) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = `${id}  Ãƒâ€”`;
+    btn.textContent = `${id}  ×`;
     btn.title = "Remove";
     btn.onclick = () => {
       persistAllowed(allowedModels().filter((x) => x !== id));
@@ -3423,7 +3423,7 @@ function fillSettingsSelects() {
     document.getElementById("app-reviewer-model"),
     state.bootstrap.reviewerModel ?? "",
     null,
-    "Off (auto Ã¢â€ â€™ supervised)",
+    "Off (auto → supervised)",
   );
   const mode = document.getElementById("app-default-mode");
   if (mode) mode.value = state.bootstrap.defaultPermissionMode || "auto-accept";
@@ -3469,8 +3469,8 @@ function paintProviderCards() {
   if (orPill) orPill.textContent = state.bootstrap?.keySet ? "Ready" : "Needs key";
   if (orStatus) {
     orStatus.textContent = state.bootstrap?.keySet
-      ? "Crew engine Ã‚Â· key saved"
-      : "Crew engine Ã‚Â· add an API key";
+      ? "Crew engine · key saved"
+      : "Crew engine · add an API key";
   }
   const orCard = document.getElementById("prov-openrouter");
   if (orCard) orCard.dataset.status = state.bootstrap?.keySet ? "ready" : "missing";
@@ -3493,8 +3493,8 @@ function paintProviderCards() {
     if (enabled) card.classList.add("open");
     if (status) {
       if (st === "ready") {
-        status.textContent = [row?.version, row?.which].filter(Boolean).join(" Ã‚Â· ") || "Ready";
-      } else if (st === "installed") status.textContent = row?.version ? `Installed Ã‚Â· ${row.version}` : "Installed Ã¢â‚¬â€ enable to use";
+        status.textContent = [row?.version, row?.which].filter(Boolean).join(" · ") || "Ready";
+      } else if (st === "installed") status.textContent = row?.version ? `Installed · ${row.version}` : "Installed — enable to use";
       else if (st === "missing") status.textContent = "Not installed";
       else status.textContent = "Off";
     }
@@ -3526,7 +3526,7 @@ function customModelChip(id) {
   b.className = "custom-chip";
   b.dataset.customChip = "";
   b.dataset.id = id;
-  b.textContent = `${id} Ãƒâ€”`;
+  b.textContent = `${id} ×`;
   b.title = "Remove";
   return b;
 }
@@ -3537,7 +3537,7 @@ async function refreshProviderHealth() {
       /* keep */
     }
     const card = el.closest("[data-harness]");
-    if (card && !card.dataset.status) el.textContent = "CheckingÃ¢â‚¬Â¦";
+    if (card && !card.dataset.status) el.textContent = "Checking…";
   }
   try {
     const data = await (await api("/api/providers/health")).json();
@@ -3682,7 +3682,7 @@ async function loadCatalog(q) {
     box.textContent = "Type 2+ characters to search OpenRouter.";
     return;
   }
-  box.textContent = "SearchingÃ¢â‚¬Â¦";
+  box.textContent = "Searching…";
   try {
     const res = await (await api(`/api/models?q=${encodeURIComponent(query)}`)).json();
     box.replaceChildren();
@@ -3775,7 +3775,7 @@ function renderMcp() {
     };
     top.append(name, on, del);
     const cmd = document.createElement("input");
-    cmd.placeholder = "command (npx, bun, python, Ã¢â‚¬Â¦)";
+    cmd.placeholder = "command (npx, bun, python, …)";
     cmd.value = row.command || "";
     cmd.spellcheck = false;
     cmd.oninput = () => {
@@ -3851,7 +3851,7 @@ async function loadInvites() {
       const li = document.createElement("li");
       li.className = "invite-row-item";
       const meta = document.createElement("span");
-      meta.textContent = `${h.handle} (@${h.id})${h.invited ? "" : " Ã¢â‚¬â€ revoked"}`;
+      meta.textContent = `${h.handle} (@${h.id})${h.invited ? "" : " — revoked"}`;
       const rev = document.createElement("button");
       rev.type = "button";
       rev.className = "danger";
@@ -4232,7 +4232,7 @@ async function onComposerSubmit(ev) {
   let workingEl = null;
   try {
       setRunning(true);
-      workingEl = addWorkingChip("WorkingÃ¢â‚¬Â¦");
+      workingEl = addWorkingChip("Working…");
       const res = await fetch("/api/say", {
         method: "POST",
         headers: inviteHeaders({ "Content-Type": "application/json" }),
@@ -4261,7 +4261,7 @@ async function onComposerSubmit(ev) {
             li.textContent = row.message;
             els.log?.append(li);
             workingEl?.querySelector(".working-label")?.replaceChildren(row.message);
-            const who = String(row.message).split("Ã¢â€ â€™")[0]?.trim();
+            const who = String(row.message).split("→")[0]?.trim();
             if (who) setActivity(who, "Calling model");
             pinBottom();
           } else if (row.type === "text") {
@@ -4327,7 +4327,7 @@ async function onComposerSubmit(ev) {
 function connectionLostMessage(err) {
   const text = String(err?.message || err);
   if (/network error|failed to fetch|networkerror|load failed/i.test(text)) {
-    return "Connection to the office was lost. The turn may still have finished Ã¢â‚¬â€ reload (Ctrl+R) or reopen Crew to check.";
+    return "Connection to the office was lost. The turn may still have finished — reload (Ctrl+R) or reopen Crew to check.";
   }
   return text;
 }
@@ -4408,7 +4408,7 @@ function jumpItems() {
     items.push({
       kind: "dm",
       id: dm.id,
-      label: headline || "@peer Ã‚Â· chat",
+      label: headline || "@peer · chat",
       hint: "direct",
     });
   }
@@ -4982,7 +4982,7 @@ function openSlashHelp() {
       const li = document.createElement("li");
       const cmd = document.createElement("code");
       cmd.textContent = `/${c.id}`;
-      li.append(cmd, ` Ã¢â‚¬â€ ${c.hint}`);
+      li.append(cmd, ` — ${c.hint}`);
       list.append(li);
     }
   }
@@ -5040,7 +5040,7 @@ async function showStatus() {
       /* compact-status is optional for older engines */
     }
   }
-  toast(`window ${keep} Ã‚Â· posted ${posted} Ã‚Â· compacted: ${compacted}`);
+  toast(`window ${keep} · posted ${posted} · compacted: ${compacted}`);
 }
 
 function runSlash(id) {
@@ -5215,7 +5215,7 @@ async function openFilesModal() {
         path.textContent = row.path;
         const meta = document.createElement("span");
         meta.className = "meta";
-        meta.textContent = `${row.tool}${row.botId ? ` Ã‚Â· @${row.botId}` : ""}`;
+        meta.textContent = `${row.tool}${row.botId ? ` · @${row.botId}` : ""}`;
         summary.append(path, " ", meta);
         details.append(summary);
         if (row.snippet) {
@@ -5780,22 +5780,22 @@ async function installCrewUpdate(row) {
   const meta = document.getElementById("app-update-meta");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "DownloadingÃ¢â‚¬Â¦";
+    btn.textContent = "Downloading…";
   }
   try {
     if (window.__CREW_DESKTOP__ && window.__TAURI__?.updater) {
-      if (meta) meta.textContent = "Downloading (signed updater)Ã¢â‚¬Â¦";
+      if (meta) meta.textContent = "Downloading (signed updater)…";
       const rel = await window.__TAURI__.updater.check();
       if (rel && rel.available) {
         await rel.downloadAndInstall();
-        if (meta) meta.textContent = "Installed. RelaunchingÃ¢â‚¬Â¦";
+        if (meta) meta.textContent = "Installed. Relaunching…";
         await window.__TAURI__.process.relaunch();
         return;
       }
       if (meta) meta.textContent = "No update via the signed feed.";
       return;
     }
-    if (meta) meta.textContent = "Downloading installerÃ¢â‚¬Â¦";
+    if (meta) meta.textContent = "Downloading installer…";
     const res = await (
       await api("/api/update-install", {
         method: "POST",
@@ -5807,7 +5807,7 @@ async function installCrewUpdate(row) {
       if (meta) meta.textContent = String(res.error);
       return;
     }
-    if (meta) meta.textContent = "Installer launched Ã¢â‚¬â€ finish it and reopen Crew.";
+    if (meta) meta.textContent = "Installer launched — finish it and reopen Crew.";
     toast("Installer launched.");
   } catch (err) {
     if (meta) meta.textContent = String(err);
@@ -5823,7 +5823,7 @@ document.getElementById("app-update-check")?.addEventListener("click", async () 
   const meta = document.getElementById("app-update-meta");
   const open = document.getElementById("app-update-open");
   const install = document.getElementById("app-update-install");
-  if (meta) meta.textContent = "CheckingÃ¢â‚¬Â¦";
+  if (meta) meta.textContent = "Checking…";
   if (open) open.hidden = true;
   if (install) install.hidden = true;
   try {
@@ -5837,7 +5837,7 @@ document.getElementById("app-update-check")?.addEventListener("click", async () 
       return;
     }
     if (res.status === "available") {
-      if (meta) meta.textContent = [res.version, "available", res.notes].filter(Boolean).join(" Ã‚Â· ");
+      if (meta) meta.textContent = [res.version, "available", res.notes].filter(Boolean).join(" · ");
       state.updateAvailable = res;
       if (install) {
         install.hidden = false;
@@ -5867,7 +5867,7 @@ async function checkForUpdateQuietly() {
     const res = await (await api("/api/update-check", { method: "POST" })).json();
     if (res?.status === "available") {
       state.updateAvailable = res;
-      toast(`Crew ${res.version} is available Ã¢â‚¬â€ Settings Ã¢â€ â€™ About Ã¢â€ â€™ Install.`);
+      toast(`Crew ${res.version} is available — Settings → About → Install.`);
       const install = document.getElementById("app-update-install");
       if (install) {
         install.hidden = false;

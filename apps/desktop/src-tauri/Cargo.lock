@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "crew-desktop"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "rfd",
  "serde",

@@ -1,4 +1,4 @@
-﻿// Crew office floor â€” a warm isometric canvas diorama (meeting-room edition).
+// Crew office floor — a warm isometric canvas diorama (meeting-room edition).
 // Rendering + input only. Pure math lives in floor-iso.js.
 
 import {
@@ -859,7 +859,7 @@ export function createFloor(canvas, handlers = {}) {
       }
       g.font = "bold 10px ui-monospace, monospace";
       g.textAlign = "center";
-      const label = (m.lead ? "â˜… " : "@") + m.name;
+      const label = (m.lead ? "★ " : "@") + m.name;
       const tw = g.measureText(label).width;
       g.fillStyle = "rgba(20,14,8,0.72)";
       roundRect(g, p.x - tw / 2 - 5, p.y + 10, tw + 10, 15, 7);
@@ -958,7 +958,7 @@ export function createFloor(canvas, handlers = {}) {
           dir: seat.dir,
           pose: m.pose || "idle",
           activityShort:
-            (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}â€¦` : m.activity || "",
+            (m.activity || "").length > 30 ? `${m.activity.slice(0, 28)}…` : m.activity || "",
         };
       });
       S.doors = (next.doors ?? []).map((d, i) => ({ ...d, slot: doorSlots(next.doors.length)[i] }));

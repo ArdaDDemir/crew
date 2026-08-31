@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #0a0a0b;
   --rail: #0e0e10;
   --lift: #161618;
@@ -800,7 +800,7 @@ svg.ico {
 }
 .fold summary::-webkit-details-marker { display: none; }
 .fold summary::before {
-  content: "â–¾";
+  content: "▾";
   color: var(--faint);
   display: inline-block;
   transform: rotate(-90deg);
@@ -2082,7 +2082,7 @@ dialog.modal:not([open]) {
   text-align: left;
 }
 .icon-dd-btn::after {
-  content: "â–¾";
+  content: "▾";
   color: var(--faint);
   font-size: 11px;
 }

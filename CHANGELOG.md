@@ -12,7 +12,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Fixed
+
 - **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
 
@@ -24,7 +36,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Fixed
+
 - **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
 
@@ -40,7 +64,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Fixed
+
 - **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
 
@@ -52,7 +88,19 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
+
+## [Unreleased]
+
+### Fixed
+
 - **The office froze again and this one is on us: the floor rewrite re-introduced a second rAF schedule (3 per frame, exponential).** Regression test now asserts exactly one schedule per frame in the shipped file — headless tests could not catch it because rAF does not tick headless.
+
+## [Unreleased]
+
+### Fixed
+
+- **Mojibake purge.** Years of PowerShell writes had double- and triple-encoded every non-ASCII string in the office UI (Members dash, hint dots, tooltips, avatar glyphs, tour copy). A CP1252 reverse-mapper repaired 170+ runs; hint dots, em-dashes and avatar glyphs restored. The floor pane is now a proper column: canvas on top, hint + look swatches + furniture kit below — all clickable (the canvas used to cover them).
 
 ## [Unreleased]
 
