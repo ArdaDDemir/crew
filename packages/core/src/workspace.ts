@@ -26,6 +26,7 @@ export type BotRecord = {
   icon?: string;
   harness?: string | null;
   harnessModel?: string | null;
+  effort?: string;
 };
 
 export type ChannelRecord = Channel & {
@@ -49,6 +50,7 @@ export type BotPatch = Partial<
     | "icon"
     | "harness"
     | "harnessModel"
+    | "effort"
   >
 >;
 

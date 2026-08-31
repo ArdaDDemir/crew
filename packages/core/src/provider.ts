@@ -22,6 +22,7 @@ export type ChatRequest = {
   model: string;
   messages: ChatMessage[];
   tools?: ToolSpec[];
+  effort?: string;
 };
 
 export type ChatEvent =

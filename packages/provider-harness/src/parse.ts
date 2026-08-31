@@ -125,8 +125,11 @@ function opencode(row: Record<string, unknown>): ChatEvent | null {
     return text ? { type: "text-delta", text } : null;
   }
   if (type === "error") {
-    const err = row.error as { message?: unknown } | undefined;
-    return { type: "error", message: str(err?.message) || str(row.message) || "OpenCode error" };
+    const err = row.error as { message?: unknown; data?: { message?: unknown } } | undefined;
+    return {
+      type: "error",
+      message: str(err?.message) || str(err?.data?.message) || str(row.message) || "OpenCode error",
+    };
   }
   return null;
 }

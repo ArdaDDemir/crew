@@ -1,5 +1,5 @@
 ---
-status: accepted; qualified by 0035
+status: accepted; qualified by 0035; spawn details qualified by 0061
 date: 2026-08-28
 decision-makers: Arda
 ---

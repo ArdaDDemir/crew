@@ -1,9 +1,9 @@
 # Now — what is in, what is missing
 
-Date: 2026-08-30  
+Date: 2026-08-31  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.9.0**. Unreleased (on `master`, not tagged): cubicle grid; channel = project room (header brief + empty CONTEXT `(not set)`); workspace-relative Files; README credits. Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
+Current release: **0.9.0**. Unreleased (on `master`, not tagged): channel = project room (header brief + empty CONTEXT `(not set)`); workspace-relative Files; cubicle grid; wiki office; README credits; harness turn fixes (OpenCode argv/default model/stderr); turn-stream heartbeat; reasoning effort per person; composer Stop/Queue + working chip; Welcome onboarding + intro tour. Parks: public `0.0.0.0`, live desktop mouse, signed auto-install, macOS/Linux.
 
 ---
 
@@ -55,15 +55,21 @@ See `CHANGELOG.md` `[0.9.0]`.
 
 ## In (unreleased, on master)
 
-Channel is a **project room**, not a chat toy.
+Channel is a **project room**, not a chat toy. Harness turns and the office UI got a reliability + control pass (2026-08-31).
 
 | Piece | What |
 |---|---|
 | Header `.room-brief` | First `CONTEXT.md` line, or **No About — bots will ask, not invent.** Click opens the channel sheet. |
-| Empty inject | Empty RULES / CONTEXT / folders still emit `## Channel … (not set)` and “ask, do not invent.” |
+| Empty inject | Empty RULES / CONTEXT / folders still emit `## Channel … (not set)` and "ask, do not invent." |
 | Files | Workspace-relative hints. Absolute picks stripped. `..` / `.env` / `.ssh` dropped. Unique `/api/paths` match when the leaf is unique. |
 | Cubicle grid | Desks left of glass, You in the aisle, working chatboxes. |
 | Wiki Office | Rooms table: About / Rules / Files. |
+| Harness turn fixes | OpenCode: brief is the first positional (array `--file` swallowed it), default model `opencode/big-pickle`, real stderr in empty-output exit errors, stderr drained. |
+| Turn-stream heartbeat | `/api/say` pings every 5s + `idleTimeout: 255` — Bun's 10s idle timeout no longer cuts silent tool phases. |
+| Reasoning effort | Per-person Default/minimal/low/medium/high/max. OpenRouter `reasoning_effort`; OpenCode `--variant`. |
+| Composer one-button | Send → Stop while running; typing during a run queues the draft; queue auto-sends after the run. |
+| Working chip | Pulsing dot + live status label until the first account/tool/error. |
+| Welcome + tour | Empty workspace onboarding (channel + lead + teammate + mode) and a five-step intro tour; replay in Settings → About. |
 
 See `CHANGELOG.md` `[Unreleased]`.
 

@@ -134,3 +134,26 @@ test("non-OK responses become error events", async () => {
   }
   expect(types).toEqual(["error", "done"]);
 });
+
+test("reasoning_effort rides in the body only when set", async () => {
+  const bodies: string[] = [];
+  const sse =
+    'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n' + "data: [DONE]\n\n";
+  const provider = new OpenAICompatProvider({
+    apiKey: "test",
+    fetch: async (_url, init) => {
+      bodies.push(String(init?.body ?? ""));
+      return new Response(sse, { status: 200 });
+    },
+  });
+  for await (const _ of provider.complete({ model: "x", messages: [], effort: "high" })) {
+    /* drain */
+  }
+  for await (const _ of provider.complete({ model: "x", messages: [] })) {
+    /* drain */
+  }
+  const withEffort = JSON.parse(bodies[0]!) as { reasoning_effort?: string };
+  const without = JSON.parse(bodies[1]!) as { reasoning_effort?: string };
+  expect(withEffort.reasoning_effort).toBe("high");
+  expect("reasoning_effort" in without).toBe(false);
+});

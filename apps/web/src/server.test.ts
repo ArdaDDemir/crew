@@ -5,7 +5,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ScriptedProvider } from "@crew/core";
 import { FsWorkspace } from "@crew/workspace-fs";
-import { startServer } from "./server";
+import { ndjsonStream, startServer } from "./server";
+
+test("ndjsonStream pings during silence so idle timeouts cannot cut a turn", async () => {
+  const res = ndjsonStream(async (push) => {
+    await Bun.sleep(150);
+    push({ type: "done", value: 1 });
+  }, 40);
+  const text = await res.text();
+  const rows = text.split("\n").filter(Boolean).map((l) => JSON.parse(l) as { type: string });
+  expect(rows.filter((r) => r.type === "ping").length).toBeGreaterThanOrEqual(2);
+  expect(rows.at(-1)).toEqual({ type: "done", value: 1 });
+});
 
 async function setup() {
   const cwd = await mkdtemp(join(tmpdir(), "crew-ui-"));
@@ -160,8 +171,12 @@ test("POST /api/bots and /api/channels create from the UI APIs", async () => {
     expect(stop.ok).toBe(true);
     const page = await (await fetch(`${url}/`)).text();
     expect(page).toContain("id=\"add-channel\"");
-    expect(page).toContain("id=\"stop\"");
     expect(page).toContain("id=\"palette\"");
+    expect(page).toContain("class=\"send primary\"");
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("queueDraft");
+    expect(js).toContain("flushQueue");
+    expect(js).toContain("addWorkingChip");
   } finally {
     server.stop(true);
   }
@@ -1805,6 +1820,92 @@ test("GET/PUT /api/providers roundtrips without writing config.json", async () =
     expect(Array.isArray(models.openrouter)).toBe(true);
     expect(Array.isArray(models.claude)).toBe(true);
     expect(Array.isArray(models.grok)).toBe(true);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("onboarding overlay and tour are served", async () => {
+  const { server, url } = await setup();
+  try {
+    const page = await (await fetch(`${url}/`)).text();
+    expect(page).toContain('id="onboarding"');
+    expect(page).toContain('id="onboard-channel"');
+    expect(page).toContain('id="onboard-lead"');
+    expect(page).toContain('id="onboard-teammate"');
+    expect(page).toContain('id="onboard-start"');
+    expect(page).toContain('id="onboard-tour"');
+    expect(page).toContain('id="onboard-skip"');
+    expect(page).toContain('id="tour-modal"');
+    expect(page).toContain('id="tour-body"');
+    expect(page).toContain('id="tour-next"');
+    expect(page).toContain('id="tour-back"');
+    const js = await (await fetch(`${url}/app.js`)).text();
+    expect(js).toContain("openTour");
+    expect(js).toContain("/api/channels");
+    expect(js).toContain("/api/bots");
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("onboarding seed: bots then channel from an empty workspace", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "crew-fresh-"));
+  const provider = new ScriptedProvider([[{ type: "text-delta", text: "ack" }, { type: "done" }]]);
+  const { server, url } = startServer({
+    cwd,
+    provider,
+    publicDir: join(import.meta.dir, "..", "public"),
+    port: 0,
+  });
+  try {
+    const boot0 = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot0.channels).toEqual([]);
+    expect(boot0.bots).toEqual([]);
+    for (const bot of [
+      { id: "lead", name: "Lead", icon: "\u{1F9ED}" },
+      { id: "coder", name: "Coder", icon: "\u{1F4BB}" },
+    ]) {
+      const res = await fetch(`${url}/api/bots`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bot),
+      });
+      expect(res.status).toBe(200);
+    }
+    const res = await fetch(`${url}/api/channels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: "general",
+        title: "General",
+        memberBotIds: ["lead", "coder"],
+        leadBotId: "lead",
+        permissionMode: "auto-accept",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const boot = await (await fetch(`${url}/api/bootstrap`)).json();
+    expect(boot.channels).toHaveLength(1);
+    expect(boot.channels[0].id).toBe("general");
+    expect(boot.channels[0].leadBotId).toBe("lead");
+    expect(boot.channels[0].memberBotIds).toEqual(["lead", "coder"]);
+  } finally {
+    server.stop(true);
+  }
+});
+
+test("bot effort roundtrips through PATCH /api/bot", async () => {
+  const { server, url } = await setup();
+  try {
+    const res = await fetch(`${url}/api/bot/coder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ effort: "high" }),
+    });
+    expect(res.status).toBe(200);
+    const detail = await (await fetch(`${url}/api/bot/coder`)).json();
+    expect(detail.effort).toBe("high");
   } finally {
     server.stop(true);
   }

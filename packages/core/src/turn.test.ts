@@ -914,3 +914,37 @@ test("auto with reviewer allow skips the human ask", async () => {
     true,
   );
 });
+
+test("bot effort rides into the provider request", async () => {
+  const store = new MemoryEventStore();
+  const workspace = new MemoryWorkspace();
+  workspace.addBot({ id: "coder", name: "Coder", model: "z-ai/glm-5.3-flash", effort: "high" });
+  workspace.addChannel({
+    id: "landing",
+    memberBotIds: ["coder"],
+    permissionMode: "auto-accept",
+  });
+  let seen: string | undefined;
+  const provider: Provider = {
+    async *complete(req) {
+      seen = req.effort;
+      yield { type: "text-delta", text: "ok" };
+      yield { type: "done" };
+    },
+  };
+  await runBotTurn({
+    store,
+    workspace,
+    provider,
+    tools: [],
+    nextId: seq(),
+    now: () => "t",
+    thread: { kind: "channel", id: "landing" },
+    botId: "coder",
+    model: "openai/other",
+    workspaceRoot: "/proj",
+    ask: async () => "allow",
+    hasReviewer: false,
+  });
+  expect(seen).toBe("high");
+});

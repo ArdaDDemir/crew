@@ -71,3 +71,30 @@ test("OpenCode complete streams text parts", async () => {
   }
   expect(texts).toEqual(["shipped landing"]);
 });
+
+test("OpenCode exit failure surfaces the stderr detail", async () => {
+  const provider = new HarnessCliProvider({
+    kind: "opencode",
+    binary: "opencode",
+    cwd: "/proj",
+    writePrompt: async () => "/tmp/p.txt",
+    unlinkPrompt: async () => {},
+    run: () => {
+      const iter = (async function* () {
+        /* no stdout events */
+      })();
+      return Object.assign(iter, {
+        exited: Promise.resolve(1),
+        stderrText: Promise.resolve('Error: Model not found: bogus/model\n'),
+      });
+    },
+  });
+  const errors: string[] = [];
+  for await (const e of provider.complete({
+    model: "bogus/model",
+    messages: [{ role: "user", content: "hi" }],
+  })) {
+    if (e.type === "error") errors.push(e.message);
+  }
+  expect(errors).toEqual(["OpenCode exited 1: Error: Model not found: bogus/model"]);
+});

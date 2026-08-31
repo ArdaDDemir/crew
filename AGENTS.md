@@ -70,7 +70,7 @@ apps/cli               `crew` argv adapter
 apps/web               local UI adapter (Bun.serve); providers, jobs, mcp json
 apps/discord           Discord Gateway in / webhook out (`ADR-0049`)
 apps/desktop           Crew.exe (Tauri + WebView2); sidecar is compiled `apps/web`
-docs/adr               decisions (immutable once accepted; next is 0061)
+docs/adr               decisions (immutable once accepted; next is 0062)
 docs/specs             wire contracts
 ```
 

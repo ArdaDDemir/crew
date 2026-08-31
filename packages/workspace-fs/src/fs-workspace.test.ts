@@ -158,3 +158,14 @@ test("rejects invalid bot slug", async () => {
   const { ws } = await tmpCrew();
   expect(() => ws.addBot({ id: "Lead", name: "X" })).toThrow("invalid slug: Lead");
 });
+
+test("bot effort persists to bot.json", async () => {
+  const { dir, ws } = await tmpCrew();
+  ws.addBot({ id: "coder", name: "Coder", effort: "high" });
+  expect(ws.getBot("coder")?.effort).toBe("high");
+  ws.updateBot("coder", { effort: "low" });
+  const raw = JSON.parse(
+    await readFile(join(dir, "bots", "coder", "bot.json"), "utf8"),
+  ) as { effort?: string };
+  expect(raw.effort).toBe("low");
+});

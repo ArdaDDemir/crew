@@ -60,5 +60,11 @@ test("parses OpenCode run --format json text parts", () => {
     type: "error",
     message: "no key",
   });
+  expect(
+    parseHarnessLine(
+      "opencode",
+      '{"type":"error","error":{"name":"APIError","data":{"message":"rate limited upstream"}}}',
+    ),
+  ).toEqual({ type: "error", message: "rate limited upstream" });
   expect(parseHarnessLine("opencode", '{"type":"tool_use"}')).toBeNull();
 });

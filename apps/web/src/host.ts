@@ -327,6 +327,7 @@ export function snapshot(host: Host) {
       icon: b.icon ?? null,
       harness: b.harness ?? null,
       harnessModel: b.harnessModel ?? null,
+      effort: b.effort ?? null,
     })),
     dms: (() => {
       const prefs = loadDmPrefs(host.cwd);
@@ -999,6 +1000,7 @@ export function botDetail(host: Host, id: string) {
     titleModel: bot.titleModel ?? "",
     harness: bot.harness ?? null,
     harnessModel: bot.harnessModel ?? null,
+    effort: bot.effort ?? "",
   };
 }
 

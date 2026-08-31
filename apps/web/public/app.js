@@ -1020,6 +1020,96 @@ function setDraftPlaceholder() {
     state.kind === "dm" ? `Message ${dmHeadline(state.id)}` : `Message #${state.id || "channel"}`;
 }
 
+function paintEmptyWorkspace() {
+  for (const el of document.querySelectorAll(".room-title")) el.textContent = "No rooms yet";
+  for (const el of document.querySelectorAll(".draft")) {
+    el.placeholder = "Create a channel from the rail — @ wakes bots.";
+  }
+  const plaque = document.getElementById("floor-plaque");
+  if (plaque) plaque.textContent = "No rooms yet";
+}
+
+const TOUR_STEPS = [
+  {
+    title: "The office",
+    body: "Channels are rooms you own. Bots sit at desks inside them. Everything runs on this machine — no cloud, no server.",
+  },
+  {
+    title: "Mentions are the engine",
+    body: "A post with @coder wakes only coder. A post with no @ wakes the room's lead. Unmentioned bots wait — one turn per bot per post.",
+  },
+  {
+    title: "The desk",
+    body: "A woken bot works at its desk with its own tools — files, shell, patches — then posts a first-person account in the room. If it needs a human, it stops and asks.",
+  },
+  {
+    title: "Direct messages",
+    body: "Click a bot on the floor to open a DM. You can read every DM. Bots may DM each other when a handoff needs it.",
+  },
+  {
+    title: "Safety rails",
+    body: "supervised asks before every tool. auto-accept writes inside the project only. .env and ~/.ssh are always denied. Switch modes from the header chip.",
+  },
+];
+
+function slugify(raw) {
+  return String(raw || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 20);
+}
+
+function uniqueId(base, taken) {
+  const reserved = new Set(["human", "you", "everyone", "engine", "user"]);
+  const stem = base || "bot";
+  let id = stem;
+  let n = 2;
+  while (taken.has(id) || reserved.has(id)) id = `${stem}-${n++}`;
+  return id;
+}
+
+function openOnboarding() {
+  const dlg = document.getElementById("onboarding");
+  if (!dlg || dlg.open) return;
+  if (sessionStorage.getItem("crew.onboard.skip") === "1") return;
+  dlg.showModal();
+}
+
+function renderTour() {
+  const step = TOUR_STEPS[state.tourStep || 0] || TOUR_STEPS[0];
+  const title = document.getElementById("tour-title");
+  const body = document.getElementById("tour-body");
+  const dots = document.getElementById("tour-dots");
+  const back = document.getElementById("tour-back");
+  const next = document.getElementById("tour-next");
+  if (title) title.textContent = step.title;
+  if (body) body.textContent = step.body;
+  if (dots) {
+    dots.replaceChildren();
+    TOUR_STEPS.forEach((_, i) => {
+      const d = document.createElement("span");
+      d.className = `tour-dot${i === (state.tourStep || 0) ? " on" : ""}`;
+      dots.append(d);
+    });
+  }
+  if (back) back.hidden = (state.tourStep || 0) === 0;
+  if (next) next.textContent = (state.tourStep || 0) >= TOUR_STEPS.length - 1 ? "Done" : "Next";
+}
+
+function openTour() {
+  const dlg = document.getElementById("tour-modal");
+  if (!dlg) return;
+  state.tourStep = 0;
+  renderTour();
+  if (!dlg.open) dlg.showModal();
+}
+
+function closeTour() {
+  document.getElementById("tour-modal")?.close();
+  localStorage.setItem("crew.tour.done", "1");
+}
+
 function renderRail() {
   const b = state.bootstrap;
   els.channels.replaceChildren();
@@ -1382,19 +1472,109 @@ function toolLabel(name, args) {
   return name;
 }
 
+const paneQueue = {};
+let sendFaceHtml = "";
+
 function setRunning(on) {
   state.running = on;
   const r = paneRoot(state.runPane);
   const send = r?.querySelector(".send");
-  const stop = r?.querySelector(".stop");
-  if (send) send.hidden = on;
-  if (stop) stop.hidden = !on;
+  if (send) {
+    if (on) {
+      if (!sendFaceHtml) sendFaceHtml = send.innerHTML;
+      send.classList.remove("primary");
+      send.classList.add("danger");
+      send.innerHTML = "Stop";
+      send.disabled = false;
+      syncRunButton();
+    } else {
+      send.classList.remove("danger");
+      send.classList.add("primary");
+      send.innerHTML = sendFaceHtml || "Send";
+      sendFaceHtml = "";
+      send.disabled = false;
+      flushQueue();
+    }
+  }
   if (!on) {
     state.busy.clear();
     state.activity = {};
     renderPresence();
     renderWorkChip();
   }
+}
+
+function syncRunButton() {
+  if (!state.running) return;
+  const r = paneRoot(state.runPane);
+  const send = r?.querySelector(".send");
+  const draft = r?.querySelector(".draft");
+  if (!send) return;
+  send.innerHTML = draft?.value.trim() ? "Queue" : "Stop";
+}
+
+function queueDraft(idx, text) {
+  paneQueue[idx] = [...(paneQueue[idx] ?? []), text];
+  renderQueue(idx);
+  const r = paneRoot(idx);
+  const draft = r?.querySelector(".draft");
+  if (draft) {
+    draft.value = "";
+    draft.style.height = "auto";
+  }
+  syncRunButton();
+}
+
+function renderQueue(idx) {
+  const r = paneRoot(idx);
+  const box = r?.querySelector(".queue-chips");
+  if (!box) return;
+  box.replaceChildren();
+  for (const [i, q] of (paneQueue[idx] ?? []).entries()) {
+    const li = document.createElement("li");
+    li.className = "queue-chip";
+    const span = document.createElement("span");
+    span.textContent = `Queued: ${q.length > 60 ? `${q.slice(0, 58)}…` : q}`;
+    const x = document.createElement("button");
+    x.type = "button";
+    x.textContent = "×";
+    x.title = "Remove from queue";
+    x.onclick = () => {
+      paneQueue[idx]?.splice(i, 1);
+      renderQueue(idx);
+      syncRunButton();
+    };
+    li.append(span, x);
+    box.append(li);
+  }
+  box.hidden = !(paneQueue[idx] ?? []).length;
+}
+
+function flushQueue() {
+  const idx = state.runPane;
+  const next = paneQueue[idx]?.shift();
+  renderQueue(idx);
+  if (!next) return;
+  const r = paneRoot(idx);
+  const form = r?.querySelector(".composer");
+  const draft = r?.querySelector(".draft");
+  if (!form || !draft) return;
+  draft.value = next;
+  form.requestSubmit();
+}
+
+function addWorkingChip(label) {
+  const li = document.createElement("li");
+  li.className = "msg working";
+  const dot = document.createElement("span");
+  dot.className = "working-dot";
+  const text = document.createElement("span");
+  text.className = "working-label";
+  text.textContent = label || "Working…";
+  li.append(dot, text);
+  els.log?.append(li);
+  pinBottom();
+  return li;
 }
 
 function markBusy(botId, on) {
@@ -2819,6 +2999,8 @@ async function openBotSettings(id) {
     fillImplPicker(document.getElementById("bot-fallback"), data.fallbackModel, null, "workspace fallback");
     syncBotFallback();
     fillImplPicker(document.getElementById("bot-title-model"), data.titleModel, null, "Jobs Title default");
+    const effortSel = document.getElementById("bot-effort");
+    if (effortSel) effortSel.value = data.effort || "";
     paintFace(document.getElementById("bot-face"), data.icon, id);
     renderSkills(data.skills ?? []);
     clearSkillForm();
@@ -2855,6 +3037,7 @@ async function deleteBot(id) {
         state.id = "";
         els.log?.replaceChildren();
         renderRail();
+        paintEmptyWorkspace();
       }
     } else renderRail();
   } catch (err) {
@@ -2877,6 +3060,7 @@ async function deleteChannel(id) {
         state.id = "";
         els.log?.replaceChildren();
         renderRail();
+        paintEmptyWorkspace();
       }
     } else renderRail();
   } catch (err) {
@@ -3105,6 +3289,7 @@ document.getElementById("bot-form").addEventListener("submit", async (ev) => {
     titleModel: document.getElementById("bot-title-model").value,
     harness: impl.harness,
     harnessModel: impl.harness ? impl.harnessModel || "" : null,
+    effort: document.getElementById("bot-effort")?.value ?? "",
   };
   if (!impl.harness) patch.model = impl.model;
   try {
@@ -3295,9 +3480,93 @@ async function boot() {
   renderRail();
   const first = state.bootstrap.channels[0];
   if (first) await paneOpen(0, "channel", first.id);
+  else {
+    paintEmptyWorkspace();
+    openOnboarding();
+  }
   await restoreSplit();
   startWatch();
 }
+
+document.getElementById("tour-next")?.addEventListener("click", () => {
+  if ((state.tourStep || 0) >= TOUR_STEPS.length - 1) closeTour();
+  else {
+    state.tourStep = (state.tourStep || 0) + 1;
+    renderTour();
+  }
+});
+document.getElementById("tour-back")?.addEventListener("click", () => {
+  state.tourStep = Math.max(0, (state.tourStep || 0) - 1);
+  renderTour();
+});
+document.getElementById("tour-close")?.addEventListener("click", closeTour);
+document.getElementById("tour-replay")?.addEventListener("click", () => {
+  document.getElementById("app-modal")?.close();
+  openTour();
+});
+document.getElementById("onboard-skip")?.addEventListener("click", () => {
+  sessionStorage.setItem("crew.onboard.skip", "1");
+  document.getElementById("onboarding")?.close();
+});
+document.getElementById("onboard-tour")?.addEventListener("click", () => {
+  document.getElementById("onboarding")?.close();
+  openTour();
+});
+document.getElementById("onboard-form")?.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const errBox = document.getElementById("onboard-error");
+  if (errBox) errBox.hidden = true;
+  const channelName =
+    document.getElementById("onboard-channel")?.value.trim() || "General";
+  const leadName = document.getElementById("onboard-lead")?.value.trim() || "Lead";
+  const mateName = document.getElementById("onboard-teammate")?.value.trim() || "";
+  const mode = document.getElementById("onboard-mode")?.value || "auto-accept";
+  const taken = new Set((state.bootstrap?.bots ?? []).map((b) => b.id));
+  const leadId = uniqueId(slugify(leadName), taken);
+  taken.add(leadId);
+  const bots = [{ id: leadId, name: leadName, icon: "\u{1F9ED}" }];
+  if (mateName) {
+    const mateId = uniqueId(slugify(mateName), taken);
+    taken.add(mateId);
+    bots.push({ id: mateId, name: mateName, icon: "\u{1F4BB}" });
+  }
+  const btn = document.getElementById("onboard-start");
+  if (btn) btn.disabled = true;
+  try {
+    for (const bot of bots) {
+      await api("/api/bots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bot),
+      });
+    }
+    const channelTaken = new Set((state.bootstrap?.channels ?? []).map((c) => c.id));
+    const channelId = uniqueId(slugify(channelName), channelTaken);
+    await api("/api/channels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: channelId,
+        title: channelName,
+        memberBotIds: bots.map((b) => b.id),
+        leadBotId: leadId,
+        permissionMode: mode,
+      }),
+    });
+    document.getElementById("onboarding")?.close();
+    state.bootstrap = await (await api("/api/bootstrap")).json();
+    renderRail();
+    await paneOpen(0, "channel", channelId);
+    if (localStorage.getItem("crew.tour.done") !== "1") openTour();
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = String(err?.message || err);
+      errBox.hidden = false;
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
 
 
 document.getElementById("desk-toggle")?.addEventListener("click", () => {
@@ -4137,6 +4406,10 @@ async function onComposerSubmit(ev) {
   }
   let text = els.draft?.value.trim() ?? "";
   if (!state.id) return;
+  if (state.running) {
+    if (text) queueDraft(idx, text);
+    return;
+  }
   const pending = [...(paneAttach[idx] ?? [])];
   if (state.kind === "dm" && isWatchingDm(state.id)) return;
   hidePalette();
@@ -4170,8 +4443,10 @@ async function onComposerSubmit(ev) {
   }
   const runKind = state.kind;
   const runId = state.id;
+  let workingEl = null;
   try {
       setRunning(true);
+      workingEl = addWorkingChip("Working…");
       const res = await fetch("/api/say", {
         method: "POST",
         headers: inviteHeaders({ "Content-Type": "application/json" }),
@@ -4199,18 +4474,25 @@ async function onComposerSubmit(ev) {
             li.className = "status";
             li.textContent = row.message;
             els.log?.append(li);
+            workingEl?.querySelector(".working-label")?.replaceChildren(row.message);
             const who = String(row.message).split("→")[0]?.trim();
             if (who) setActivity(who, "Calling model");
             pinBottom();
           } else if (row.type === "text") {
+            workingEl?.remove();
+            workingEl = null;
             appendAccount(row.botId, row.text, false);
           } else if (row.type === "thinking") {
             appendThinking(row.botId, row.text);
           } else if (row.type === "tool") {
+            workingEl?.remove();
+            workingEl = null;
             appendTool(row.botId, row.name, row.args, row.output, row.shot);
           } else if (row.type === "ask") {
             showAsk(row);
           } else if (row.type === "error") {
+            workingEl?.remove();
+            workingEl = null;
             addMessage({
               who: `@${row.botId ?? "engine"}`,
               botId: row.botId,
@@ -4218,6 +4500,8 @@ async function onComposerSubmit(ev) {
               kind: "error",
             });
           } else if (row.type === "done") {
+            workingEl?.remove();
+            workingEl = null;
             if (row.ignored?.text) {
               const li = document.createElement("li");
               li.className = "status";
@@ -4241,13 +4525,25 @@ async function onComposerSubmit(ev) {
       }
   } catch (err) {
     bindPane(state.runPane);
-    addMessage({ who: "error", text: String(err), kind: "error" });
+    workingEl?.remove();
+    workingEl = null;
+    addMessage({ who: "error", text: connectionLostMessage(err), kind: "error" });
   }
+  workingEl?.remove();
+  workingEl = null;
   setRunning(false);
   bindPane(state.runPane);
   if (els.send) els.send.disabled = false;
   pinBottom();
   els.draft?.focus();
+}
+
+function connectionLostMessage(err) {
+  const text = String(err?.message || err);
+  if (/network error|failed to fetch|networkerror|load failed/i.test(text)) {
+    return "Connection to the office was lost. The turn may still have finished — reload (Ctrl+R) or reopen Crew to check.";
+  }
+  return text;
 }
 
 function showAsk(row) {
@@ -5755,4 +6051,10 @@ wireRailPull();
 wireSplitHandle();
 boot().catch((err) => {
   addMessage({ who: "error", text: String(err), kind: "error" });
+});
+
+document.querySelectorAll(".draft").forEach((el) => {
+  el.addEventListener("input", () => {
+    if (state.running) syncRunButton();
+  });
 });

@@ -144,8 +144,9 @@ function watchStream(host: Host, req: Request) {
   });
 }
 
-function ndjsonStream(
+export function ndjsonStream(
   write: (push: (row: unknown) => void) => Promise<void>,
+  pingMs = 5000,
 ) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -153,10 +154,26 @@ function ndjsonStream(
       const push = (row: unknown) => {
         controller.enqueue(encoder.encode(`${JSON.stringify(row)}\n`));
       };
+      const timer =
+        pingMs > 0
+          ? setInterval(() => {
+              try {
+                controller.enqueue(encoder.encode('{"type":"ping"}\n'));
+              } catch {
+                /* stream already gone */
+              }
+            }, pingMs)
+          : undefined;
       try {
         await write(push);
       } catch (err) {
-        push({ type: "error", message: err instanceof Error ? err.message : String(err) });
+        try {
+          push({ type: "error", message: err instanceof Error ? err.message : String(err) });
+        } catch {
+          /* stream already gone */
+        }
+      } finally {
+        if (timer) clearInterval(timer);
       }
       controller.close();
     },
@@ -423,6 +440,7 @@ export function handleRequest(host: Host, req: Request, publicDir: string): Prom
                   ? null
                   : String(body.harnessModel)
                 : undefined,
+            effort: body.effort !== undefined ? String(body.effort) : undefined,
           }),
         );
       } catch (err) {
@@ -935,13 +953,13 @@ export function startServer(opts: ServerOpts = {}) {
   };
   let server: ReturnType<typeof Bun.serve>;
   try {
-    server = Bun.serve({ port: preferred, hostname, fetch });
+    server = Bun.serve({ port: preferred, hostname, fetch, idleTimeout: 255 });
   } catch (err) {
     const busy =
       err instanceof Error &&
       (/EADDRINUSE/i.test(err.message) || /port .* in use/i.test(err.message));
     if (!busy || preferred === 0) throw err;
-    server = Bun.serve({ port: 0, hostname, fetch });
+    server = Bun.serve({ port: 0, hostname, fetch, idleTimeout: 255 });
   }
   return { server, host, url: `http://${hostname}:${server.port}` };
 }

@@ -56,6 +56,7 @@ export class HarnessCliProvider implements Provider {
         model: req.model,
         mode: this.mode,
         mcpConfigPath: this.mcpConfigPath,
+        effort: req.effort,
       });
       const stream = this.run(argv, { cwd: this.cwd, signal: this.signal });
       for await (const line of stream) {
@@ -70,7 +71,7 @@ export class HarnessCliProvider implements Provider {
       }
       const code = stream.exited ? await stream.exited : 0;
       if (!hadText && !hadError && code !== 0) {
-        yield { type: "error", message: `${label(this.kind)} exited ${code}` };
+        yield { type: "error", message: await exitMessage(this.kind, code, stream.stderrText) };
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -87,6 +88,29 @@ function label(kind: HarnessKind): string {
   if (kind === "claude") return "Claude";
   if (kind === "codex") return "Codex";
   return "OpenCode";
+}
+
+async function exitMessage(
+  kind: HarnessKind,
+  code: number,
+  stderrText?: Promise<string>,
+): Promise<string> {
+  let detail = "";
+  if (stderrText) {
+    try {
+      const text = await stderrText;
+      detail =
+        text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .pop() ?? "";
+      detail = detail.slice(0, 240);
+    } catch {
+      /* keep empty */
+    }
+  }
+  return detail ? `${label(kind)} exited ${code}: ${detail}` : `${label(kind)} exited ${code}`;
 }
 
 async function writePromptFile(text: string): Promise<string> {

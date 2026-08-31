@@ -9,7 +9,7 @@ export const DEFAULT_HARNESS_MODEL: Record<HarnessKind, string> = {
   grok: "grok-4.6",
   claude: "claude-sonnet-4-6",
   codex: "gpt-5.6-sol",
-  opencode: "",
+  opencode: "opencode/big-pickle",
 };
 
 export function shouldSpawnHarness(mode: CrewPermissionMode): boolean {
@@ -24,6 +24,7 @@ export function buildHarnessArgv(input: {
   model?: string;
   mode?: CrewPermissionMode;
   mcpConfigPath?: string;
+  effort?: string;
 }): string[] {
   if (input.kind === "grok") return grokArgv(input);
   if (input.kind === "claude") return claudeArgv(input);
@@ -156,10 +157,12 @@ function opencodeArgv(input: {
   promptFile: string;
   model?: string;
   mcpConfigPath?: string;
+  effort?: string;
 }): string[] {
   const argv = [
     input.binary,
     "run",
+    "Follow the attached Crew brief. Never read or write .env or ~/.ssh. Do the desk work with your own tools. Then write a first-person English account. The Crew office posts only that account.",
     "--format",
     "json",
     "--auto",
@@ -168,10 +171,9 @@ function opencodeArgv(input: {
     "--file",
     input.promptFile,
   ];
+  const effort = input.effort?.trim();
+  if (effort) argv.push("--variant", effort);
   pushMcp(argv, input.mcpConfigPath);
   pushModel(argv, input.model);
-  argv.push(
-    "Follow the attached Crew brief. Never read or write .env or ~/.ssh. Do the desk work with your own tools. Then write a first-person English account. The Crew office posts only that account.",
-  );
   return argv;
 }

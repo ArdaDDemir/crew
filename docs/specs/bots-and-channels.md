@@ -14,6 +14,7 @@ A bot is a persistent named teammate.
 | `model` / `fallbackModel` | optional; else workspace default. OpenRouter ids for Crew talk |
 | `titleModel` | optional; names Direct chats. Empty = Jobs Title |
 | `harness` / `harnessModel` | optional; `null` or `claude` \| `codex` \| `grok` \| `opencode` plus that CLI's model id (`ADR-0030`, `ADR-0031`, `ADR-0034`, `ADR-0035`). When the Providers card is enabled, that Person's turn spawns the CLI. Otherwise talk uses `model` |
+| `effort` | optional reasoning effort: `minimal` \| `low` \| `medium` \| `high` \| `max`. Empty/unset = Default (nothing sent; some models ignore effort). OpenRouter turns send `reasoning_effort`, OpenCode turns send `--variant <effort>`, other harnesses ignore it |
 | `soul` | `SOUL.md` — voice |
 | `standingOrders` | `AGENTS.md` — always on |
 | `skills` | `skills/<slug>/SKILL.md` (`ADR-0021`) |
@@ -62,7 +63,7 @@ A bot opens a DM by emitting `dm_send` (`to`, `text`) targeting another **channe
   discord.json                 # optional guild/channel/user map (ADR-0049)
   jobs.json                    # title / compact / vision / read slots (ADR-0029, ADR-0031)
   providers.json               # OpenRouter + harness cards (ADR-0030, ADR-0031)
-  bots/<id>/bot.json           # includes harness / harnessModel / titleModel
+  bots/<id>/bot.json           # includes harness / harnessModel / titleModel / effort
   bots/<id>/SOUL.md
   bots/<id>/AGENTS.md
   bots/<id>/skills/<slug>/SKILL.md

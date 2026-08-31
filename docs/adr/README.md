@@ -15,7 +15,7 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | Local UI | 0017 → 0020 → 0023 → 0024 → 0026 → 0027 → 0028 → 0029 → 0030 → 0031 → **0032** → **0033** → **0036** → **0038** → **0039** → **0040** → **0041** → **0048** (`crew serve`) → **0054** (invite chip, live shot) → **0055** (guest writes) → **0056** (isometric floor) → **0057** (walk) → **0058** (doors) → **0059** (furniture) → **0060** (looks) |
 | Discord adapter | **0049** → **0051** (DMs) → **0052** (ask buttons) → **0053** (`dm_send`) → **0054** (outbound queue) |
 | Desktop window | **0032** → **0039** (tray + opt-in updates) → **0040** (`latest.json`) |
-| Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) |
+| Providers / Person picker / Jobs impl | **0030** → **0031** → **0034** / **0035** (harness spawn) → **0036** (MCP) → **0037** → **0038** (resources/prompts) → **0061** (spawn contract fixes, effort, stream keepalive) |
 | Org tools / reserved ids | 0022 → **0047** (`user`) |
 | Version / law file | 0006, 0010 |
 
@@ -83,3 +83,4 @@ Format: MADR-lite in `docs/adr/`. Numbers are monotonic. Never reuse a number. A
 | 0058 | Floor doors switch channel | accepted |
 | 0059 | Channel floor furniture is owner-editable | accepted |
 | 0060 | Floor looks: skin, hair, top | accepted |
+| 0061 | Harness spawn contract fixes and turn-stream keepalive | accepted; amends 0034/0035 |

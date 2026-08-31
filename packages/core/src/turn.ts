@@ -285,6 +285,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
           model: id,
           messages,
           tools: denials >= 2 ? undefined : toolSpecs,
+          effort: bot.effort || undefined,
         }),
         onDelta,
       );
@@ -301,6 +302,7 @@ export async function runBotTurn(input: RunBotTurnInput): Promise<{
               },
             ],
             tools: undefined,
+            effort: bot.effort || undefined,
           }),
           onDelta,
         );

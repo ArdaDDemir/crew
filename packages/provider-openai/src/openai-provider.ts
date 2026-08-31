@@ -78,6 +78,7 @@ export class OpenAICompatProvider implements Provider {
       tools: tools?.length ? tools : undefined,
       stream: true,
       reasoning: { enabled: true },
+      reasoning_effort: req.effort || undefined,
     });
 
     let response: Response | undefined;

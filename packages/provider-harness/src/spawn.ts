@@ -1,9 +1,14 @@
 import { spawnSync } from "node:child_process";
 
+export type HarnessReader = {
+  getReader: () => { read: () => Promise<{ done: boolean; value?: Uint8Array }> };
+};
+
 export type HarnessProc = {
   pid?: number;
   kill: () => void;
-  stdout: { getReader: () => { read: () => Promise<{ done: boolean; value?: Uint8Array }> } };
+  stdout: HarnessReader;
+  stderr?: HarnessReader;
   exited: Promise<number>;
 };
 
@@ -24,7 +29,7 @@ export type HarnessRunOpts = {
 export type HarnessRunner = (
   argv: string[],
   opts: HarnessRunOpts,
-) => AsyncIterable<string> & { exited?: Promise<number> };
+) => AsyncIterable<string> & { exited?: Promise<number>; stderrText?: Promise<string> };
 
 export function onHarnessAbort(
   proc: { pid?: number; kill: () => void },
@@ -55,7 +60,7 @@ export function defaultTreeKill(pid: number): void {
 export function spawnHarness(
   argv: string[],
   opts: HarnessRunOpts,
-): AsyncIterable<string> & { exited: Promise<number> } {
+): AsyncIterable<string> & { exited: Promise<number>; stderrText: Promise<string> } {
   const spawn = opts.spawn ?? ((cmd, spawnOpts) => Bun.spawn(cmd, spawnOpts) as HarnessProc);
   const treeKill = opts.treeKill ?? defaultTreeKill;
   const proc = spawn(argv, {
@@ -70,6 +75,7 @@ export function spawnHarness(
     else opts.signal.addEventListener("abort", abort, { once: true });
   }
   const exited = proc.exited;
+  const stderrText = drainStderr(proc);
   async function* lines() {
     const reader = proc.stdout.getReader();
     const decoder = new TextDecoder();
@@ -90,5 +96,24 @@ export function spawnHarness(
   return {
     [Symbol.asyncIterator]: () => iter[Symbol.asyncIterator](),
     exited,
+    stderrText,
   };
+}
+
+async function drainStderr(proc: HarnessProc): Promise<string> {
+  const stream = proc.stderr;
+  if (!stream?.getReader) return "";
+  try {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let text = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      text += decoder.decode(value, { stream: true });
+    }
+    return text;
+  } catch {
+    return "";
+  }
 }

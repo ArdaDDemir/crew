@@ -10,8 +10,17 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-31
+
+Harness turns run, turns survive silence, effort control, one-button composer, welcome office.
+
 ### Added
 
+- **Reasoning effort per person.** Person sheet gains Default / Minimal / Low / Medium / High / Max. OpenRouter turns send `reasoning_effort`; OpenCode turns send `--variant`; models without effort support just stay on Default. Persisted on the person and surfaced in bootstrap / bot detail.
+- **Composer is one button.** Send becomes Stop while the turn runs. Typing during a run turns it into Queue — Enter parks the draft as a queued chip that auto-sends when the run finishes; × removes it.
+- **Working indicator.** A pulsing dot with a live label (`Working…` → latest status) shows in the thread while the bot is at its desk, until the first account, tool card, or error.
+- Start screen: a workspace with no channels opens a **Welcome to Crew** dialog — first channel, lead, optional teammate, work mode — and seeds the office in one submit. "Skip for now" stays hidden for the session.
+- Intro tour: a five-step guided tour (office, mentions, the desk, DMs, safety rails) opens after the first setup and can be replayed from Settings → About.
 - Channel header shows the first CONTEXT.md line, or **No About — bots will ask, not invent.** Empty CONTEXT / RULES / folders still inject `(not set)` so bots ask instead of inventing the product.
 - Channel Files store workspace-relative paths. Absolute picks are stripped to the project folder; `..` / `.env` / `.ssh` are dropped. Wiki Office documents About / Rules / Files.
 - Public GitHub: `ArdaDDemir/crew`. Windows NSIS/MSI/portable on Releases. MIT license. Wiki for install / office / Discord.
@@ -29,6 +38,11 @@ See `docs/versioning.md`.
 
 ### Fixed
 
+- Turns no longer die mid-run. `/api/say` streams a heartbeat ping every 5s and the office server sets `idleTimeout: 255`, so Bun's default 10s idle timeout can no longer cut the connection during a silent tool phase — the UI saw `TypeError: network error` while the turn actually kept running and finished server-side.
+- OpenCode turns run again. The brief message is the first positional after `opencode run`, so the array-typed `--file` flag can no longer swallow it as a second attachment (`File not found: Follow the attached Crew brief…`). OpenCode gets a known tool-capable default model (`opencode/big-pickle`) like the other harnesses, instead of falling back to provider auto-routing that picked endpoints without tool use. OpenCode errors surface the real provider message (e.g. rate limits) instead of a generic "OpenCode error".
+- Harness exits with no output now show the CLI's last stderr line (e.g. `OpenCode exited 1: Error: Model not found: …`) instead of a bare exit code, and the stderr pipe is drained so chatty CLIs can no longer block.
+- A dropped turn stream shows **Connection to the office was lost** with recovery hints instead of a raw `TypeError: network error`.
+- An empty workspace no longer shows a fake `#landing` room; the panes say **No rooms yet** until a channel exists.
 - Floor: guest cannot remove furniture (no 403 toast). Escape cancels a held plant/lamp/sofa. Holding a kind no longer deletes the piece you click.
 - Invalid invite Bearer is 401 on `permission` / `stop` / looks, not treated as the owner.
 - Discord Allow/Always/Deny uses the author of that Discord channel, not the last message in any room.

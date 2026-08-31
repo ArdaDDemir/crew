@@ -10,11 +10,11 @@ Vibecoded with Grok 4.6.
 
 | | |
 |---|---|
-| **Installer** | [Crew_0.9.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64-setup.exe) |
-| MSI | [Crew_0.9.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew_0.9.0_x64_en-US.msi) |
-| Portable zip | [Crew-0.9.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.9.0/Crew-0.9.0-windows-portable.zip) |
+| **Installer** | [Crew_0.10.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew_0.10.0_x64-setup.exe) |
+| MSI | [Crew_0.10.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew_0.10.0_x64_en-US.msi) |
+| Portable zip | [Crew-0.10.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.10.0/Crew-0.10.0-windows-portable.zip) |
 
-All files: [github.com/ArdaDDemir/crew/releases/tag/v0.9.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.9.0)
+All files: [github.com/ArdaDDemir/crew/releases/tag/v0.10.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.10.0)
 
 WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Providers: [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
 
@@ -31,7 +31,8 @@ WebView2 is Windows 11 / current Edge. Open a project folder. Settings → Provi
 | Crew.exe | Tauri + WebView2 window. Same office as `bun run ui`. |
 | Split panes | Drag a chat to the right. Max two in-page panes. |
 | Jobs | Settings → Title / Compact / Vision / Read (not extra People). |
-| Providers | OpenRouter, plus optional Claude / Codex / Grok / OpenCode CLI spawn. |
+| Providers | OpenRouter, plus optional Claude / Codex / Grok / OpenCode CLI spawn. Reasoning effort per person (Default to Max). |
+| Composer | One button: Send becomes Stop while a turn runs; typing during a run queues the draft and it auto-sends after. |
 | MCP | Stdio or HTTP servers. Tools, resources, prompts on OpenRouter turns. |
 | Browser tools | Isolated Playwright profile under `.crew/browser/`. Not your mouse. |
 | Discord | Optional adapter (`apps/discord`). Core has no Discord. |
