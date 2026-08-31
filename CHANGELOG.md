@@ -10,6 +10,12 @@ See `docs/versioning.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- The canvas floor reads as a **warm wooden meeting room**: plank floor, cream walls with terracotta wainscot, whiteboard + wall clock + window with a light shaft, bookshelf / water cooler / plant props, and the team sits around a real wooden meeting table with chairs and open laptops when busy.
+
+## [Unreleased]
+
 ### Fixed
 
 - **The canvas floor froze the whole app.** Every frame scheduled two more frames (exponential rAF) — seconds after boot the UI went unresponsive. Now a single loop. Also fixed: floor clicks used the wrong screen↔world coordinate space (nothing reacted), the canvas was missing its class (no CSS), You had no start position, and the camera now auto-fits the room on open.

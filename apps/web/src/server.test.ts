@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+﻿import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -314,7 +314,7 @@ test("PATCH channel and bot persist customization", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: "Landing",
-        icon: "âŒ‚",
+        icon: "Ã¢Å’â€š",
         folders: "src\npublic",
         context: "Ship the marketing page.",
       }),
@@ -322,14 +322,14 @@ test("PATCH channel and bot persist customization", async () => {
     expect(ch.ok).toBe(true);
     const got = await (await fetch(`${url}/api/channel/landing`)).json();
     expect(got.title).toBe("Landing");
-    expect(got.icon).toBe("âŒ‚");
+    expect(got.icon).toBe("Ã¢Å’â€š");
     expect(got.folders).toEqual(["src", "public"]);
     const bot = await fetch(`${url}/api/bot/coder`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Frontend",
-        icon: "Î»",
+        icon: "ÃŽÂ»",
         soul: "Write HTML.",
         titleModel: "z-ai/glm-5.3-flash",
       }),
@@ -1054,7 +1054,7 @@ test("floor is a canvas game: walk, tables, poses", async () => {
     const game = await (await fetch(url + "/floor-game.js")).text();
     expect(game).toContain("findPath");
     expect(game).toContain("drawBubble");
-    expect(game).toContain("drawDesk");
+    expect(game).toContain("drawTable");
     expect(game).toContain('"type"');
     const iso = await (await fetch(url + "/floor-iso.js")).text();
     expect(iso).toContain("export function tableSlot");
@@ -1169,7 +1169,7 @@ test("floor visual depth: shadows, glass bay, name tags", async () => {
     expect(game).toContain("drawTable");
     expect(game).toContain("charSprite");
     expect(game).toContain("walkDuration");
-    expect(game).toContain("name tag");
+    expect(game).toContain("drawChair");
   } finally {
     server.stop(true);
   }
