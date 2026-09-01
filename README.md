@@ -10,11 +10,11 @@ Vibecoded with Grok 4.6.
 
 | | |
 |---|---|
-| **Installer** | [Crew_0.12.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.12.0/Crew_0.12.0_x64-setup.exe) |
-| MSI | [Crew_0.12.0_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.12.0/Crew_0.12.0_x64_en-US.msi) |
-| Portable zip | [Crew-0.12.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.12.0/Crew-0.12.0-windows-portable.zip) |
+| **Installer** | [Crew_0.12.9_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew_0.12.9_x64-setup.exe) |
+| MSI | [Crew_0.12.9_x64_en-US.msi](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew_0.12.9_x64_en-US.msi) |
+| Portable zip | [Crew-0.12.9-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew-0.12.9-windows-portable.zip) |
 
-All files: [github.com/ArdaDDemir/crew/releases/tag/v0.12.0](https://github.com/ArdaDDemir/crew/releases/tag/v0.12.0)
+All files: [github.com/ArdaDDemir/crew/releases/tag/v0.12.9](https://github.com/ArdaDDemir/crew/releases/tag/v0.12.9)
 
 WebView2 is Windows 11 / current Edge. Open a project folder. Settings Ã¢â€ â€™ Providers: [OpenRouter](https://openrouter.ai) key (or another OpenAI-compatible `base_url`).
 
@@ -49,7 +49,7 @@ Default permission is **auto-accept** (workspace file writes + workspace shell).
 
 ## Install
 
-1. Download **Crew_0.12.0_x64-setup.exe** from the table above.
+1. Download **Crew_0.12.9_x64-setup.exe** from the table above.
 2. Install and launch Crew. Pick a **project folder** (Crew writes `.crew/` there).
 3. Settings Ã¢â€ â€™ Providers Ã¢â€ â€™ paste your API key.
 

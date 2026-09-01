@@ -3,7 +3,7 @@
 Date: 2026-08-31  
 Law: `AGENTS.md` + `docs/adr/`. This file is a snapshot, not a second spec.
 
-Current release: **0.11.0** (tagged; see `CHANGELOG.md` `[0.10.0]` + `[0.11.0]`). In those: channel = project room, workspace-relative Files, harness turn fixes, turn-stream heartbeat, reasoning effort, composer Stop/Queue, Welcome onboarding + tour, GitHub-native updates with a signed silent updater. Parks: public `0.0.0.0`, live desktop mouse, macOS/Linux, delta updates.
+Current release: **0.12.9** (tagged; see `CHANGELOG.md` `[0.12.0]` + `[0.12.9]`). In those: the canvas floor game (warm meeting room, walk / DM / doors / furniture), harness turn fixes, turn-stream heartbeat, reasoning effort, composer Stop/Queue, Welcome onboarding + tour, GitHub-native auto-update with a signed silent updater, and the occlusion/webview liveness fixes.
 
 ---
 

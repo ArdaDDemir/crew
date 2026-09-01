@@ -2,13 +2,13 @@
 
 ## Windows (start here)
 
-1. Download **[Crew_0.11.0_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64-setup.exe)** (or the [MSI](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew_0.11.0_x64_en-US.msi)).
-2. The [release page](https://github.com/ArdaDDemir/crew/releases/tag/v0.11.0) also has a portable zip.
+1. Download **[Crew_0.12.9_x64-setup.exe](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew_0.12.9_x64-setup.exe)** (or the [MSI](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew_0.12.9_x64_en-US.msi)).
+2. The [release page](https://github.com/ArdaDDemir/crew/releases/tag/v0.12.9) also has a portable zip.
 3. Install. WebView2 is Windows 11 / current Edge.
 4. Launch Crew. Pick a **project folder**. Crew writes `.crew/` in that folder.
 5. Settings → Providers → paste an [OpenRouter](https://openrouter.ai) API key (or another OpenAI-compatible base URL).
 
-Portable: **[Crew-0.11.0-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.11.0/Crew-0.11.0-windows-portable.zip)**. Unzip so `Crew.exe`, `crew-server.exe`, and `public/` sit together. Double-click `Crew.exe`.
+Portable: **[Crew-0.12.9-windows-portable.zip](https://github.com/ArdaDDemir/crew/releases/download/v0.12.9/Crew-0.12.9-windows-portable.zip)**. Unzip so `Crew.exe`, `crew-server.exe`, and `public/` sit together. Double-click `Crew.exe`.
 
 Chromium for browser tools is **not** inside Crew.exe. If a person uses `browser_*` tools: `bunx playwright install chromium`.
 
